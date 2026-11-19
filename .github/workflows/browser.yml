@@ -28,25 +28,12 @@ jobs:
         with:
           node-version: 24
       - name: Prepare Chinese fonts for readable screenshots
-        timeout-minutes: 3
+        timeout-minutes: 1
         run: |
           set -euo pipefail
-          qa_font_tmp="$(mktemp -d "${RUNNER_TEMP}/pore-cjk.XXXXXX")"
-          trap 'rm -rf "$qa_font_tmp"' EXIT
           qa_font_dir="${HOME}/.local/share/fonts/pore-master-clinic-ci"
-          # Official Ubuntu package and checksum:
-          # https://packages.ubuntu.com/noble/all/fonts-noto-cjk/download
-          timeout --signal=TERM --kill-after=5s 140s \
-            curl --fail --location --silent --show-error --proto '=https' \
-              --connect-timeout 15 --max-time 60 --retry 1 --retry-delay 2 --retry-max-time 120 \
-              --output "$qa_font_tmp/fonts.deb" \
-              'https://archive.ubuntu.com/ubuntu/pool/main/f/fonts-noto-cjk/fonts-noto-cjk_20230817+repack1-3_all.deb'
-          printf '%s  %s\n' \
-            '7d64b985f6fe128c99eae5610d5c047338e572bdcfb2bb09736be01b824a7f6c' \
-            "$qa_font_tmp/fonts.deb" | sha256sum --check --status
-          dpkg-deb --extract "$qa_font_tmp/fonts.deb" "$qa_font_tmp/unpacked"
           install -d "$qa_font_dir"
-          install -m 644 "$qa_font_tmp"/unpacked/usr/share/fonts/opentype/noto/*.ttc "$qa_font_dir/"
+          install -m 644 scripts/qa-fonts/*.otf "$qa_font_dir/"
           fc-cache -f "$qa_font_dir"
           fc-match -f '%{family}\n' 'sans-serif:lang=zh-cn'
           fc-match -f '%{family}\n' 'serif:lang=zh-cn'
