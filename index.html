@@ -85,6 +85,8 @@
     .patient-info { display: flex; align-items: center; gap: 12px; padding-right: 27px; }
     .patient-avatar-wrap { flex-shrink: 0; }
     .patient-avatar { display: flex; align-items: center; justify-content: center; width: 42px; height: 46px; border-radius: 16px 16px 9px 9px; background: #e3e7da; color: #65745a; font-family: var(--serif); font-size: 21px; }
+    .patient-avatar { overflow: hidden; border: 1px solid rgba(93,110,81,.12); }
+    .patient-portrait { display: block; width: 100%; height: 100%; }
     .patient-name-line { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; font-size: 16px; font-weight: 500; }
     .patient-role { margin-top: 5px; color: var(--muted); font-size: 10px; }
     .mood-badge { color: var(--green); font-size: 9px; font-weight: 400; letter-spacing: .4px; }
@@ -126,6 +128,9 @@
     #btn-style-mode { min-height: 32px; border: 1px solid var(--line); font-size: 10px; padding: 0 10px; }
     #btn-style-mode .icon { width: 14px; height: 14px; }
     #viewport-wrap { position: relative; flex: 1; min-height: 320px; margin: 0 24px; overflow: hidden; background: #ddc3ac; border-radius: 11px; isolation: isolate; touch-action: none; cursor: crosshair; }
+    .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+    #skin-canvas:focus-visible { outline: 3px solid var(--green); outline-offset: -4px; }
+    .keyboard-care-status { position: absolute; z-index: 18; left: 10px; bottom: 10px; max-width: calc(100% - 20px); padding: 6px 9px; border: 1px solid #acbba0; border-radius: 5px; color: #3d5944; background: rgba(250,249,241,.95); font-size: 11px; line-height: 1.4; pointer-events: none; }
     #skin-canvas { display: block; width: 100%; height: 100%; touch-action: none; }
     .view-label { position: absolute; top: 17px; left: 18px; z-index: 12; display: flex; align-items: center; gap: 7px; pointer-events: none; font-size: 9px; color: rgba(65, 55, 42, .8); letter-spacing: 1.8px; }
     .view-label::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: #60795b; }
@@ -392,6 +397,42 @@
     #practice-label { flex: 1; font-weight: 500; }
     #btn-skip-practice { min-height: 30px; padding: 4px 7px; border: 0; background: transparent; color: var(--muted); font-size: 11px; cursor: pointer; }
     @media (max-width: 760px) { #practice-guide { margin-inline: 12px; min-height: 28px; gap: 7px; font-size: 10.5px; } #btn-skip-practice { min-height: 28px; font-size: 10px; } }
+    /* On short phones, the work surface takes priority over secondary statistics. */
+    #practice-guide { flex-shrink: 0; min-width: 0; }
+    @media (max-width: 760px) and (max-height: 700px) and (orientation: portrait) {
+      .studio-header { height: calc(48px + env(safe-area-inset-top, 0px)); padding-inline: 12px; }
+      .brand-title { font-size: 16px; }
+      .brand-mark { width: 25px; height: 28px; }
+      .brand-caption { font-size: 6.5px; margin-top: 2px; }
+      .top-actions { gap: 0; }
+      .icon-btn { min-width: 36px; }
+      .case-panel { padding: 6px 12px 5px; }
+      .patient-info { gap: 7px; min-height: 30px; }
+      .patient-avatar { width: 27px; height: 30px; border-radius: 8px; }
+      .patient-name-line { line-height: 16px; font-size: 12px; }
+      .patient-role { line-height: 11px; font-size: 9px; margin-top: 2px; }
+      .tray-trigger-box { top: 5px; right: 48px; min-height: 30px; }
+      .reset-button { top: -2px; right: -3px; min-height: 34px; }
+      .case-stats { grid-template-columns: .85fr 1fr 1.1fr; gap: 7px; margin-top: 5px; }
+      .stat-card { display: flex; align-items: baseline; gap: 5px; min-height: 18px; }
+      .stat-label { font-size: 9px; white-space: nowrap; }
+      .stat-value { font-size: 16px; margin: 0; letter-spacing: -.2px; }
+      .progress-track, .combo-pill { display: none; }
+      .damage-stat { display: block; padding-top: 1px; }
+      .damage-bar-track { height: 2px; margin-top: 4px; }
+      .treatment-heading { min-height: 32px; padding: 4px 12px; }
+      .treatment-heading h2 { font-size: 14px; }
+      #btn-style-mode { min-height: 25px; }
+      #viewport-wrap { min-height: 270px; }
+      .tool-section { padding-top: 6px; padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px)); }
+      .tool-section-head { min-height: 19px; margin-bottom: 1px; }
+      .next-tool-btn { min-height: 22px; }
+      .hint-banner { min-height: 32px; margin-bottom: 4px; font-size: 10.5px; line-height: 1.5; }
+      .tool-btn { min-height: 54px; gap: 2px; padding-block: 5px; }
+      .tool-icon, .tool-icon .icon { width: 22px; height: 22px; }
+      .tool-name { font-size: 10.5px; }
+      #practice-guide { margin-block: 3px 0; font-size: 10px; line-height: 18px; }
+    }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
   </style>
 </head>
@@ -442,7 +483,9 @@
       <section class="treatment-panel" aria-label="护理工作台">
         <div class="treatment-heading"><div><h2 id="care-zone">鼻翼与脸颊</h2><div class="section-meta">局部观察 · 手动护理</div></div><button id="btn-style-mode" class="icon-btn" type="button" aria-pressed="false" title="切换自然肌理与柔和肌理"><svg class="icon " aria-hidden="true"><use href="#i-style"/></svg><span id="style-mode-label">自然肌理</span></button></div>
         <main id="viewport-wrap" aria-label="微距皮肤操作区域">
-          <canvas id="skin-canvas" aria-label="护理画布：选择下方工具后，按住或拖动操作"></canvas>
+          <canvas id="skin-canvas" tabindex="0" role="application" aria-label="护理画布：选择工具后按住或拖动；也可使用键盘辅助" aria-describedby="keyboard-care-help">键盘辅助：方向键选择目标，1–5 切换工具，按住空格或回车操作，松开停手，Esc 取消。</canvas>
+          <p id="keyboard-care-status" class="keyboard-care-status" role="status" aria-live="polite" hidden></p>
+          <span id="keyboard-care-help" class="visually-hidden">键盘辅助：左或上选择上一处，右或下选择下一处；1–5 切换工具，按住空格或回车使用，松开停手；粉刺针在松键时破口，Esc 取消。清理完后按 6 涂冰膜。辅助成绩单独记录。</span>
           <div class="canvas-topline"><ol class="care-stages" aria-label="护理流程"><li data-care-stage="0" aria-current="step"><span>01</span>热敷</li><li data-care-stage="1"><span>02</span>清理</li><li data-care-stage="2"><span>03</span>舒缓</li></ol><span id="canvas-status" class="canvas-status">已软化 0 / 8</span></div>
           <div class="ice-cta-group"><button id="btn-ice-finish" class="ice-finish-cta" type="button">涂抹舒缓冰膜</button><button id="btn-ice-quick" class="ice-quick-btn" type="button">一键敷膜 · 完成护理</button></div>
           <div class="macro-frame-overlay"></div><div id="macro-reticle" class="macro-reticle">鼻翼沟与内侧脸颊 · 自然肌理</div>
@@ -576,6 +619,7 @@
           <p class="modal-subtitle">桌面端按 1–5 切换工具；触屏点击下方器械。</p>
         </div>
         <div class="guide-list">
+          <div class="guide-row"><strong>键盘辅助</strong><br>Tab 聚焦护理画布；← / ↑ 选择上一处，→ / ↓ 选择下一处。1–5 换工具，按住空格或回车操作，松开停手。粉刺针在松键时破口，Esc 可取消。完成清理后按 6，逐处涂抹冰膜。使用辅助后，本局会单独记录为键盘辅助成绩。</div>
           <div class="guide-row"><strong>本次可选目标</strong><br><span id="help-care-goal"></span><br>按自己的节奏尝试，不影响正常完成护理。</div>
           <div class="guide-row"><strong>01 / 热喷</strong><br>按住并缓慢移动。充分软化的黑头可以直接夹取；白头可轻挤，深层先用粉刺针破口。</div>
           <div class="guide-row"><strong>02 / 粉刺针</strong><br>按住查看放大镜，松开挑开未破口的尖端。黑头可先挑松再夹取；已露出一半的黑头也可直接针取。</div>
@@ -1221,6 +1265,8 @@
       height: 640,
       dpr: 1,
       styleMode: 'realistic',
+      controlMode: 'pointer',
+      keyboardCare: { index: 0, target: null, visible: false, active: false, key: null, tool: '', elapsed: 0, wipeClock: 0, startX: 0, startY: 0, pullX: 0, pullY: 0 },
       currentTool: 'steam', // 'steam' | 'needle' | 'squeeze' | 'tweezers' | 'swab' | 'ice_brush'
       targetDensity: 0,
       faceSeed: Math.random() * 10000,
@@ -1631,6 +1677,58 @@
       return record;
     }
 
+    function getPatientPortrait(client) {
+      const portraits = {
+        coder: {
+          paper: '#dde4d8', shirt: '#617b6b', skin: '#dcb697', hair: '#3d4139',
+          back: '',
+          face: 'M20 25C20 14 45 13 46 26L44 43Q41 54 33 55Q23 53 20 43Z',
+          hairPath: 'M18 31 17 22Q18 9 32 9 48 8 49 25L46 33 43 24 39 19Q30 24 23 20L22 32Z',
+          detail: '<g fill="none" stroke="#485448" stroke-width="1.4"><rect x="21" y="30" width="10" height="8" rx="3"/><rect x="35" y="30" width="10" height="8" rx="3"/><path d="M31 33h4m-14-1-3-1m27 1 3-1"/></g><path d="m25 60 8 7 8-7" fill="none" stroke="#ccd6c4" stroke-width="1.5"/>',
+          eyes: '<path d="M26 34h.1m14 0h.1"/>',
+          mouth: '<path d="M29 45q4 2 8-1"/>'
+        },
+        student: {
+          paper: '#e5e4d6', shirt: '#8a9b9b', skin: '#e7c8a7', hair: '#655443',
+          back: '',
+          face: 'M19 26C19 14 45 13 47 28L44 43Q41 53 33 55Q22 52 20 42Z',
+          hairPath: 'M18 34Q13 18 24 12 39 4 49 19L47 34 43 26 40 22 36 27 33 21 29 27 24 23 22 34Z',
+          detail: '<path d="m24 60 9 6 9-6m-13 5-1 13m10-13 1 13" fill="none" stroke="#dbe3db" stroke-width="1.4"/><path d="M41 19 46 16" stroke="#b3bbae" stroke-width="2" stroke-linecap="round"/>',
+          eyes: '<path d="M25 34h.1m15 0h.1"/>',
+          mouth: '<path d="M29 45q4 3 8 0"/>'
+        },
+        anchor: {
+          paper: '#eee0d4', shirt: '#a77f75', skin: '#e9c4a5', hair: '#57483f',
+          back: '<path d="M17 36Q10 12 30 9 50 5 52 28L55 59 13 59Z" fill="#57483f"/>',
+          face: 'M21 24C22 14 44 14 45 26L43 43Q39 52 33 54Q25 52 22 42Z',
+          hairPath: 'M18 33Q16 10 32 10 49 10 48 33L44 27 41 19Q35 28 21 25L21 38Z',
+          detail: '<g fill="none" stroke="#d2b06c" stroke-width="1.5"><ellipse cx="20" cy="42" rx="2" ry="3"/><ellipse cx="46" cy="42" rx="2" ry="3"/></g><path d="M27 59q6 8 12 0" fill="none" stroke="#e4beb0" stroke-width="1.4"/>',
+          eyes: '<path d="m25 34 2-.5m12 .5 2-.5"/>',
+          mouth: '<path d="M29 44q4 3 8 0"/>'
+        },
+        foodie_vip: {
+          paper: '#e4dfcd', shirt: '#9a8765', skin: '#d5ab88', hair: '#504538',
+          back: '',
+          face: 'M17 26C17 13 47 12 49 27L48 42Q46 56 33 57Q19 55 17 42Z',
+          hairPath: 'M16 29 16 22Q17 9 33 9 49 9 50 24L49 32 45 25 44 20Q32 17 22 22L20 31Z',
+          detail: '<path d="m24 59 4 19m14-19-4 19" fill="none" stroke="#d6c5a3" stroke-width="3"/><path d="M25 47q8 7 16 0" fill="none" stroke="#765943" stroke-width="1.4" stroke-dasharray="1 3" stroke-linecap="round"/>',
+          eyes: '<path d="M24 35h.1m18 0h.1"/>',
+          mouth: '<path d="M28 45q5 3 10 0"/>'
+        },
+        strawberry_nose: {
+          paper: '#dfe7dc', shirt: '#8da090', skin: '#e3bd9c', hair: '#74604b',
+          back: '<path d="M17 40Q12 15 29 10 49 8 51 29L49 53 17 53Z" fill="#74604b"/>',
+          face: 'M20 25C20 14 45 14 47 26L44 44Q40 54 33 55Q23 53 20 42Z',
+          hairPath: 'M18 30Q14 11 33 9 52 9 48 32L44 24Q32 20 22 25L21 34Z',
+          detail: '<path d="M18 22q15-9 31 0l-1 6q-16-7-29 0Z" fill="#f2f0e4"/><path d="M20 24q14-7 27 0" fill="none" stroke="#b0c0a9" stroke-width="1"/><path d="M27 60q6 5 12 0" fill="none" stroke="#cbd8c6" stroke-width="1.5"/>',
+          eyes: '<path d="M24 34q2 2 4 0m10 0q2 2 4 0"/>',
+          mouth: '<path d="M29 45q4 2 8 0"/>'
+        }
+      };
+      const p = portraits[client.id] || portraits.coder;
+      return `<svg class="patient-portrait" viewBox="0 0 66 78" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><rect width="66" height="78" rx="10" fill="${p.paper}"/>${p.back}<path d="M7 78V71Q8 59 25 57h16Q58 60 60 72v6Z" fill="${p.shirt}"/><path d="M26 47v12q7 8 14 0V47" fill="${p.skin}"/><path d="M26 51q7 5 14 0v5q-7 5-14 0Z" fill="#a87960" opacity=".19"/><ellipse cx="19" cy="35" rx="3" ry="5" fill="${p.skin}"/><ellipse cx="47" cy="35" rx="3" ry="5" fill="${p.skin}"/><path d="${p.face}" fill="${p.skin}"/><path d="${p.hairPath}" fill="${p.hair}"/><g stroke="#534b3f" stroke-width="1.65" stroke-linecap="round">${p.eyes}</g><path d="m33 35-2 6h3" stroke="#ae8065" stroke-width=".9" stroke-linecap="round"/><g stroke="#8e6050" stroke-width="1.1" stroke-linecap="round">${p.mouth}</g>${p.detail}</svg>`;
+    }
+
     function setPatientMood(emoji) {
       const moods = { '😟': '准备中', '🙂': '放松', '😌': '舒适', '😣': '请轻一点', '🤩': '很满意', '🥰': '已完成' };
       patientMoodEl.textContent = moods[emoji] || '放松';
@@ -1681,211 +1779,158 @@
      * ============================================================================
      */
     function renderSkinTexture() {
-      const w = state.width;
-      const h = state.height;
-      const dpr = state.dpr;
+      const w = state.width, h = state.height, dpr = state.dpr;
       skinLayer.width = Math.max(1, Math.floor(w * dpr));
       skinLayer.height = Math.max(1, Math.floor(h * dpr));
       skinCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
       const isCreamy = state.styleMode === 'creamy';
       const seedBase = state.faceSeed;
       const client = currentClient();
       const region = client.zoneId === 'nose_tip' ? '鼻头皮脂区' : client.zoneId === 'chin_jaw' ? '下巴与唇周' : '鼻翼沟与内侧脸颊';
       reticleEl.textContent = `${region} · ${isCreamy ? '柔和肌理' : '自然肌理'}`;
 
-      // A broad, soft light keeps the skin warm without a glossy orange cast.
-      const shift = Math.floor((seededRand(seedBase + 1) - 0.5) * 10);
-      const baseGrad = skinCtx.createRadialGradient(
-        w * 0.28, h * 0.23, w * 0.06,
-        w * 0.48, h * 0.48, Math.max(w, h) * 0.94
-      );
-      if (isCreamy) {
-        baseGrad.addColorStop(0, '#f5e5d8');
-        baseGrad.addColorStop(0.55, '#ead0bc');
-        baseGrad.addColorStop(1, '#d5ae92');
-      } else {
-        baseGrad.addColorStop(0, `rgb(${239 + shift}, ${214 + shift}, ${193 + shift})`);
-        baseGrad.addColorStop(0.48, `rgb(${226 + shift}, ${195 + shift}, ${171 + shift})`);
-        baseGrad.addColorStop(0.82, `rgb(${209 + shift}, ${175 + shift}, ${149 + shift})`);
-        baseGrad.addColorStop(1, `rgb(${196 + shift}, ${158 + shift}, ${134 + shift})`);
-      }
-      skinCtx.fillStyle = baseGrad;
+      // Form comes first: one light from the upper left, then region-specific planes.
+      const shift = Math.floor((seededRand(seedBase + 1) - 0.5) * 6);
+      const base = skinCtx.createLinearGradient(0, 0, w * 0.68, h);
+      base.addColorStop(0, isCreamy ? '#f1dfd0' : `rgb(${234 + shift},${208 + shift},${185 + shift})`);
+      base.addColorStop(0.55, isCreamy ? '#e9cbb4' : `rgb(${222 + shift},${188 + shift},${162 + shift})`);
+      base.addColorStop(1, isCreamy ? '#d8b79e' : `rgb(${205 + shift},${168 + shift},${143 + shift})`);
+      skinCtx.fillStyle = base;
       skinCtx.fillRect(0, 0, w, h);
 
-      // Keep each facial region recognizable through form, not a dark outline.
-      skinCtx.save();
-      if (client.zoneId === 'nose_cheek') {
-        const noseWingHL = skinCtx.createRadialGradient(w * 0.12, h * 0.38, 3, w * 0.18, h * 0.43, w * 0.36);
-        noseWingHL.addColorStop(0, 'rgba(255, 248, 235, 0.19)');
-        noseWingHL.addColorStop(1, 'rgba(255, 248, 235, 0)');
-        skinCtx.fillStyle = noseWingHL;
-        skinCtx.fillRect(0, 0, w, h);
-
-        skinCtx.strokeStyle = isCreamy ? 'rgba(130, 90, 70, 0.08)' : 'rgba(119, 77, 59, 0.13)';
-        skinCtx.lineWidth = 22;
-        skinCtx.filter = 'blur(10px)';
-        skinCtx.beginPath();
-        skinCtx.moveTo(w * 0.30, -20);
-        skinCtx.bezierCurveTo(w * 0.42, h * 0.34, w * 0.38, h * 0.68, w * 0.18, h * 0.92);
-        skinCtx.stroke();
-        skinCtx.filter = 'none';
-      } else if (client.zoneId === 'nose_tip') {
-        const tipHL = skinCtx.createRadialGradient(w * 0.39, h * 0.36, 5, w * 0.48, h * 0.48, w * 0.55);
-        tipHL.addColorStop(0, 'rgba(255, 249, 236, 0.19)');
-        tipHL.addColorStop(0.58, 'rgba(250, 235, 215, 0.025)');
-        tipHL.addColorStop(1, 'rgba(115, 81, 59, 0.10)');
-        skinCtx.fillStyle = tipHL;
-        skinCtx.fillRect(0, 0, w, h);
-      } else {
-        const chinShadow = skinCtx.createLinearGradient(0, h * 0.04, 0, h * 0.37);
-        chinShadow.addColorStop(0, 'rgba(123, 85, 65, 0.13)');
-        chinShadow.addColorStop(0.55, 'rgba(135, 90, 70, 0.035)');
-        chinShadow.addColorStop(1, 'rgba(135, 90, 70, 0)');
-        skinCtx.fillStyle = chinShadow;
-        skinCtx.fillRect(0, 0, w, h);
-
-        const chinDome = skinCtx.createRadialGradient(w * 0.41, h * 0.49, 6, w * 0.5, h * 0.58, w * 0.48);
-        chinDome.addColorStop(0, 'rgba(255, 247, 232, 0.14)');
-        chinDome.addColorStop(1, 'rgba(255, 247, 232, 0)');
-        skinCtx.fillStyle = chinDome;
-        skinCtx.fillRect(0, 0, w, h);
-      }
-      skinCtx.restore();
-
-      // Broad, low-contrast undertones prevent a uniform synthetic surface.
-      const blotchCount = isCreamy ? 8 : 18;
-      for (let i = 0; i < blotchCount; i++) {
-        const bx = seededRand(seedBase + 15 + i * 3.7) * w;
-        const by = seededRand(seedBase + 16 + i * 3.7) * h;
-        const br = 28 + seededRand(seedBase + 17 + i * 3.7) * 70;
-        const alpha = (isCreamy ? 0.018 : 0.025) + seededRand(seedBase + 80 + i) * 0.02;
-        const bGrad = skinCtx.createRadialGradient(bx, by, 0, bx, by, br);
-        const pigment = i % 3 === 0 ? '156, 112, 77' : '185, 104, 93';
-        bGrad.addColorStop(0, `rgba(${pigment}, ${alpha})`);
-        bGrad.addColorStop(0.55, `rgba(${pigment}, ${alpha * 0.35})`);
-        bGrad.addColorStop(1, `rgba(${pigment}, 0)`);
-        skinCtx.fillStyle = bGrad;
-        skinCtx.fillRect(0, 0, w, h);
-      }
-
-      const tile = 192;
-      const noiseCanvas = document.createElement('canvas');
-      noiseCanvas.width = tile;
-      noiseCanvas.height = tile;
-      const nCtx = noiseCanvas.getContext('2d');
-      const imgData = nCtx.createImageData(tile, tile);
-      const px = imgData.data;
-      const noiseAlpha = isCreamy ? 6 : 12;
-      for (let i = 0; i < px.length; i += 4) {
-        const idx = i >> 2;
-        const v = seededRand(seedBase + idx * 0.31) * 0.6 + seededRand(seedBase + idx * 1.13 + 9) * 0.4;
-        if (v > 0.52) {
-          px[i] = 255; px[i + 1] = 245; px[i + 2] = 231;
-          px[i + 3] = Math.floor((v - 0.52) * 2.08 * noiseAlpha);
-        } else if (v < 0.48) {
-          px[i] = 139; px[i + 1] = 104; px[i + 2] = 80;
-          px[i + 3] = Math.floor((0.48 - v) * 2.08 * noiseAlpha);
+      const wash = (x, y, rx, ry, stops) => {
+        skinCtx.save();
+        skinCtx.translate(x * w, y * h);
+        skinCtx.scale(rx * w, ry * h);
+        const g = skinCtx.createRadialGradient(-0.15, -0.18, 0.03, 0, 0, 1);
+        stops.forEach(([at, color]) => g.addColorStop(at, color));
+        skinCtx.fillStyle = g;
+        skinCtx.fillRect(-1.1, -1.1, 2.2, 2.2);
+        skinCtx.restore();
+      };
+      const fold = (points, strength, width) => {
+        const trace = () => {
+          skinCtx.beginPath();
+          skinCtx.moveTo(points[0] * w, points[1] * h);
+          for (let i = 2; i + 5 < points.length; i += 6) {
+            skinCtx.bezierCurveTo(points[i] * w, points[i + 1] * h, points[i + 2] * w, points[i + 3] * h, points[i + 4] * w, points[i + 5] * h);
+          }
+        };
+        skinCtx.save();
+        skinCtx.lineCap = 'round';
+        // A continuous penumbra avoids a hard drawn outline around the anatomy.
+        let previousOpacity = 0;
+        for (let i = 36; i >= 1; i--) {
+          const spread = i / 9;
+          const opacity = Math.exp(-spread * spread * .5) * strength * .26;
+          skinCtx.strokeStyle = `rgba(120, 77, 60, ${Math.max(0, opacity - previousOpacity)})`;
+          skinCtx.lineWidth = width * spread * 2;
+          trace(); skinCtx.stroke();
+          previousOpacity = opacity;
         }
+        skinCtx.translate(width * 1.9, -width * .45);
+        previousOpacity = 0;
+        for (let i = 20; i >= 1; i--) {
+          const spread = i / 7;
+          const opacity = Math.exp(-spread * spread * .5) * strength * .18;
+          skinCtx.strokeStyle = `rgba(255, 240, 216, ${Math.max(0, opacity - previousOpacity)})`;
+          skinCtx.lineWidth = width * spread * 2;
+          trace(); skinCtx.stroke();
+          previousOpacity = opacity;
+        }
+        skinCtx.restore();
+      };
+      const relief = isCreamy ? .62 : .85;
+      if (client.zoneId === 'nose_cheek') {
+        wash(.73, .43, .75, .86, [[0, 'rgba(255,244,225,.45)'], [.55, 'rgba(255,232,207,.17)'], [1, 'rgba(255,232,207,0)']]);
+        wash(-.10, .42, .53, .92, [[0, 'rgba(144,94,68,.20)'], [.65, 'rgba(153,100,77,.12)'], [1, 'rgba(153,100,77,0)']]);
+        wash(.13, .34, .30, .65, [[0, 'rgba(255,245,226,.60)'], [.62, 'rgba(255,235,207,.23)'], [1, 'rgba(255,235,207,0)']]);
+        fold([.14, -.12, .25, .13, .23, .27, .31, .40, .43, .55, .30, .66, .10, .65], relief * .52, Math.max(2.4, w * .016));
+        wash(.06, .65, .20, .095, [[0, 'rgba(141,87,64,.23)'], [.54, 'rgba(145,91,69,.12)'], [1, 'rgba(145,91,69,0)']]);
+        wash(.14, .54, .26, .20, [[0, 'rgba(255,239,213,.42)'], [.66, 'rgba(255,229,199,.13)'], [1, 'rgba(255,229,199,0)']]);
+      } else if (client.zoneId === 'nose_tip') {
+        wash(.02, .56, .36, .70, [[0, 'rgba(139,87,63,.23)'], [.70, 'rgba(139,87,63,.08)'], [1, 'rgba(139,87,63,0)']]);
+        wash(.99, .58, .38, .72, [[0, 'rgba(130,82,61,.29)'], [.65, 'rgba(130,82,61,.12)'], [1, 'rgba(130,82,61,0)']]);
+        wash(.47, .43, .53, .64, [[0, 'rgba(255,244,221,.48)'], [.55, 'rgba(255,228,195,.19)'], [1, 'rgba(255,228,195,0)']]);
+        fold([.03, .61, .03, .75, .11, .82, .24, .84], relief * .40, Math.max(2.2, w * .017));
+        fold([.97, .61, .97, .75, .89, .82, .76, .84], relief * .52, Math.max(2.2, w * .018));
+        wash(.50, .88, .47, .17, [[0, 'rgba(128,80,61,.18)'], [.57, 'rgba(143,91,70,.08)'], [1, 'rgba(143,91,70,0)']]);
+        wash(.42, .53, .37, .25, [[0, 'rgba(255,247,227,.19)'], [1, 'rgba(255,247,227,0)']]);
+      } else {
+        // The cropped lower-lip plane and curved chin distinguish this area at a glance.
+        wash(.51, -.12, .58, .30, [[0, 'rgba(160,93,82,.32)'], [.70, 'rgba(160,93,82,.13)'], [1, 'rgba(160,93,82,0)']]);
+        fold([.12, .075, .33, .18, .69, .18, .88, .075], relief * .52, Math.max(1.6, w * .010));
+        wash(.50, .62, .57, .52, [[0, 'rgba(255,243,220,.43)'], [.55, 'rgba(255,228,198,.16)'], [1, 'rgba(255,228,198,0)']]);
+        wash(-.07, .67, .37, .59, [[0, 'rgba(133,84,63,.20)'], [.64, 'rgba(133,84,63,.08)'], [1, 'rgba(133,84,63,0)']]);
+        wash(1.07, .69, .39, .62, [[0, 'rgba(133,84,63,.24)'], [.64, 'rgba(133,84,63,.09)'], [1, 'rgba(133,84,63,0)']]);
+        wash(.51, 1.04, .57, .23, [[0, 'rgba(132,85,65,.18)'], [.65, 'rgba(132,85,65,.06)'], [1, 'rgba(132,85,65,0)']]);
       }
-      nCtx.putImageData(imgData, 0, 0);
-      const pat = skinCtx.createPattern(noiseCanvas, 'repeat');
-      if (pat) {
-        skinCtx.fillStyle = pat;
-        skinCtx.fillRect(0, 0, w, h);
+
+      // Sparse, broad colour variation sits below the fine surface texture.
+      for (let i = 0; i < (isCreamy ? 5 : 10); i++) {
+        const x = seededRand(seedBase + 15 + i * 3.7);
+        const y = seededRand(seedBase + 16 + i * 3.7);
+        const br = .12 + seededRand(seedBase + 17 + i * 3.7) * .16;
+        wash(x, y, br, br * w / h, [[0, `rgba(176,102,88,${isCreamy ? .018 : .033})`], [1, 'rgba(176,102,88,0)']]);
       }
 
       const areaScale = (w * h) / (390 * 640);
       if (!isCreamy) {
         skinCtx.save();
-        skinCtx.lineWidth = 0.5;
-        for (let i = 0; i < Math.floor(165 * Math.max(0.8, areaScale)); i++) {
+        skinCtx.lineWidth = .45;
+        for (let i = 0; i < Math.floor(125 * Math.max(.55, areaScale)); i++) {
           const lx = seededRand(seedBase + 300 + i * 2.1) * w;
           const ly = seededRand(seedBase + 301 + i * 2.1) * h;
-          const tWeight = getSebaceousZoneWeight(lx / w, ly / h);
-          const len = 5 + seededRand(seedBase + 302 + i) * 14;
-          const ang = (i % 3 === 0 ? -0.62 : 0.42) + (seededRand(seedBase + 400 + i) - 0.5) * 0.95;
-          skinCtx.strokeStyle = `rgba(131, 95, 74, ${0.055 * (1 - tWeight * 0.45)})`;
-          skinCtx.beginPath();
-          skinCtx.moveTo(lx, ly);
-          skinCtx.quadraticCurveTo(
-            lx + Math.cos(ang) * len * 0.5,
-            ly + Math.sin(ang) * len * 0.5 + 1.1,
-            lx + Math.cos(ang) * len,
-            ly + Math.sin(ang) * len
-          );
+          const len = 5 + seededRand(seedBase + 302 + i) * 12;
+          const ang = .35 + (seededRand(seedBase + 400 + i) - .5) * 1.0 + (ly / h - .5) * .35;
+          skinCtx.strokeStyle = 'rgba(133,93,72,.050)';
+          skinCtx.beginPath(); skinCtx.moveTo(lx, ly);
+          skinCtx.quadraticCurveTo(lx + Math.cos(ang) * len * .5, ly + Math.sin(ang) * len * .5 + 1.0, lx + Math.cos(ang) * len, ly + Math.sin(ang) * len);
           skinCtx.stroke();
         }
         skinCtx.restore();
       }
 
-      const poreCount = Math.floor(CONFIG.SKIN.PORE_COUNT_BASE * Math.max(0.8, areaScale) * (isCreamy ? 0.55 : 1));
+      const poreCount = Math.floor(CONFIG.SKIN.PORE_COUNT_BASE * Math.max(.55, areaScale) * (isCreamy ? .38 : .72));
       for (let i = 0; i < poreCount; i++) {
-        const pxX = seededRand(seedBase + 1000 + i * 2.3) * w;
-        const pxY = seededRand(seedBase + 1001 + i * 2.3) * h;
-        const sebW = getSebaceousZoneWeight(pxX / w, pxY / h);
-        const sizeVariation = seededRand(seedBase + 3000 + i);
-        const pr = 0.48 + sebW * 0.72 + sizeVariation * sizeVariation * (0.55 + sebW * 0.70);
-        const stretch = 0.94 + seededRand(seedBase + 3200 + i) * 0.43 + (1 - sebW) * 0.16;
-        const rot = 0.42 + (seededRand(seedBase + 3500 + i) - 0.5) * 0.95;
-        const poreAlpha = (isCreamy ? 0.075 : 0.12) + sebW * 0.07 + sizeVariation * 0.035;
-
-        // Feather the cavity into the surrounding skin instead of stamping dots.
+        const x = seededRand(seedBase + 1000 + i * 2.3) * w;
+        const y = seededRand(seedBase + 1001 + i * 2.3) * h;
+        const seb = getSebaceousZoneWeight(x / w, y / h);
+        const variation = seededRand(seedBase + 3000 + i);
+        const r = .30 + seb * .43 + variation * variation * .65;
         skinCtx.save();
-        skinCtx.translate(pxX, pxY);
-        skinCtx.rotate(rot);
-        skinCtx.scale(stretch, 1);
-        const poreShade = skinCtx.createRadialGradient(-pr * 0.10, -pr * 0.16, 0, 0, 0, pr * 1.7);
-        poreShade.addColorStop(0, `rgba(111, 76, 56, ${poreAlpha})`);
-        poreShade.addColorStop(0.35, `rgba(128, 88, 64, ${poreAlpha * 0.8})`);
-        poreShade.addColorStop(0.72, `rgba(147, 105, 78, ${poreAlpha * 0.28})`);
-        poreShade.addColorStop(1, 'rgba(147, 105, 78, 0)');
-        skinCtx.fillStyle = poreShade;
-        skinCtx.fillRect(-pr * 1.8, -pr * 1.8, pr * 3.6, pr * 3.6);
-
-        if (!isCreamy && sebW > 0.4 && seededRand(seedBase + 4200 + i) < 0.35) {
-          const isOxidizedTiny = seededRand(seedBase + 4600 + i) < 0.20;
-          skinCtx.fillStyle = isOxidizedTiny ? 'rgba(100, 75, 51, 0.19)' : 'rgba(238, 220, 181, 0.25)';
-          skinCtx.beginPath();
-          skinCtx.ellipse(0, 0, pr * 0.38, pr * 0.47, 0, 0, Math.PI * 2);
-          skinCtx.fill();
-        }
-
-        skinCtx.strokeStyle = `rgba(255, 246, 229, ${isCreamy ? 0.12 : 0.17})`;
-        skinCtx.lineWidth = 0.5;
-        skinCtx.beginPath();
-        skinCtx.ellipse(pr * 0.17, pr * 0.20, pr * 0.77, pr * 0.69, 0, 0.1, Math.PI * 0.72);
-        skinCtx.stroke();
+        skinCtx.translate(x, y);
+        skinCtx.rotate(.35 + (seededRand(seedBase + 3500 + i) - .5) * .7);
+        const pore = skinCtx.createRadialGradient(-r * .16, -r * .2, 0, 0, 0, r * 1.5);
+        const alpha = (isCreamy ? .07 : .105) + seb * .045;
+        pore.addColorStop(0, `rgba(109,72,52,${alpha})`);
+        pore.addColorStop(.42, `rgba(130,88,63,${alpha * .62})`);
+        pore.addColorStop(1, 'rgba(146,101,73,0)');
+        skinCtx.fillStyle = pore;
+        skinCtx.beginPath(); skinCtx.ellipse(0, 0, r * 1.55, r * 1.35, 0, 0, Math.PI * 2); skinCtx.fill();
+        skinCtx.strokeStyle = 'rgba(255,246,225,.16)'; skinCtx.lineWidth = .45;
+        skinCtx.beginPath(); skinCtx.ellipse(r * .15, r * .21, r * .82, r * .69, 0, .15, Math.PI * .8); skinCtx.stroke();
         skinCtx.restore();
       }
 
       if (!isCreamy) {
-        skinCtx.save();
-        const hairCount = Math.floor(CONFIG.SKIN.VELLUS_HAIR_COUNT * Math.max(0.75, areaScale));
-        for (let i = 0; i < hairCount; i++) {
-          const hx = seededRand(seedBase + 6100 + i * 2) * w;
-          const hy = seededRand(seedBase + 6101 + i * 2) * h;
-          if (getSebaceousZoneWeight(hx / w, hy / h) > 0.72) continue;
-          const hLen = 4.5 + seededRand(seedBase + 6300 + i) * 7;
-          const hAng = 0.55 + (seededRand(seedBase + 6500 + i) - 0.5) * 0.75;
-          const ex = hx + Math.cos(hAng) * hLen;
-          const ey = hy + Math.sin(hAng) * hLen;
-
-          const hGrad = skinCtx.createLinearGradient(hx, hy, ex, ey);
-          hGrad.addColorStop(0, 'rgba(105, 81, 55, 0.17)');
-          hGrad.addColorStop(0.7, 'rgba(147, 121, 84, 0.08)');
-          hGrad.addColorStop(1, 'rgba(249, 234, 210, 0)');
-          skinCtx.strokeStyle = hGrad;
-          skinCtx.lineWidth = 0.55;
-          skinCtx.beginPath();
-          skinCtx.moveTo(hx, hy);
-          skinCtx.quadraticCurveTo((hx + ex) * 0.5 + 1.2, (hy + ey) * 0.5 - 1.0, ex, ey);
-          skinCtx.stroke();
+        skinCtx.save(); skinCtx.lineWidth = .48;
+        const count = Math.floor(CONFIG.SKIN.VELLUS_HAIR_COUNT * Math.max(.55, areaScale) * .65);
+        for (let i = 0; i < count; i++) {
+          const x = seededRand(seedBase + 6100 + i * 2) * w;
+          const y = seededRand(seedBase + 6101 + i * 2) * h;
+          if (getSebaceousZoneWeight(x / w, y / h) > .72) continue;
+          const len = 4 + seededRand(seedBase + 6300 + i) * 6;
+          const angle = .5 + (seededRand(seedBase + 6500 + i) - .5) * .6;
+          const ex = x + Math.cos(angle) * len, ey = y + Math.sin(angle) * len;
+          const hair = skinCtx.createLinearGradient(x, y, ex, ey);
+          hair.addColorStop(0, 'rgba(112,82,57,.14)'); hair.addColorStop(1, 'rgba(232,213,181,0)');
+          skinCtx.strokeStyle = hair; skinCtx.beginPath(); skinCtx.moveTo(x, y);
+          skinCtx.quadraticCurveTo((x + ex) * .5 + 1, (y + ey) * .5 - .8, ex, ey); skinCtx.stroke();
         }
         skinCtx.restore();
       }
     }
-
     /**
      * ============================================================================
      * 2. 生成关卡并捕获「护理前 Before」微距快照
@@ -2095,11 +2140,17 @@
     function generateLevel(overrideDensity = 0) {
       state.runId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 11)}`;
       state.runDensity = overrideDensity;
-      state.runControlMode = state.controlMode === 'keyboard' ? 'keyboard' : 'pointer';
+      // Assistance belongs to the current treatment; a fresh run is classified anew.
+      state.controlMode = 'pointer';
+      state.runControlMode = 'pointer';
       state.runStats = createRunStats();
       state.actionSerial = 0;
       state.resultRecorded = false;
       state.bestScore = getCompletedBest() ? getCompletedBest().bestScore : 0;
+      state.keyboardCare.active = false;
+      state.keyboardCare.key = null;
+      state.keyboardCare.target = null;
+      state.keyboardCare.index = 0;
       state.faceSeed = Math.random() * 99999;
       state.pimples = [];
       state.flyingParticles = [];
@@ -2136,7 +2187,7 @@
       sound.setTension(0);
 
       const client = currentClient();
-      patientAvatarEl.textContent = client.initial;
+      patientAvatarEl.innerHTML = getPatientPortrait(client);
       document.getElementById('patient-role').textContent = client.role;
       document.getElementById('case-number').textContent = String(state.clientIndex % CLIENTS.length + 1).padStart(2, '0');
       document.getElementById('care-zone').textContent = client.zoneId === 'nose_tip' ? '鼻部集中护理' : client.zoneId === 'chin_jaw' ? '下巴与唇周' : '鼻翼与脸颊';
@@ -3351,6 +3402,256 @@
       return best;
     }
 
+    function keyboardCareTargets() {
+      const targets = state.pimples.map(p => ({ kind: 'pimple', item: p, x: p.x, y: p.y }));
+      if (state.currentTool === 'swab' || state.currentTool === 'tweezers') {
+        for (const item of state.surfaceResidues) {
+          if (state.currentTool === 'swab' || item.kind === 'worm' || item.kind === 'core_seed') {
+            targets.push({ kind: 'residue', item, x: item.x, y: item.y });
+          }
+        }
+        if (state.currentTool === 'swab') {
+          for (const item of state.lensSplatters) targets.push({ kind: 'splatter', item, x: item.x, y: item.y });
+        }
+      }
+      return targets.filter(target => target.x >= 0 && target.y >= 0 && target.x <= state.width && target.y <= state.height);
+    }
+
+    function currentKeyboardTarget() {
+      const targets = keyboardCareTargets();
+      if (!targets.length) return null;
+      const care = state.keyboardCare;
+      const found = targets.find(target => target.item === care.target);
+      const target = found || targets[Math.min(care.index, targets.length - 1)] || targets[0];
+      care.index = targets.indexOf(target);
+      care.target = target.item;
+      return target;
+    }
+
+    function keyboardTargetDescription(target) {
+      if (!target) return '没有可选的护理点';
+      if (target.kind === 'residue') return '皮肤残留';
+      if (target.kind === 'splatter') return '镜片飞溅';
+      const p = target.item;
+      const name = {blackhead: '黑头', whitehead: '白头', cyst: '深层目标'}[p.type];
+      const status = p.iced ? '已敷膜' : p.state >= P_STATE.HEALING ? '已清理'
+        : p.state === P_STATE.OOZING ? '待擦净' : p.state === P_STATE.EXTRUDING ? '已露头'
+        : p.pierced ? '已破口' : p.steamed >= .75 ? '已热敷' : '待护理';
+      return `${name} · ${status}`;
+    }
+
+    function updateKeyboardCareStatus() {
+      const status = document.getElementById('keyboard-care-status');
+      const target = currentKeyboardTarget();
+      const targets = keyboardCareTargets();
+      const visible = state.keyboardCare.visible && document.activeElement === canvas && !state.settled;
+      status.hidden = !visible;
+      if (!visible) return;
+      const text = `键盘辅助 · ${state.keyboardCare.index + 1}/${targets.length} · ${keyboardTargetDescription(target)}`;
+      updateText(status, text);
+      canvas.setAttribute('aria-label', `护理画布。${text}`);
+    }
+
+    function selectKeyboardTarget(step) {
+      releasePointer();
+      const targets = keyboardCareTargets();
+      if (!targets.length) return;
+      const care = state.keyboardCare;
+      currentKeyboardTarget();
+      care.index = (care.index + step + targets.length) % targets.length;
+      care.target = targets[care.index].item;
+      care.visible = true;
+      updateKeyboardCareStatus();
+    }
+
+    function startKeyboardCare(key) {
+      if (state.keyboardCare.active || state.pointer.active || state.paused || state.settled || state.iceFinishing || document.hidden) return;
+      const target = currentKeyboardTarget();
+      if (!target) return;
+      const care = state.keyboardCare, ptr = state.pointer;
+      state.controlMode = 'keyboard';
+      if (typeof beginCareAction === 'function') beginCareAction();
+      care.visible = true;
+      care.active = true;
+      care.key = key;
+      care.elapsed = 0;
+      care.wipeClock = 0;
+      care.tool = state.currentTool;
+      care.startX = target.x;
+      care.startY = target.y;
+      ptr.active = true;
+      ptr.touchId = null;
+      ptr.secondTouchId = null;
+      ptr.x = target.x;
+      ptr.y = target.y;
+      ptr.hoverX = target.x;
+      ptr.hoverY = target.y;
+      sound.unlock();
+      if (care.tool === 'needle') {
+        ptr.mode = 'needle';
+        if (target.kind === 'pimple' && target.item.type === 'cyst') {
+          ptr.x += target.item.headOffsetX;
+          ptr.y += target.item.headOffsetY;
+        }
+        setHint('键盘辅助：已对准当前目标，松开按键完成破口；Esc 取消。', 'good');
+      } else if (care.tool === 'steam') {
+        ptr.mode = 'steam';
+        handleSteamSpray({x: ptr.x, y: ptr.y}, .04);
+      } else if (care.tool === 'squeeze') {
+        if (target.kind !== 'pimple') { releasePointer(); return; }
+        const p = target.item;
+        ptr.mode = 'two-finger';
+        ptr.anchorX = p.x;
+        ptr.anchorY = p.y;
+        ptr.lockedPimple = p;
+        ptr.axisAngle = p.type === 'cyst' ? p.targetAngle : 0;
+        ptr.initSpan = Math.max(96, CONFIG.INTERACTION.CYST_TOO_NARROW_SPAN_PX + 12);
+        ptr.curSpan = ptr.initSpan;
+        ptr.squeezeForce = 0;
+        ptr.rawForce = .52;
+        const dx = Math.cos(ptr.axisAngle) * ptr.initSpan * .5;
+        const dy = Math.sin(ptr.axisAngle) * ptr.initSpan * .5;
+        ptr.p1 = {x: p.x - dx, y: p.y - dy};
+        ptr.p2 = {x: p.x + dx, y: p.y + dy};
+        ptr.smoothP1 = {...ptr.p1};
+        ptr.smoothP2 = {...ptr.p2};
+        setHint('键盘辅助：正沿目标两侧温和挤压，松开即可停手。', 'normal');
+      } else if (care.tool === 'tweezers') {
+        ptr.mode = 'tweezers';
+        care.pullX = target.x < state.width * .5 ? .8 : -.8;
+        care.pullY = target.y < state.height * .5 ? .6 : -.6;
+        startTweezerGrab({x: ptr.x, y: ptr.y});
+        if (!state.tweezers.clampedPimple) releasePointer();
+      } else if (care.tool === 'swab') {
+        ptr.mode = 'swab';
+        handleSwabWipe({x: ptr.x, y: ptr.y});
+      } else if (care.tool === 'ice_brush') {
+        ptr.mode = 'ice_brush';
+        handleIceBrushPaint({x: ptr.x, y: ptr.y});
+      } else {
+        releasePointer();
+      }
+      updateKeyboardCareStatus();
+    }
+
+    function finishKeyboardCare(cancel = false) {
+      const care = state.keyboardCare;
+      if (!care.active) return;
+      if (!cancel && care.tool === 'needle' && !state.paused && !state.settled && !state.iceFinishing && !document.hidden) {
+        handleNeedleTap({x: state.pointer.x, y: state.pointer.y});
+      }
+      releasePointer();
+      updateKeyboardCareStatus();
+    }
+
+    function updateKeyboardCare(dt) {
+      const care = state.keyboardCare;
+      if (!care.active) return;
+      if (document.activeElement !== canvas || state.paused || state.settled || state.iceFinishing || document.hidden || care.tool !== state.currentTool) {
+        finishKeyboardCare(true);
+        return;
+      }
+      const target = keyboardCareTargets().find(item => item.item === care.target);
+      if (!target) { finishKeyboardCare(true); return; }
+      care.elapsed += dt;
+      const ptr = state.pointer;
+      if (care.tool === 'squeeze') {
+        const p = target.item;
+        if (p.state >= P_STATE.OOZING) {
+          finishKeyboardCare(true);
+          setHint('当前目标已排空。换清洁棉签，继续擦净残留。', 'good');
+          return;
+        }
+        const half = Math.max(28, ptr.initSpan * .5 - Math.min(14, care.elapsed * 9));
+        const dx = Math.cos(ptr.axisAngle) * half, dy = Math.sin(ptr.axisAngle) * half;
+        ptr.p1 = {x: p.x - dx, y: p.y - dy};
+        ptr.p2 = {x: p.x + dx, y: p.y + dy};
+        ptr.curSpan = half * 2;
+        ptr.rawForce = .52;
+      } else if (care.tool === 'tweezers') {
+        if (!state.tweezers.clampedPimple) { finishKeyboardCare(true); return; }
+        const distance = Math.min(42, care.elapsed * 24);
+        ptr.x = care.startX + care.pullX * distance;
+        ptr.y = care.startY + care.pullY * distance;
+        updateTweezerPull({x: ptr.x, y: ptr.y}, dt);
+        if (!state.tweezers.clampedPimple) finishKeyboardCare(true);
+      } else if (care.tool === 'swab') {
+        const sweep = target.kind === 'pimple' ? Math.min(18, target.item.radius * .7) : 3;
+        ptr.x = target.x + Math.sin(care.elapsed * 6) * sweep;
+        ptr.y = target.y + Math.sin(care.elapsed * 3) * sweep * .45;
+        care.wipeClock += dt;
+        if (care.wipeClock >= .075) {
+          care.wipeClock %= .075;
+          handleSwabWipe({x: ptr.x, y: ptr.y});
+        }
+      } else if (care.tool === 'ice_brush') {
+        care.wipeClock += dt;
+        if (care.wipeClock >= .10) {
+          care.wipeClock %= .10;
+          handleIceBrushPaint({x: target.x, y: target.y});
+        }
+      }
+      updateKeyboardCareStatus();
+    }
+
+    function drawKeyboardCue() {
+      if (!state.keyboardCare.visible || document.activeElement !== canvas || state.settled) return;
+      const target = currentKeyboardTarget();
+      if (!target) return;
+      const r = target.kind === 'pimple' ? Math.max(15, target.item.radius + 7) : Math.max(14, (target.item.r || 4) + 7);
+      ctx.save();
+      ctx.strokeStyle = 'rgba(250,249,241,.95)'; ctx.lineWidth = 3.8;
+      ctx.beginPath(); ctx.arc(target.x, target.y, r, 0, Math.PI * 2); ctx.stroke();
+      ctx.strokeStyle = '#42664f'; ctx.lineWidth = 1.4; ctx.setLineDash([4, 4]); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#42664f';
+      ctx.beginPath(); ctx.arc(target.x, target.y - r, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+
+    function bindKeyboardCare() {
+      canvas.addEventListener('focus', () => {
+        state.keyboardCare.visible = canvas.matches(':focus-visible');
+        updateKeyboardCareStatus();
+      });
+      canvas.addEventListener('blur', () => {
+        finishKeyboardCare(true);
+        state.keyboardCare.visible = false;
+        updateKeyboardCareStatus();
+      });
+      canvas.addEventListener('keydown', event => {
+        if (event.altKey || event.ctrlKey || event.metaKey || state.paused || state.settled || document.querySelector('.modal-backdrop.open')) return;
+        if (['ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown'].includes(event.key)) {
+          event.preventDefault();
+          if (!event.repeat) selectKeyboardTarget(event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1 : 1);
+        } else if (event.key === ' ' || event.key === 'Enter') {
+          event.preventDefault();
+          if (!event.repeat) startKeyboardCare(event.key);
+        } else if (event.key === 'Escape') {
+          event.preventDefault();
+          finishKeyboardCare(true);
+        } else if (event.key === '6') {
+          event.preventDefault();
+          if (state.pimples.every(p => p.state >= P_STATE.HEALING)) enterIceBrushingStage();
+          else setHint('先清理完所有目标，再按 6 开始涂抹冰膜。', 'normal');
+        }
+      });
+      window.addEventListener('keyup', event => {
+        if (state.keyboardCare.active && event.key === state.keyboardCare.key) {
+          event.preventDefault();
+          finishKeyboardCare(false);
+        }
+      });
+      // A pointer can take over safely; its action is still filed as an assisted run.
+      const pointerTakesOver = () => {
+        finishKeyboardCare(true);
+        state.keyboardCare.visible = false;
+        updateKeyboardCareStatus();
+      };
+      canvas.addEventListener('mousedown', pointerTakesOver, {capture: true});
+      canvas.addEventListener('touchstart', pointerTakesOver, {capture: true, passive: true});
+    }
+
     function bindCanvasInteractions() {
       canvas.addEventListener('contextmenu', (e) => e.preventDefault());
       const touchIdentity = (touch, index = 0) => touch.identifier === undefined ? index : touch.identifier;
@@ -3757,6 +4058,8 @@
     }
 
     function releasePointer() {
+      state.keyboardCare.active = false;
+      state.keyboardCare.key = null;
       if (state.tweezers.clampedPimple) {
         state.tweezers.clampedPimple.tentOffsetX = 0;
         state.tweezers.clampedPimple.tentOffsetY = 0;
@@ -3817,6 +4120,7 @@
      */
     function updateSimulation(dt) {
       if (state.paused) return;
+      updateKeyboardCare(dt);
 
       if (state.cameraShake > 0) {
         state.cameraShake = Math.max(0, state.cameraShake - dt * 30);
@@ -4235,6 +4539,7 @@
       }
 
       drawPracticeCue();
+      drawKeyboardCue();
 
       // 5) 热喷在皮肤表面凝结的晶莹微水珠 (Micro-Dewdrops)
       for (const dw of state.dewDrops) {
@@ -4828,73 +5133,40 @@
     }
 
     function renderRealBlackhead(p, isCreamy, healFade) {
-      const r = p.radius;
-      const swell = p.swellVisual;
-
-      if (swell > 0.05 && p.state !== P_STATE.HEALING) {
-        const blanchG = ctx.createRadialGradient(0, 0, r * 0.15, 0, 0, r * 1.15);
-        blanchG.addColorStop(0, `rgba(248, 236, 214, ${swell * 0.28})`);
-        blanchG.addColorStop(0.65, `rgba(192, 147, 120, ${swell * 0.12})`);
-        blanchG.addColorStop(1, 'rgba(192, 147, 120, 0)');
-        ctx.fillStyle = blanchG;
-        ctx.beginPath();
-        ctx.arc(0, 0, r * 1.15, 0, Math.PI * 2);
-        ctx.fill();
+      const r = p.radius, swell = p.swellVisual;
+      if (p.traumaLevel > .1 || swell > .05) {
+        const skin = ctx.createRadialGradient(-r * .15, -r * .2, 0, 0, 0, r * 1.12);
+        skin.addColorStop(0, `rgba(247,226,199,${swell * .28})`);
+        skin.addColorStop(.42, `rgba(177,109,91,${p.traumaLevel * .18 * healFade})`);
+        skin.addColorStop(1, 'rgba(177,109,91,0)');
+        ctx.fillStyle = skin; ctx.beginPath(); ctx.arc(0, 0, r * 1.12, 0, Math.PI * 2); ctx.fill();
       }
-
-      if (p.traumaLevel > 0.1) {
-        const trG = ctx.createRadialGradient(0, 0, 1, 0, 0, r * 1.2);
-        trG.addColorStop(0, `rgba(170, 101, 91, ${p.traumaLevel * 0.28 * healFade})`);
-        trG.addColorStop(1, 'rgba(170, 101, 91, 0)');
-        ctx.fillStyle = trG;
-        ctx.beginPath();
-        ctx.arc(0, 0, r * 1.2, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
       if (p.state === P_STATE.OOZING || p.state === P_STATE.HEALING) return;
-
-      const steamDilate = p.steamed >= 0.75 ? 1.15 : 1.0;
-      const poreR = r * (0.34 + swell * 0.07) * steamDilate;
-      const funnelGrad = ctx.createLinearGradient(-poreR, -poreR, poreR, poreR);
-      funnelGrad.addColorStop(0, isCreamy ? 'rgba(133, 99, 75, 0.56)' : 'rgba(89, 63, 44, 0.66)');
-      funnelGrad.addColorStop(1, isCreamy ? 'rgba(238, 218, 193, 0.38)' : 'rgba(221, 187, 157, 0.42)');
-      ctx.fillStyle = funnelGrad;
-      beginOrganicPath(ctx, 0, 0, poreR * 1.32, poreR * 1.18, p.shape, 1.0);
-      ctx.fill();
-
-      ctx.fillStyle = 'rgba(64, 45, 32, 0.86)';
-      beginOrganicPath(ctx, 0, 0, poreR * 1.02, poreR * 0.92, p.shape, 1.05);
-      ctx.fill();
-
-      ctx.strokeStyle = 'rgba(250, 236, 214, 0.20)';
-      ctx.lineWidth = 0.9;
-      ctx.beginPath();
-      ctx.arc(0, 0, poreR * 1.16, 0.15, 1.52);
-      ctx.stroke();
-
+      const poreR = r * (.35 + swell * .07) * (p.steamed >= .75 ? 1.12 : 1);
+      const funnel = ctx.createRadialGradient(0, 0, poreR * .45, 0, 0, poreR * 1.45);
+      funnel.addColorStop(0, 'rgba(89,57,39,.51)');
+      funnel.addColorStop(.58, 'rgba(117,77,52,.24)');
+      funnel.addColorStop(1, 'rgba(143,99,67,0)');
+      ctx.fillStyle = funnel;
+      beginOrganicPath(ctx, 0, .5, poreR * 1.45, poreR * 1.32, p.shape, .65); ctx.fill();
+      ctx.fillStyle = isCreamy ? 'rgba(82,59,41,.74)' : 'rgba(61,43,31,.85)';
+      beginOrganicPath(ctx, 0, 0, poreR, poreR * .90, p.shape, .8); ctx.fill();
+      ctx.strokeStyle = 'rgba(250,229,202,.32)'; ctx.lineWidth = .65;
+      ctx.beginPath(); ctx.ellipse(0, .2, poreR * 1.08, poreR * .98, p.shape.rot, .12, 1.5); ctx.stroke();
       if (p.state === P_STATE.INTACT || p.state === P_STATE.RUPTURED) {
-        const liftY = -swell * 1.6;
-        const plugR = poreR * 0.88;
-
-        if (swell > 0.15 || p.pierced || p.steamed >= 0.75) {
-          ctx.fillStyle = 'rgba(225, 208, 172, 0.48)';
-          beginOrganicPath(ctx, 0, liftY + 0.3, plugR * 1.04, plugR * 0.94, p.shape, 1.0);
-          ctx.fill();
+        const lift = -swell * 1.6, cap = poreR * .84;
+        if (p.pierced || p.steamed >= .75) {
+          ctx.fillStyle = 'rgba(225,203,158,.62)';
+          beginOrganicPath(ctx, 0, lift + .4, cap * 1.07, cap * .99, p.shape, .7); ctx.fill();
         }
-
-        const plugG = ctx.createRadialGradient(-plugR * 0.2, liftY - plugR * 0.2, 0.3, 0, liftY, plugR);
-        plugG.addColorStop(0, isCreamy ? '#806c54' : '#6c5742');
-        plugG.addColorStop(0.55, isCreamy ? '#5c4937' : '#423329');
-        plugG.addColorStop(1, '#6a5140');
-        ctx.fillStyle = plugG;
-        beginOrganicPath(ctx, 0, liftY, plugR * 0.96, plugR * 0.86, p.shape, 1.15);
-        ctx.fill();
-
-        ctx.fillStyle = 'rgba(244, 225, 196, 0.10)';
-        ctx.beginPath();
-        ctx.arc(-plugR * 0.25, liftY - plugR * 0.25, plugR * 0.26, 0, Math.PI * 2);
-        ctx.fill();
+        const plug = ctx.createLinearGradient(-cap, lift - cap, cap, lift + cap);
+        plug.addColorStop(0, isCreamy ? '#8a7359' : '#77614a');
+        plug.addColorStop(.45, isCreamy ? '#68523c' : '#51402e');
+        plug.addColorStop(1, '#3e3025');
+        ctx.fillStyle = plug;
+        beginOrganicPath(ctx, 0, lift, cap, cap * .87, p.shape, .8); ctx.fill();
+        ctx.strokeStyle = 'rgba(229,205,167,.36)'; ctx.lineWidth = .7;
+        ctx.beginPath(); ctx.ellipse(-cap * .18, lift - cap * .18, cap * .55, cap * .38, p.shape.rot, 3.7, 5.4); ctx.stroke();
       }
     }
 
@@ -5002,169 +5274,94 @@
     }
 
     function renderRealWhitehead(p, isCreamy, healFade) {
-      const r = p.radius;
-      const swell = p.swellVisual;
-
-      const haloR = r * (1.75 + swell * 0.16);
-      const haloG = ctx.createRadialGradient(0, 0, r * 0.12, 0, 0, haloR);
-      const redA = (isCreamy ? 0.18 : 0.27 + swell * 0.12) * healFade;
-      haloG.addColorStop(0, `rgba(173, 103, 92, ${redA})`);
-      haloG.addColorStop(0.40, `rgba(191, 126, 108, ${redA * 0.42})`);
-      haloG.addColorStop(0.76, 'rgba(191, 126, 108, 0)');
-      haloG.addColorStop(1, 'rgba(191, 126, 108, 0)');
-      ctx.fillStyle = haloG;
-      beginOrganicPath(ctx, 0, 0, haloR * 1.05, haloR * 0.96, p.shape, 1.1);
-      ctx.fill();
-
-      if (p.state === P_STATE.HEALING) return;
-
-      const domeR = r * (0.96 + swell * 0.12);
-      const shG = ctx.createRadialGradient(2.2, 2.8, r * 0.15, 2.2, 2.8, domeR * 1.12);
-      shG.addColorStop(0, 'rgba(119, 83, 61, 0.14)');
-      shG.addColorStop(0.70, 'rgba(119, 83, 61, 0)');
-      shG.addColorStop(1, 'rgba(119, 83, 61, 0)');
-      ctx.fillStyle = shG;
-      beginOrganicPath(ctx, 2.2, 2.8, domeR, domeR * 0.95, p.shape, 0.9);
-      ctx.fill();
-
-      const slopeG = ctx.createRadialGradient(0, 0, domeR * 0.1, 0, 0, domeR);
-      slopeG.addColorStop(0, isCreamy ? 'rgba(230, 182, 157, 0.58)' : `rgba(219, 156, 136, ${0.56 + swell * 0.10})`);
-      slopeG.addColorStop(0.56, isCreamy ? 'rgba(197, 138, 117, 0.32)' : 'rgba(177, 108, 96, 0.35)');
-      slopeG.addColorStop(0.84, 'rgba(177, 108, 96, 0)');
-      slopeG.addColorStop(1, 'rgba(177, 108, 96, 0)');
-      ctx.fillStyle = slopeG;
-      beginOrganicPath(ctx, 0, 0, domeR * 1.04, domeR * 0.96, p.shape, 0.95);
-      ctx.fill();
-
-      if (p.state === P_STATE.OOZING) return;
-
-      const remScale = p.state === P_STATE.EXTRUDING ? (0.55 + p.pusRemaining * 0.45) : 1;
-      const headR = r * (0.44 + swell * 0.16) * remScale;
-      const liftY = -swell * 1.8;
-
-      const ringG = ctx.createRadialGradient(0, liftY, headR * 0.7, 0, liftY, headR * 1.22);
-      ringG.addColorStop(0, 'rgba(158, 103, 81, 0)');
-      ringG.addColorStop(0.68, 'rgba(158, 103, 81, 0.23)');
-      ringG.addColorStop(1, 'rgba(158, 103, 81, 0)');
-      ctx.fillStyle = ringG;
-      beginOrganicPath(ctx, 0, liftY, headR * 1.22, headR * 1.14, p.shape, 1.15);
-      ctx.fill();
-
-      const pusG = ctx.createRadialGradient(-headR * 0.20, liftY - headR * 0.24, 0, 0, liftY, headR * 1.08);
-      pusG.addColorStop(0, 'rgba(247, 237, 214, 0.94)');
-      pusG.addColorStop(0.40, 'rgba(235, 221, 193, 0.90)');
-      pusG.addColorStop(0.78, 'rgba(206, 186, 153, 0.64)');
-      pusG.addColorStop(1, 'rgba(191, 156, 129, 0.06)');
-      ctx.fillStyle = pusG;
-      beginOrganicPath(ctx, 0, liftY, headR * 1.04, headR * 0.96, p.shape, 1.25, 0.3);
-      ctx.fill();
-
-      const sheenG = ctx.createRadialGradient(-headR * 0.22, liftY - headR * 0.28, 0, -headR * 0.22, liftY - headR * 0.28, headR * 0.63);
-      sheenG.addColorStop(0, 'rgba(255, 248, 231, 0.22)');
-      sheenG.addColorStop(1, 'rgba(255, 248, 231, 0)');
-      ctx.fillStyle = sheenG;
-      ctx.beginPath();
-      ctx.arc(-headR * 0.22, liftY - headR * 0.28, headR * 0.63, 0, Math.PI * 2);
-      ctx.fill();
+      const r = p.radius, swell = p.swellVisual;
+      const halo = ctx.createRadialGradient(0, 0, r * .12, 0, 0, r * 1.5);
+      halo.addColorStop(0, `rgba(178,106,93,${(isCreamy ? .16 : .22) * healFade})`);
+      halo.addColorStop(.55, `rgba(189,121,101,${.07 * healFade})`);
+      halo.addColorStop(1, 'rgba(189,121,101,0)');
+      ctx.fillStyle = halo;
+      beginOrganicPath(ctx, 0, 0, r * 1.5, r * 1.36, p.shape, .7); ctx.fill();
+      if (p.state === P_STATE.HEALING || p.state === P_STATE.OOZING) return;
+      const remaining = p.state === P_STATE.EXTRUDING ? .42 + p.pusRemaining * .58 : 1;
+      const dome = r * (.88 + swell * .12) * (.65 + remaining * .35);
+      const lift = -swell * 2.0;
+      const shadow = ctx.createRadialGradient(dome * .12, dome * .30, 0, dome * .12, dome * .30, dome * 1.1);
+      shadow.addColorStop(0, 'rgba(123,81,57,.14)'); shadow.addColorStop(.50, 'rgba(123,81,57,.055)'); shadow.addColorStop(.82, 'rgba(123,81,57,0)'); shadow.addColorStop(1, 'rgba(123,81,57,0)');
+      ctx.fillStyle = shadow; beginOrganicPath(ctx, dome * .12, dome * .30, dome * 1.05, dome * .83, p.shape, .6); ctx.fill();
+      const mound = ctx.createRadialGradient(-dome * .32, lift - dome * .38, dome * .04, 0, lift, dome * 1.1);
+      mound.addColorStop(0, isCreamy ? 'rgba(248,216,188,.92)' : 'rgba(239,197,167,.91)');
+      mound.addColorStop(.42, 'rgba(221,163,137,.81)');
+      mound.addColorStop(.72, 'rgba(189,124,104,.42)');
+      mound.addColorStop(.92, 'rgba(184,117,99,.08)'); mound.addColorStop(1, 'rgba(184,117,99,0)');
+      ctx.fillStyle = mound; beginOrganicPath(ctx, 0, lift, dome * 1.12, dome, p.shape, .7); ctx.fill();
+      const head = r * (.40 + swell * .13) * remaining;
+      const core = ctx.createRadialGradient(-head * .30, lift - head * .35, 0, 0, lift, head * 1.1);
+      core.addColorStop(0, '#fff5da'); core.addColorStop(.40, '#f1dfb6');
+      core.addColorStop(.76, 'rgba(213,188,139,.94)'); core.addColorStop(1, 'rgba(189,151,116,.09)');
+      ctx.fillStyle = core; beginOrganicPath(ctx, 0, lift, head * 1.08, head * .95, p.shape, .85); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,248,227,.72)'; ctx.lineWidth = .8;
+      ctx.beginPath(); ctx.ellipse(-head * .14, lift - head * .15, head * .68, head * .57, p.shape.rot, 3.45, 5.0); ctx.stroke();
+      if (p.pierced) {
+        ctx.strokeStyle = 'rgba(133,89,62,.62)'; ctx.lineWidth = .9; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(-head * .25, lift + .3); ctx.lineTo(head * .23, lift - .45); ctx.stroke();
+      }
     }
 
     function renderRealCyst(p, isCreamy, healFade) {
-      const r = p.radius;
-      const swell = p.swellVisual;
-
-      const haloRx = r * (2.25 + swell * 0.20);
-      const haloRy = r * (1.88 + swell * 0.18);
-      const haloG = ctx.createRadialGradient(0, 0, r * 0.18, 0, 0, haloRx);
-      const redA = (isCreamy ? 0.26 : 0.38 + swell * 0.13 + p.traumaLevel * 0.12) * healFade;
-      haloG.addColorStop(0, `rgba(155, 88, 82, ${redA})`);
-      haloG.addColorStop(0.36, `rgba(180, 107, 96, ${redA * 0.48})`);
-      haloG.addColorStop(0.64, `rgba(191, 123, 106, ${redA * 0.10})`);
-      haloG.addColorStop(0.76, 'rgba(191, 123, 106, 0)');
-      haloG.addColorStop(1, 'rgba(191, 123, 106, 0)');
-      ctx.fillStyle = haloG;
-      beginOrganicPath(ctx, 0, 0, haloRx, haloRy, p.shape, 0.95);
-      ctx.fill();
-
-      if (p.state === P_STATE.HEALING) return;
-
-      const domeRx = r * (1.16 + swell * 0.14);
-      const domeRy = r * (0.98 + swell * 0.12);
-      const liftY = -swell * 2.4;
-
-      const shG = ctx.createRadialGradient(3.8, 4.6, r * 0.2, 3.8, 4.6, domeRx * 1.18);
-      shG.addColorStop(0, 'rgba(108, 73, 58, 0.17)');
-      shG.addColorStop(0.70, 'rgba(108, 73, 58, 0)');
-      shG.addColorStop(1, 'rgba(108, 73, 58, 0)');
-      ctx.fillStyle = shG;
-      beginOrganicPath(ctx, 3.6, 4.4, domeRx, domeRy, p.shape, 0.85);
-      ctx.fill();
-
-      const moundG = ctx.createRadialGradient(-domeRx * 0.12, liftY - domeRy * 0.12, r * 0.08, 0, liftY, domeRx);
-      if (isCreamy) {
-        moundG.addColorStop(0, 'rgba(231, 173, 153, 0.68)');
-        moundG.addColorStop(0.43, 'rgba(190, 119, 108, 0.49)');
-        moundG.addColorStop(0.78, 'rgba(170, 103, 92, 0)');
-        moundG.addColorStop(1, 'rgba(170, 103, 92, 0)');
-      } else {
-        moundG.addColorStop(0, `rgba(219, 146, 130, ${0.68 + swell * 0.08})`);
-        moundG.addColorStop(0.43, `rgba(181, 106, 98, ${0.58 + swell * 0.10})`);
-        moundG.addColorStop(0.68, 'rgba(149, 85, 81, 0.12)');
-        moundG.addColorStop(0.78, 'rgba(149, 85, 81, 0)');
-        moundG.addColorStop(1, 'rgba(149, 85, 81, 0)');
-      }
-      ctx.fillStyle = moundG;
-      beginOrganicPath(ctx, 0, liftY, domeRx, domeRy, p.shape, 0.9);
-      ctx.fill();
-
+      const r = p.radius, swell = p.swellVisual;
+      const haloR = r * (1.65 + swell * .12);
+      const redness = (isCreamy ? .19 : .26) + p.traumaLevel * .14;
+      const halo = ctx.createRadialGradient(0, 0, r * .16, 0, 0, haloR);
+      halo.addColorStop(0, `rgba(172,91,81,${redness * healFade})`);
+      halo.addColorStop(.53, `rgba(183,108,91,${redness * .38 * healFade})`);
+      halo.addColorStop(1, 'rgba(183,108,91,0)');
+      ctx.fillStyle = halo; beginOrganicPath(ctx, 0, 0, haloR, haloR * .84, p.shape, .65); ctx.fill();
+      if (p.state === P_STATE.HEALING || p.state === P_STATE.OOZING) return;
+      const remaining = p.state === P_STATE.EXTRUDING ? .58 + p.pusRemaining * .42 : 1;
+      const rx = r * (1.08 + swell * .12) * remaining, ry = rx * .86;
+      const lift = -swell * 2.4;
+      const shadow = ctx.createRadialGradient(rx * .10, ry * .31, 0, rx * .10, ry * .31, rx * 1.15);
+      shadow.addColorStop(0, 'rgba(113,68,52,.18)'); shadow.addColorStop(.48, 'rgba(113,68,52,.065)'); shadow.addColorStop(.80, 'rgba(113,68,52,0)'); shadow.addColorStop(1, 'rgba(113,68,52,0)');
+      ctx.fillStyle = shadow; beginOrganicPath(ctx, rx * .10, ry * .31, rx * 1.12, ry * .96, p.shape, .6); ctx.fill();
+      ctx.save(); ctx.translate(0, lift); ctx.rotate(p.shape.rot * .20); ctx.scale(1, ry / rx);
+      const body = ctx.createRadialGradient(-rx * .31, -rx * .39, r * .04, 0, 0, rx * 1.10);
+      body.addColorStop(0, isCreamy ? 'rgba(242,195,170,.94)' : 'rgba(231,172,149,.94)');
+      body.addColorStop(.38, isCreamy ? 'rgba(219,153,132,.88)' : 'rgba(209,138,120,.88)');
+      body.addColorStop(.65, 'rgba(180,106,94,.65)');
+      body.addColorStop(.84, 'rgba(167,97,85,.09)'); body.addColorStop(.96, 'rgba(167,97,85,0)'); body.addColorStop(1, 'rgba(167,97,85,0)');
+      ctx.fillStyle = body; ctx.fillRect(-rx * 1.2, -rx * 1.2, rx * 2.4, rx * 2.4); ctx.restore();
+      const sheen = ctx.createRadialGradient(-rx * .29, lift - ry * .37, 0, -rx * .29, lift - ry * .37, r * .43);
+      sheen.addColorStop(0, `rgba(255,232,207,${.14 + swell * .10})`); sheen.addColorStop(1, 'rgba(255,232,207,0)');
+      ctx.fillStyle = sheen; ctx.beginPath(); ctx.arc(-rx * .29, lift - ry * .37, r * .43, 0, Math.PI * 2); ctx.fill();
       if (!isCreamy) {
-        for (let i = 0; i < 10; i++) {
-          const a = i * 0.628 + p.shape.p1;
-          const d = r * (0.32 + (i % 3) * 0.20);
-          const px = Math.cos(a) * d;
-          const py = liftY + Math.sin(a) * d * 0.85;
-          ctx.fillStyle = 'rgba(119, 77, 66, 0.11)';
-          ctx.beginPath();
-          ctx.arc(px, py, 1.0, 0, Math.PI * 2);
-          ctx.fill();
+        for (let i = 0; i < 8; i++) {
+          const a = i * .78 + p.shape.p1, distance = r * (.34 + (i % 3) * .14);
+          const x = Math.cos(a) * distance, y = lift + Math.sin(a) * distance * .8;
+          ctx.fillStyle = 'rgba(125,77,62,.11)'; ctx.beginPath(); ctx.ellipse(x, y, .55, .40, a, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = 'rgba(255,226,196,.16)'; ctx.beginPath(); ctx.arc(x + .3, y + .45, .35, 0, Math.PI * 2); ctx.fill();
         }
       }
-
-      if (p.state === P_STATE.OOZING) return;
-
-      const hx = p.headOffsetX;
-      const hy = liftY + p.headOffsetY;
-      const coreR = r * (0.28 + swell * 0.12);
-      const deepG = ctx.createRadialGradient(hx, hy, 0.6, hx, hy, coreR * 1.45);
-      const pusHintAlpha = p.pierced ? 0.72 : (0.30 + swell * 0.32);
-      deepG.addColorStop(0, `rgba(230, 211, 174, ${pusHintAlpha})`);
-      deepG.addColorStop(0.58, `rgba(207, 157, 129, ${pusHintAlpha * 0.42})`);
-      deepG.addColorStop(1, 'rgba(176, 107, 91, 0)');
-      ctx.fillStyle = deepG;
-      ctx.beginPath();
-      ctx.arc(hx, hy, coreR * 1.45, 0, Math.PI * 2);
-      ctx.fill();
-
-      if (p.pierced) {
-        ctx.save();
-        ctx.translate(hx, hy);
-        ctx.rotate(p.targetAngle + Math.PI * 0.5);
-        ctx.strokeStyle = isCreamy ? '#a36b5f' : '#75483f';
-        ctx.lineWidth = 1.5;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(-2.8, 0);
-        ctx.lineTo(2.8, 0);
-        ctx.stroke();
-        ctx.restore();
+      ctx.save();
+      ctx.strokeStyle = 'rgba(139,85,70,.12)'; ctx.lineWidth = .45; ctx.lineCap = 'round';
+      for (let i = 0; i < 3; i++) {
+        const y = lift + ry * (.18 + i * .16);
+        const x = rx * (-.42 + i * .17);
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + r * .13, y + 1.1, x + r * .25, y - .4); ctx.stroke();
       }
-
-      const sheenG = ctx.createRadialGradient(-domeRx * 0.26, liftY - domeRy * 0.26, 0, -domeRx * 0.26, liftY - domeRy * 0.26, domeRy * 0.55);
-      sheenG.addColorStop(0, `rgba(247, 217, 196, ${0.13 + swell * 0.08})`);
-      sheenG.addColorStop(1, 'rgba(247, 217, 196, 0)');
-      ctx.fillStyle = sheenG;
-      ctx.beginPath();
-      ctx.arc(-domeRx * 0.26, liftY - domeRy * 0.26, domeRy * 0.55, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.restore();
+      const hx = p.headOffsetX, hy = lift + p.headOffsetY;
+      const tipR = r * (.16 + swell * .055) * (.6 + remaining * .4);
+      const cap = ctx.createRadialGradient(hx - tipR * .25, hy - tipR * .3, 0, hx, hy, tipR * 1.35);
+      cap.addColorStop(0, p.pierced ? 'rgba(246,224,181,.95)' : 'rgba(244,216,175,.80)');
+      cap.addColorStop(.45, 'rgba(230,192,147,.62)'); cap.addColorStop(1, 'rgba(210,153,120,0)');
+      ctx.fillStyle = cap; ctx.beginPath(); ctx.ellipse(hx, hy, tipR * 1.35, tipR * 1.18, p.targetAngle, 0, Math.PI * 2); ctx.fill();
+      if (p.pierced) {
+        ctx.save(); ctx.translate(hx, hy); ctx.rotate(p.targetAngle + Math.PI * .5);
+        ctx.strokeStyle = isCreamy ? '#9e6454' : '#784a3d'; ctx.lineWidth = 1.35; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(-2.6, 0); ctx.quadraticCurveTo(0, .6, 2.6, 0); ctx.stroke();
+        ctx.strokeStyle = 'rgba(249,218,179,.60)'; ctx.lineWidth = .7;
+        ctx.beginPath(); ctx.moveTo(-2.1, 1.1); ctx.lineTo(2.1, 1.1); ctx.stroke(); ctx.restore();
+      }
     }
 
     function renderViscousPusDollop(cx, cy, r, isCreamy) {
@@ -5805,14 +6002,14 @@
         const area = c.zoneId === 'nose_tip' ? '鼻部集中护理' : c.zoneId === 'chin_jaw' ? '下巴与唇周' : '鼻翼与脸颊';
         const total = canContinue ? state.pimples.length : Object.values(c.recipe).reduce((sum, count) => sum + count, 0);
         const action = canContinue ? '护理中 · 继续' : isCurrent ? '再护理一次' : '开始护理';
-        const best = getCompletedBest(c.id, canContinue ? state.runDensity : 0, canContinue ? state.runControlMode : state.controlMode);
+        const best = getCompletedBest(c.id, canContinue ? state.runDensity : 0, canContinue ? state.runControlMode : 'pointer');
         const history = best ? `${best.completions} 次完成 · 最高分 ${best.bestScore} · 最佳评级 ${best.bestGrade}${best.goalMet ? ' · 目标已达成' : ''}` : `可选目标 · ${CARE_GOALS[c.id].title}`;
         const card = document.createElement('button');
         card.type = 'button';
         card.className = 'client-card' + (isCurrent ? ' active-client' : '');
         card.setAttribute('aria-label', `${c.name}，${area}，${total}处，护理酬金${c.bounty}，${action}`);
         card.innerHTML = `
-          <div class="patient-avatar" aria-hidden="true">${c.initial}</div>
+          <div class="patient-avatar" aria-hidden="true">${getPatientPortrait(c)}</div>
           <div class="client-meta">
             <div class="client-title">${c.name}${isCurrent ? `<span class="client-state">${action}</span>` : ''}</div>
             <div class="client-area">${area} · ${total} 处</div>
@@ -5973,6 +6170,7 @@
         setHint('轻轻擦净残留；再点一次棉签，即可换新。', 'good');
       }
       updateCareGuidance();
+      updateKeyboardCareStatus();
     }
 
     function closeStudioModal(modal) {
@@ -6218,8 +6416,12 @@
       const dt = Math.min(0.05, Math.max(0.001, (timestamp - lastTime) / 1000));
       lastTime = timestamp;
 
-      updateSimulation(dt);
-      renderScene(false);
+      // Keep the last frame while a modal is open or the tab is hidden.
+      // Active scenes redraw on the next frame after resume, resize or a tool/style change.
+      if (!document.hidden && !state.paused && !state.settled) {
+        updateSimulation(dt);
+        renderScene(false);
+      }
 
       rafId = requestAnimationFrame(mainLoop);
     }
@@ -6228,6 +6430,7 @@
       bindUIControls();
       bindModalAccessibility();
       bindCanvasInteractions();
+      bindKeyboardCare();
       persistSaveData();
       resizeCanvas();
       if (!restoreCurrentSession()) {
