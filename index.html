@@ -3595,77 +3595,171 @@
      * 2.2X 偏振微距光学瞄准放大镜（解决触屏手指遮挡痛点，提供手术级精准视觉！）
      */
     function renderPrecisionMagnifierLoupe(focusX, focusY) {
-      const R = CONFIG.INTERACTION.LOUPE_RADIUS_PX;
+      const margin = 12;
+      const R = Math.max(1, Math.min(
+        CONFIG.INTERACTION.LOUPE_RADIUS_PX,
+        (state.width - margin * 2) * 0.5,
+        (state.height - margin * 2) * 0.5
+      ));
       const zoom = CONFIG.INTERACTION.LOUPE_ZOOM;
       const dpr = state.dpr;
+      const offset = R + 30;
+      const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
-      // 默认悬浮在触点正上方 76px；若靠近顶部边缘则自动切换到下方或侧方
-      let lx = Math.max(R + 12, Math.min(state.width - R - 12, focusX));
-      let ly = focusY - 78;
-      if (ly < R + 48) {
-        ly = focusY + 78;
-      }
+      // Prefer the space above the finger, then use an unobstructed side.
+      const placements = [
+        [focusX, focusY - offset],
+        [focusX, focusY + offset],
+        [focusX - offset, focusY],
+        [focusX + offset, focusY]
+      ].map(([x, y], preference) => {
+        const lx = clamp(x, R + margin, state.width - R - margin);
+        const ly = clamp(y, R + margin, state.height - R - margin);
+        const clipping = Math.hypot(lx - x, ly - y);
+        const fingerOverlap = Math.max(0, R + 22 - Math.hypot(lx - focusX, ly - focusY));
+        return { lx, ly, score: clipping * 2 + fingerOverlap * 4 + preference * 2 };
+      });
+      placements.sort((a, b) => a.score - b.score);
+      const { lx, ly } = placements[0];
 
       const srcW = (R * 2) / zoom;
       const srcH = (R * 2) / zoom;
-      const sx = Math.max(0, Math.min(canvas.width - srcW * dpr, (focusX - srcW * 0.5) * dpr));
-      const sy = Math.max(0, Math.min(canvas.height - srcH * dpr, (focusY - srcH * 0.5) * dpr));
+      const sampleX = (focusX - srcW * 0.5) * dpr;
+      const sampleY = (focusY - srcH * 0.5) * dpr;
+      const sx = Math.max(0, sampleX);
+      const sy = Math.max(0, sampleY);
+      const sw = Math.max(0, Math.min(canvas.width, sampleX + srcW * dpr) - sx);
+      const sh = Math.max(0, Math.min(canvas.height, sampleY + srcH * dpr) - sy);
+      // Preserve the contact point at the true centre, including corners. A
+      // clipped source is padded rather than shifted to a different skin point.
+      const sample = renderPrecisionMagnifierLoupe.sample || document.createElement('canvas');
+      renderPrecisionMagnifierLoupe.sample = sample;
+      const sampleSize = Math.max(1, Math.round(R * 2 * dpr));
+      if (sample.width !== sampleSize || sample.height !== sampleSize) {
+        sample.width = sampleSize;
+        sample.height = sampleSize;
+      }
+      const sampleCtx = sample.getContext('2d');
+      sampleCtx.fillStyle = '#e9e6d8';
+      sampleCtx.fillRect(0, 0, sampleSize, sampleSize);
+      const sampleScale = sampleSize / (srcW * dpr);
+      if (sw > 0 && sh > 0) {
+        sampleCtx.drawImage(canvas, sx, sy, sw, sh,
+          (sx - sampleX) * sampleScale, (sy - sampleY) * sampleScale,
+          sw * sampleScale, sh * sampleScale);
+      }
+      const targetX = lx - R + ((focusX * dpr - sampleX) / (srcW * dpr)) * R * 2;
+      const targetY = ly - R + ((focusY * dpr - sampleY) / (srcH * dpr)) * R * 2;
 
       ctx.save();
-      // 镜框外投影
-      ctx.fillStyle = 'rgba(10, 6, 12, 0.50)';
-      ctx.beginPath();
-      ctx.arc(lx, ly + 4, R + 4, 0, Math.PI * 2);
-      ctx.fill();
-
-      // 裁剪圆形放大视窗，直接采样主画布已渲染的真实微距画面！
       ctx.beginPath();
       ctx.arc(lx, ly, R, 0, Math.PI * 2);
       ctx.clip();
+      // Sample before adding a frame or its shadow, so a constrained lens never
+      // magnifies its own chrome when it sits close to the contact point.
+      ctx.drawImage(sample, lx - R, ly - R, R * 2, R * 2);
 
-      ctx.drawImage(
-        canvas,
-        sx, sy, srcW * dpr, srcH * dpr,
-        lx - R, ly - R, R * 2, R * 2
-      );
-
-      // 医用十字光学微刻度准星
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
-      ctx.lineWidth = 0.9;
-      ctx.beginPath();
-      ctx.moveTo(lx - 10, ly);
-      ctx.lineTo(lx - 3, ly);
-      ctx.moveTo(lx + 3, ly);
-      ctx.lineTo(lx + 10, ly);
-      ctx.moveTo(lx, ly - 10);
-      ctx.lineTo(lx, ly - 3);
-      ctx.moveTo(lx, ly + 3);
-      ctx.lineTo(lx, ly + 10);
-      ctx.stroke();
-
-      // 环形 LED 冷光补光镜面内反光
       const glassG = ctx.createLinearGradient(lx - R, ly - R, lx + R, ly + R);
-      glassG.addColorStop(0, 'rgba(255, 255, 255, 0.24)');
-      glassG.addColorStop(0.4, 'rgba(255, 255, 255, 0)');
-      glassG.addColorStop(1, 'rgba(107, 226, 255, 0.14)');
+      glassG.addColorStop(0, 'rgba(255, 249, 234, 0.08)');
+      glassG.addColorStop(0.45, 'rgba(255, 249, 234, 0)');
+      glassG.addColorStop(1, 'rgba(215, 224, 202, 0.035)');
       ctx.fillStyle = glassG;
       ctx.fillRect(lx - R, ly - R, R * 2, R * 2);
+
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(targetX - 8, targetY);
+      ctx.lineTo(targetX - 3, targetY);
+      ctx.moveTo(targetX + 3, targetY);
+      ctx.lineTo(targetX + 8, targetY);
+      ctx.moveTo(targetX, targetY - 8);
+      ctx.lineTo(targetX, targetY - 3);
+      ctx.moveTo(targetX, targetY + 3);
+      ctx.lineTo(targetX, targetY + 8);
+      ctx.strokeStyle = 'rgba(249, 243, 226, 0.78)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(71, 88, 62, 0.76)';
+      ctx.lineWidth = 0.85;
+      ctx.stroke();
       ctx.restore();
 
-      // 金属拉丝镜圈外框
       ctx.save();
-      ctx.strokeStyle = '#e2e8f0';
-      ctx.lineWidth = 3.2;
+      ctx.shadowColor = 'rgba(61, 57, 40, 0.16)';
+      ctx.shadowBlur = 7;
+      ctx.shadowOffsetY = 3;
+      ctx.strokeStyle = '#c4c8b7';
+      ctx.lineWidth = 2.6;
       ctx.beginPath();
       ctx.arc(lx, ly, R, 0, Math.PI * 2);
       ctx.stroke();
-
-      ctx.strokeStyle = '#38bdf8';
-      ctx.lineWidth = 1.2;
+      ctx.shadowColor = 'transparent';
+      ctx.strokeStyle = '#79866e';
+      ctx.lineWidth = 0.8;
       ctx.beginPath();
-      ctx.arc(lx, ly, R + 2, 0, Math.PI * 2);
+      ctx.arc(lx, ly, R + 1.7, 0, Math.PI * 2);
       ctx.stroke();
       ctx.restore();
+
+      if (state.currentTool === 'tweezers' && state.tweezers.clampedPimple) {
+        const tw = state.tweezers;
+        const panelW = Math.min(98, state.width - 16);
+        const panelH = 32;
+        const gap = 8;
+        const candidates = [
+          [lx - panelW * 0.5, ly - R - gap - panelH],
+          [lx - panelW * 0.5, ly + R + gap],
+          [lx + R + gap, ly - panelH * 0.5],
+          [lx - R - gap - panelW, ly - panelH * 0.5],
+          [8, 8],
+          [state.width - panelW - 8, 8],
+          [8, state.height - panelH - 8],
+          [state.width - panelW - 8, state.height - panelH - 8]
+        ].map(([x, y], preference) => {
+          const px = clamp(x, 8, state.width - panelW - 8);
+          const py = clamp(y, 8, state.height - panelH - 8);
+          const distanceTo = (cx, cy) => Math.hypot(clamp(cx, px, px + panelW) - cx, clamp(cy, py, py + panelH) - cy);
+          const lensOverlap = Math.max(0, R + 4 - distanceTo(lx, ly));
+          const fingerOverlap = Math.max(0, 30 - distanceTo(focusX, focusY));
+          const clipping = Math.hypot(px - x, py - y);
+          return { px, py, score: lensOverlap * 6 + fingerOverlap * 5 + clipping + preference };
+        });
+        candidates.sort((a, b) => a.score - b.score);
+        const { px, py } = candidates[0];
+        const atRisk = tw.dangerRatio > 0.78;
+        const ink = atRisk ? '#965b49' : '#526b48';
+        const progress = Math.max(0, Math.min(1, tw.pullRatio));
+        ctx.save();
+        ctx.fillStyle = 'rgba(247, 244, 231, 0.96)';
+        ctx.strokeStyle = 'rgba(92, 108, 77, 0.26)';
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.moveTo(px + 5, py);
+        ctx.lineTo(px + panelW - 5, py);
+        ctx.quadraticCurveTo(px + panelW, py, px + panelW, py + 5);
+        ctx.lineTo(px + panelW, py + panelH - 5);
+        ctx.quadraticCurveTo(px + panelW, py + panelH, px + panelW - 5, py + panelH);
+        ctx.lineTo(px + 5, py + panelH);
+        ctx.quadraticCurveTo(px, py + panelH, px, py + panelH - 5);
+        ctx.lineTo(px, py + 5);
+        ctx.quadraticCurveTo(px, py, px + 5, py);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.font = '500 11px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif';
+        ctx.textBaseline = 'alphabetic';
+        ctx.textAlign = 'left';
+        ctx.fillStyle = '#4c5544';
+        ctx.fillText(`夹取 ${Math.round(progress * 100)}%`, px + 8, py + 13);
+        ctx.textAlign = 'right';
+        ctx.fillStyle = ink;
+        ctx.fillText(atRisk ? '放慢' : '匀速', px + panelW - 8, py + 13);
+        ctx.fillStyle = '#d7dbc9';
+        ctx.fillRect(px + 8, py + 22, panelW - 16, 3);
+        ctx.fillStyle = ink;
+        ctx.fillRect(px + 8, py + 22, (panelW - 16) * progress, 3);
+        ctx.restore();
+      }
     }
 
     /**
@@ -3877,6 +3971,10 @@
         ctx.beginPath();
         ctx.ellipse(p.x, p.y, finalPoreR, finalPoreR * 0.8, p.shape.rot, 0, Math.PI * 2);
         ctx.fill();
+        if (state.currentTool === 'ice_brush' && !p.iced) {
+          ctx.translate(p.x, p.y);
+          renderSubtleClinicalGuides(p, false);
+        }
         ctx.restore();
         return;
       }
@@ -4454,6 +4552,11 @@
 
     function renderSubtleClinicalGuides(p, isTarget) {
       const r = p.radius;
+      const ptr = state.pointer;
+      const focusX = ptr.active ? ptr.x : ptr.hoverX;
+      const focusY = ptr.active ? ptr.y : ptr.hoverY;
+      const nearby = Math.hypot(focusX - p.x, focusY - p.y) < r + 30;
+
       if (
         p.type === 'cyst' &&
         p.pierced &&
@@ -4463,8 +4566,8 @@
       ) {
         const a = p.targetAngle;
         ctx.save();
-        ctx.strokeStyle = 'rgba(255, 246, 224, 0.68)';
-        ctx.lineWidth = 1.8;
+        ctx.strokeStyle = 'rgba(133, 86, 68, 0.64)';
+        ctx.lineWidth = 1.4;
         ctx.lineCap = 'round';
         for (const side of [-1, 1]) {
           const baseA = side > 0 ? a : a + Math.PI;
@@ -4480,27 +4583,30 @@
         p.state === P_STATE.EXTRUDING &&
         ((p.type === 'blackhead' && p.extrudeProgress >= 0.18) || p.pusRemaining <= 0.45)
       ) {
+        // Opposing brackets describe the two tips of the tweezers.
+        const locked = state.tweezers.clampedPimple === p;
         ctx.save();
-        ctx.strokeStyle = 'rgba(107, 226, 255, 0.72)';
-        ctx.lineWidth = 1.4;
-        ctx.setLineDash([3, 3]);
-        ctx.beginPath();
-        ctx.arc(0, 0, r * 0.75 + 6, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.setLineDash([]);
+        ctx.strokeStyle = `rgba(65, 88, 59, ${nearby || locked ? 0.68 : 0.38})`;
+        ctx.lineWidth = nearby || locked ? 1.25 : 0.95;
+        ctx.lineCap = 'round';
+        const guideR = r * 0.75 + 6;
+        for (const angle of [0, Math.PI]) {
+          ctx.beginPath();
+          ctx.arc(0, 0, guideR, angle - 0.48, angle + 0.48);
+          ctx.stroke();
+        }
         ctx.restore();
       }
 
-      // 冰膜涂抹阶段：对尚未刷上冰膜的毛孔显示冰蓝微光圈引导
+      // A dotted ring remains visible until this area has actually been coated.
       if (state.currentTool === 'ice_brush' && !p.iced) {
         ctx.save();
-        ctx.strokeStyle = 'rgba(130, 238, 255, 0.65)';
-        ctx.lineWidth = 1.4;
-        ctx.setLineDash([4, 3]);
+        ctx.strokeStyle = `rgba(85, 108, 75, ${nearby ? 0.68 : 0.44})`;
+        ctx.lineWidth = nearby ? 1.4 : 1.1;
+        ctx.setLineDash([2, 4]);
         ctx.beginPath();
         ctx.arc(0, 0, r * 0.8 + 8, 0, Math.PI * 2);
         ctx.stroke();
-        ctx.setLineDash([]);
         ctx.restore();
       }
     }
@@ -4523,7 +4629,7 @@
           ctx.rotate(ang + (idx === 0 ? Math.PI : 0));
 
           const dropSh = ctx.createRadialGradient(-28, 5, 6, -28, 5, 48);
-          dropSh.addColorStop(0, `rgba(48, 20, 14, ${0.26 + f * 0.16})`);
+          dropSh.addColorStop(0, `rgba(48, 20, 14, ${0.16 + f * 0.10})`);
           dropSh.addColorStop(1, 'rgba(48, 20, 14, 0)');
           ctx.fillStyle = dropSh;
           ctx.beginPath();
@@ -4532,9 +4638,9 @@
 
           ctx.globalAlpha = 0.90;
           const fingerGrad = ctx.createLinearGradient(4, -18, -76, 18);
-          fingerGrad.addColorStop(0, '#f3bfa2');
-          fingerGrad.addColorStop(0.45, '#e5aa8b');
-          fingerGrad.addColorStop(1, '#cf8f70');
+          fingerGrad.addColorStop(0, '#e2c2aa');
+          fingerGrad.addColorStop(0.45, '#cfaa8f');
+          fingerGrad.addColorStop(1, '#b88e74');
           ctx.fillStyle = fingerGrad;
           ctx.beginPath();
           ctx.moveTo(2, -13);
@@ -4544,17 +4650,17 @@
           ctx.closePath();
           ctx.fill();
 
-          ctx.strokeStyle = 'rgba(156, 94, 72, 0.36)';
+          ctx.strokeStyle = 'rgba(137, 99, 75, 0.22)';
           ctx.lineWidth = 1.1;
           ctx.beginPath();
           ctx.arc(-48, 0, 14, -0.65, 0.65);
           ctx.stroke();
 
           const nailGrad = ctx.createLinearGradient(3, 0, -26, 0);
-          nailGrad.addColorStop(0, '#fffaf2');
-          nailGrad.addColorStop(0.18, `rgba(255, 245, 236, ${0.75 + f * 0.25})`);
-          nailGrad.addColorStop(0.58, f > 0.35 ? '#f29ca3' : '#f4b8b8');
-          nailGrad.addColorStop(1, '#e8a8a6');
+          nailGrad.addColorStop(0, '#f2e5d4');
+          nailGrad.addColorStop(0.18, `rgba(242, 229, 214, ${0.65 + f * 0.25})`);
+          nailGrad.addColorStop(0.58, f > 0.35 ? '#c99d8e' : '#d8b5a5');
+          nailGrad.addColorStop(1, '#c7a08f');
           ctx.fillStyle = nailGrad;
           ctx.beginPath();
           ctx.moveTo(1.5, -9.5);
@@ -4564,12 +4670,12 @@
           ctx.closePath();
           ctx.fill();
 
-          ctx.fillStyle = 'rgba(255, 248, 244, 0.55)';
+          ctx.fillStyle = 'rgba(246, 234, 215, 0.26)';
           ctx.beginPath();
           ctx.arc(-21, 0, 6.5, -0.85, 0.85);
           ctx.fill();
 
-          ctx.strokeStyle = 'rgba(172, 106, 88, 0.45)';
+          ctx.strokeStyle = 'rgba(148, 108, 87, 0.28)';
           ctx.lineWidth = 0.85;
           ctx.stroke();
           ctx.restore();
@@ -4584,20 +4690,47 @@
         : ptr.hoverY;
       if (hx < 0 || hy < 0 || hx > state.width || hy > state.height) return;
 
+      // Move only the handle; the working tip stays exactly on the contact point.
+      const handleAngle = (preferred) => {
+        const angles = [preferred, Math.PI - preferred, -preferred, preferred + Math.PI];
+        let best = preferred;
+        let bestScore = Infinity;
+        angles.forEach((angle, preference) => {
+          const cos = Math.cos(angle);
+          const sin = Math.sin(angle);
+          let overflow = 0;
+          for (const x of [-18, 80]) {
+            for (const y of [-17, 17]) {
+              const px = hx + x * cos - y * sin;
+              const py = hy + x * sin + y * cos;
+              overflow += Math.max(0, 6 - px) + Math.max(0, px - state.width + 6);
+              overflow += Math.max(0, 6 - py) + Math.max(0, py - state.height + 6);
+            }
+          }
+          const score = overflow * 10 + preference;
+          if (score < bestScore) { bestScore = score; best = angle; }
+        });
+        return best;
+      };
+
       if (state.currentTool === 'steam') {
         // 绘制手持纳米热喷仪金属喷嘴与扇形雾束
         ctx.save();
         ctx.translate(hx, hy);
-        ctx.strokeStyle = 'rgba(140, 235, 255, 0.45)';
+        ctx.strokeStyle = `rgba(78, 104, 68, ${ptr.active ? 0.45 : 0.27})`;
         ctx.lineWidth = 1.3;
-        ctx.setLineDash([4, 4]);
+        ctx.setLineDash([2, 5]);
         ctx.beginPath();
-        ctx.arc(0, 0, CONFIG.INTERACTION.STEAM_RADIUS_PX * 0.65, 0, Math.PI * 2);
+        ctx.arc(0, 0, CONFIG.INTERACTION.STEAM_RADIUS_PX, 0, Math.PI * 2);
         ctx.stroke();
         ctx.setLineDash([]);
 
-        ctx.rotate(Math.PI * 0.25);
-        ctx.fillStyle = state.upgrades.steamer ? '#7dd3fc' : '#e2e8f0';
+        ctx.rotate(handleAngle(Math.PI * 0.25));
+        const nozzleG = ctx.createLinearGradient(0, -6, 0, 6);
+        nozzleG.addColorStop(0, '#e6e7d9');
+        nozzleG.addColorStop(0.48, '#c1c8b8');
+        nozzleG.addColorStop(1, '#8d9886');
+        ctx.fillStyle = nozzleG;
         ctx.beginPath();
         ctx.moveTo(29, -6);
         ctx.lineTo(65, -6);
@@ -4610,7 +4743,7 @@
         ctx.quadraticCurveTo(24, -6, 29, -6);
         ctx.closePath();
         ctx.fill();
-        ctx.fillStyle = '#475569';
+        ctx.fillStyle = '#626c59';
         ctx.beginPath();
         ctx.arc(24, 0, 4.2, 0, Math.PI * 2);
         ctx.fill();
@@ -4619,8 +4752,11 @@
         // 绘制冰感积雪草硅胶面膜刷
         ctx.save();
         ctx.translate(hx, hy);
-        ctx.rotate(Math.PI * 0.24);
-        ctx.fillStyle = 'rgba(120, 236, 255, 0.78)';
+        ctx.rotate(handleAngle(Math.PI * 0.24));
+        const brushG = ctx.createLinearGradient(0, -12, 0, 12);
+        brushG.addColorStop(0, 'rgba(202, 218, 185, 0.82)');
+        brushG.addColorStop(1, 'rgba(135, 158, 119, 0.72)');
+        ctx.fillStyle = brushG;
         ctx.beginPath();
         ctx.moveTo(-6, -12);
         ctx.quadraticCurveTo(14, -14, 18, -6);
@@ -4629,16 +4765,16 @@
         ctx.quadraticCurveTo(-12, 0, -6, -12);
         ctx.fill();
 
-        ctx.fillStyle = '#e2e8f0';
+        ctx.fillStyle = '#c8cdbb';
         ctx.fillRect(18, -4, 52, 8);
         ctx.restore();
       } else if (state.currentTool === 'needle') {
         // 精致防滑滚花纹不锈钢粉刺针
         ctx.save();
         ctx.translate(hx, hy);
-        ctx.rotate(-Math.PI * 0.25);
+        ctx.rotate(handleAngle(-Math.PI * 0.25));
 
-        ctx.strokeStyle = 'rgba(30, 14, 16, 0.28)';
+        ctx.strokeStyle = 'rgba(79, 72, 51, 0.18)';
         ctx.lineWidth = 4;
         ctx.beginPath();
         ctx.moveTo(4, 3);
@@ -4646,9 +4782,9 @@
         ctx.stroke();
 
         const metalGrad = ctx.createLinearGradient(0, -3.5, 0, 3.5);
-        metalGrad.addColorStop(0, '#ffffff');
-        metalGrad.addColorStop(0.5, '#b8c4d0');
-        metalGrad.addColorStop(1, '#64748b');
+        metalGrad.addColorStop(0, '#eeeadd');
+        metalGrad.addColorStop(0.5, '#bac0ae');
+        metalGrad.addColorStop(1, '#828d76');
         ctx.fillStyle = metalGrad;
         ctx.beginPath();
         ctx.moveTo(0, 0);
@@ -4660,7 +4796,7 @@
         ctx.fill();
 
         // 防滑手柄滚花纹理刻线
-        ctx.strokeStyle = 'rgba(71, 85, 105, 0.45)';
+        ctx.strokeStyle = 'rgba(84, 97, 72, 0.36)';
         ctx.lineWidth = 0.8;
         for (let k = 32; k < 66; k += 5) {
           ctx.beginPath();
@@ -4676,11 +4812,11 @@
 
         ctx.save();
         ctx.translate(hx, hy);
-        ctx.rotate(-Math.PI * 0.28);
+        ctx.rotate(handleAngle(-Math.PI * 0.28));
 
-        const isGold = state.upgrades.tweezers;
-        const bladeColorTop = isGold ? '#ffe79e' : '#f8fafc';
-        const bladeColorBot = isGold ? '#c99738' : '#94a3b8';
+        const isUpgraded = state.upgrades.tweezers;
+        const bladeColorTop = isUpgraded ? '#e4e8d2' : '#ebe9dc';
+        const bladeColorBot = isUpgraded ? '#85946f' : '#929e83';
 
         ctx.strokeStyle = bladeColorTop;
         ctx.lineWidth = 2.6;
@@ -4698,30 +4834,20 @@
         ctx.stroke();
         ctx.restore();
 
-        if (isClamped) {
-          ctx.save();
-          const barW = 50;
-          const bx = hx - barW * 0.5;
-          const by = hy + 20;
-          ctx.fillStyle = 'rgba(18, 14, 20, 0.85)';
-          ctx.fillRect(bx - 1, by - 1, barW + 2, 7);
-          ctx.fillStyle = tw.dangerRatio > 0.78 ? '#ff5c70' : '#4cd9a4';
-          ctx.fillRect(bx, by, barW * tw.pullRatio, 5);
-          ctx.restore();
-        }
+        // Progress and speed guidance are placed beside the loupe, clear of the finger.
       } else if (state.currentTool === 'swab') {
         ctx.save();
         ctx.translate(hx, hy);
-        ctx.rotate(Math.PI * 0.22);
+        ctx.rotate(handleAngle(Math.PI * 0.22));
 
-        ctx.strokeStyle = 'rgba(40, 20, 22, 0.24)';
+        ctx.strokeStyle = 'rgba(78, 71, 51, 0.17)';
         ctx.lineWidth = 6;
         ctx.beginPath();
         ctx.moveTo(14, 3);
         ctx.lineTo(76, 3);
         ctx.stroke();
 
-        ctx.strokeStyle = state.upgrades.iceprobe ? '#c8f4ff' : '#edf1f6';
+        ctx.strokeStyle = state.upgrades.iceprobe ? '#cdd8bf' : '#e0e1d2';
         ctx.lineWidth = 4.6;
         ctx.lineCap = 'round';
         ctx.beginPath();
@@ -4735,16 +4861,16 @@
         ctx.clip();
 
         const cottonGrad = ctx.createRadialGradient(-3, -4, 2, 2, 0, 18);
-        cottonGrad.addColorStop(0, '#ffffff');
-        cottonGrad.addColorStop(0.7, state.upgrades.iceprobe ? '#e2f9ff' : '#f1f5f9');
-        cottonGrad.addColorStop(1, '#cbd5e1');
+        cottonGrad.addColorStop(0, '#faf6e9');
+        cottonGrad.addColorStop(0.7, state.upgrades.iceprobe ? '#e5edd7' : '#eeeede');
+        cottonGrad.addColorStop(1, '#c6ceba');
         ctx.fillStyle = cottonGrad;
         ctx.fillRect(-20, -15, 45, 30);
 
         if (state.swabStain.pus > 0.02) {
           const pg = ctx.createRadialGradient(-4, 1, 1, -4, 1, 11);
-          pg.addColorStop(0, `rgba(232, 202, 112, ${Math.min(0.88, state.swabStain.pus)})`);
-          pg.addColorStop(1, 'rgba(232, 202, 112, 0)');
+          pg.addColorStop(0, `rgba(202, 182, 132, ${Math.min(0.88, state.swabStain.pus)})`);
+          pg.addColorStop(1, 'rgba(202, 182, 132, 0)');
           ctx.fillStyle = pg;
           ctx.fillRect(-20, -15, 30, 30);
         }
@@ -4757,9 +4883,9 @@
         }
         if (state.swabStain.blood > 0.02) {
           const bg = ctx.createRadialGradient(-7, 2, 0.8, -7, 2, 9.5);
-          bg.addColorStop(0, `rgba(186, 26, 38, ${Math.min(0.88, state.swabStain.blood)})`);
-          bg.addColorStop(0.65, `rgba(224, 92, 102, ${Math.min(0.55, state.swabStain.blood * 0.6)})`);
-          bg.addColorStop(1, 'rgba(224, 92, 102, 0)');
+          bg.addColorStop(0, `rgba(158, 90, 76, ${Math.min(0.88, state.swabStain.blood)})`);
+          bg.addColorStop(0.65, `rgba(184, 120, 102, ${Math.min(0.55, state.swabStain.blood * 0.6)})`);
+          bg.addColorStop(1, 'rgba(184, 120, 102, 0)');
           ctx.fillStyle = bg;
           ctx.fillRect(-20, -15, 28, 28);
         }
