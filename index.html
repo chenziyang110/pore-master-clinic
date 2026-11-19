@@ -75,7 +75,7 @@
     .sound-off-line { display: none; }
     #btn-sound[aria-pressed='false'] .sound-off-line { display: block; }
     #btn-sound[aria-pressed='false'] .sound-waves { display: none; }
-    .studio-layout { display: grid; grid-template-columns: 274px minmax(0, 1fr); flex: 1; min-height: 0; }
+    .studio-layout { display: grid; grid-template-columns: 274px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); flex: 1; min-height: 0; }
     .case-panel { position: relative; display: flex; flex-direction: column; padding: 28px 26px 22px; border-right: 1px solid var(--line); background: #f6f6ef; min-width: 0; }
     .eyebrow { display: flex; align-items: center; gap: 9px; font-size: 10px; font-weight: 500; letter-spacing: 1.8px; color: var(--muted); }
     .eyebrow .line { width: 22px; height: 1px; background: #9daa92; }
@@ -420,6 +420,9 @@
       .canvas-topline { inset: 7px 8px auto; }
       .care-stages { padding: 4px 7px; }
       .canvas-status { padding: 4px 6px; }
+    }
+    @media (min-width: 761px), (orientation: landscape) and (max-height: 520px) {
+      .case-panel { min-height: 0; overflow-y: auto; }
     }
     #practice-guide { display: flex; align-items: center; gap: 9px; min-height: 34px; margin: 0 22px; color: var(--green); border-bottom: 1px solid var(--line); font-size: 11px; }
     #practice-guide[hidden] { display: none; }
