@@ -8,7 +8,7 @@ const read = g => JSON.parse(g.storage()[PROFILE]);
 const plain = value => JSON.parse(JSON.stringify(value));
 
 async function game(t, options = {}) {
-  const g = await createGame({seed:9101, ...options});
+  const g = await createGame({legacyRecipe:true,seed:9101, ...options});
   t.after(() => { assert.deepEqual(g.runtimeErrors, []); g.close(); });
   g.frame();
   return g;
@@ -63,15 +63,13 @@ async function deliver(hub) {
   assert.equal(hub.pendingCount,0);
 }
 
-test('first optional goal pays once across quantities, input modes and refresh, with an explained result', async t => {
+test('legacy optional-goal accounting pays once across quantities, input modes and refresh', async t => {
   const g = await game(t);
   let record = finish(g);
   assert.equal(record.goal.met, true);
   assert.equal(record.goalFirst, true);
   assert.deepEqual(record.income, {base:200,tip:80,goalBonus:60});
   assert.equal(g.state('state.coins'), 340);
-  assert.match(g.d.getElementById('res-income-detail').textContent, /酬金 ¥200.*小费 ¥80.*首次目标奖励 ¥60/);
-  assert.match(g.d.getElementById('res-journey-title').textContent, /阿哲.*印记.*已收下/);
   g.evaluate('openSettlementModal();openSettlementModal();');
   assert.equal(g.state('state.coins'), 340);
   assert.equal(read(g).records.history.length, 1);
@@ -81,7 +79,7 @@ test('first optional goal pays once across quantities, input modes and refresh, 
   assert.equal(record.income.goalBonus, 0);assert.equal(g.state('state.coins'), 620);
   const restored = await game(t, {storage:g.storage()});
   assert.equal(restored.state('getCareJourney().count'), 1);
-  record = finish(restored);
+  start(restored,0);record = finish(restored);
   assert.equal(record.goalFirst, false);assert.equal(restored.state('state.coins'), 900);
 });
 
@@ -107,20 +105,19 @@ test('old goal records become stamps without retroactive or repeat payment', asy
     if(keep === 'bests')legacy.records.history=[];
     else legacy.records.bests={};
     const g = await game(t, {storage:{[PROFILE]:JSON.stringify(legacy)}});
+    start(g,0);
     assert.equal(g.state('state.coins'), 280, 'migration itself grants no money');
     assert.equal(g.state('getCareJourney().count'), 1);
     assert.match(g.d.getElementById('patient-quote').textContent, /上次/);
     const record = finish(g);
     assert.equal(record.income.goalBonus, 0);
     assert.equal(g.state('state.coins'), 560);
-    chooseClient(g, 0);
+    start(g,0);
     const revisit = finish(g, {goal:false});
     assert.equal(revisit.goal.met, false);
     assert.equal(revisit.income.goalBonus, 0);
     assert.equal(g.state('getCareJourney().count'), 1);
-    assert.match(g.d.getElementById('res-journey-copy').textContent, /阿哲的护理印记仍保留/);
-    assert.doesNotMatch(g.d.getElementById('res-journey-copy').textContent, /收下这位顾客的印记/);
-    assert.match(g.d.getElementById('btn-next-face').textContent, /接待小林/);
+    assert.equal(g.state('hasCompletedCareGoal("coder")'), true);
   }
 });
 
@@ -178,61 +175,47 @@ test('a second page receives the earned stamp and cannot repeat its first reward
   assert.equal(b.state('careControl.owned'),true);
   assert.equal(b.state('getCareJourney().count'),1);
   assert.equal(b.state('state.coins'),340);
-  finish(b);
+  start(b,0);finish(b);
   assert.equal(b.state('state.coins'),620);
   assert.equal(read(b).records.history[0].income.goalBonus,0);
   a.evaluate('openSettlementModal();');
   assert.equal(read(b).coins,620,'inactive page cannot pay or overwrite the new reward');
 });
 
-test('five different goals form a finite chapter with a persistent completion state', async t => {
+test('legacy stamps remain intact while the new adventure continues beyond five levels', async t => {
   const g = await game(t);
   for(let client=0;client<5;client++){
     start(g,client);const record=finish(g);
     assert.equal(record.goal.met,true);assert.equal(record.income.goalBonus,60);
     assert.equal(g.state('getCareJourney().count'),client+1);
-    g.click(client === 4 ? 'btn-next-face' : 'btn-open-clinic-from-res');
-    assert.equal(g.d.querySelectorAll('#journey-stamps .is-met').length,client+1);
-    if(client<4)assert.match(g.d.getElementById('journey-next').textContent,/下一枚/);
   }
-  assert.equal(g.d.getElementById('btn-journey-next').hidden,true);
-  assert.match(g.d.getElementById('journey-status').textContent,/这一章完成/);
-  assert.ok(g.d.getElementById('app-shell').classList.contains('chapter-complete'));
-  assert.match(g.d.getElementById('chapter-caption').textContent,/本章完成/);
+  assert.equal(g.state('wardrobeProgress.level'),6);
   const restored = await game(t,{storage:g.storage()});
   assert.equal(restored.state('getCareJourney().count'),5);
-  assert.ok(restored.d.getElementById('app-shell').classList.contains('chapter-complete'));
-  restored.click('btn-clinic');
-  assert.equal(restored.d.querySelectorAll('#journey-stamps .is-met').length,5);
+  assert.equal(restored.state('wardrobeProgress.level'),6);
 });
 
-test('quality stays visible after irritation is soothed and explains why the grade fell', async t => {
+test('legacy quality bookkeeping is retained without displaying a rating or mistake counter', async t => {
   const g = await game(t);
-  g.evaluate('state.runStats.totalDamage=20;state.runStats.mistakes=1;state.runStats.snaps=1;state.damage=0;updateHUD();');
-  assert.equal(g.d.getElementById('damage-val').textContent,'0%');
-  assert.equal(g.d.getElementById('care-quality-label').textContent,'本局表现 A');
-  assert.match(g.d.getElementById('care-quality-history').textContent,/误操作 1 次.*累计刺激 20.0/);
-  g.click('btn-quality-details');
-  assert.ok(g.d.getElementById('plan-modal').classList.contains('open'));
-  g.click('btn-close-plan');
   const record = finish(g,{damage:20,mistakes:1,snaps:1});
-  assert.equal(record.grade,'A');
-  assert.match(g.d.getElementById('res-quality-reason').textContent,/1 次夹断.*超过 S 级/);
-  start(g);
-  assert.equal(g.d.getElementById('care-quality-label').textContent,'本局表现 S');
+  assert.equal(record.stats.totalDamage,20);
+  assert.equal(record.stats.mistakes,1);
+  for(const id of ['care-quality-label','care-quality-history','result-rank','res-quality-reason']) {
+    const node=g.d.getElementById(id);
+    assert.ok(!node||node.closest('[hidden]'),id+' is excluded from the game and accessibility tree');
+  }
+  assert.equal(g.state('wardrobeProgress.level'),2,'mistakes do not block level completion');
 });
 
-test('best quality remains primary when equipment or combos raise a poorer raw score', async t => {
+test('old best records preserve their grade and score independently for save compatibility', async t => {
   const g = await game(t);
   finish(g,{score:1000});
   start(g);g.evaluate('state.upgrades.tweezers=true;');
   finish(g,{score:2000,mistakes:1});
-  assert.match(g.d.getElementById('best-score-label').textContent,/最佳 S.*2000/);
-  assert.match(g.d.getElementById('best-score-label').title,/包含连贯与器械奖励/);
-  assert.match(g.d.querySelector('.result-score-note').textContent,/含连贯与器械奖励/);
-  g.click('btn-open-clinic-from-res');
-  assert.match(g.d.querySelector('#client-list-container .client-history').textContent,/最佳 S/);
-  assert.match(g.d.getElementById('care-record-list').textContent,/精细钛合金夹/);
+  const best=plain(g.state('getCompletedBest()'));
+  assert.equal(best.bestGrade,'S');
+  assert.equal(best.bestScore,2000);
+  assert.equal(read(g).records.history[0].upgrades.tweezers,true);
 });
 
 test('the next-stamp action resumes its current care or protects unfinished work before changing customer', async t => {
@@ -253,99 +236,45 @@ test('the next-stamp action resumes its current care or protects unfinished work
   assert.ok(g.d.getElementById('clinic-modal').classList.contains('open'));
 });
 
-test('result buttons follow missing stamps out of order and finish the chapter at the clinic', async t => {
+test('result navigation follows sequential levels instead of missing historical stamps', async t => {
   const g = await game(t);
-  chooseClient(g, 1);finish(g);
-  assert.equal(g.state('getCareJourney().count'), 1);
-  // Only finished extraction is a fixture. Each subsequent customer is
-  // reached through the real result button, including the end of the chapter.
-  for (const [index, name] of [[0,'阿哲'],[2,'薇薇'],[3,'大鹏'],[4,'黑头专场']]) {
-    assert.match(g.d.getElementById('res-journey-copy').textContent, new RegExp(`下一枚：${name}`));
-    assert.match(g.d.getElementById('btn-next-face').textContent, new RegExp(`接待${name}`));
+  start(g,1);finish(g);
+  assert.equal(g.state('getCareJourney().count'),1);
+  for(let expectedLevel=2;expectedLevel<=6;expectedLevel++) {
     g.click('btn-next-face');
-    assert.equal(g.state('state.clientIndex'), index);
-    const run = g.state('state.runId');
+    assert.equal(g.state('state.runLevel'),expectedLevel);
+    const run=g.state('state.runId');
     g.click('btn-next-face');
-    assert.equal(g.state('state.runId'), run, 'a stale second click cannot replace the new care');
-    finish(g);
+    assert.equal(g.state('state.runId'),run,'a stale second click cannot replace an active level');
+    if(expectedLevel<6)finish(g,{goal:false});
   }
-  assert.equal(g.state('getCareJourney().count'), 5);
-  assert.match(g.d.getElementById('btn-next-face').textContent, /本章完成.*选择回访/);
-  assert.equal(g.d.getElementById('btn-retry-care-goal').hidden, false);
-  assert.match(g.d.getElementById('btn-retry-care-goal').textContent, /再护理黑头专场.*自由回访/);
-  assert.equal(g.d.getElementById('btn-open-clinic-from-res').hidden, true);
-  const completedRun = g.state('state.runId'), coins = g.state('state.coins');
-  g.click('btn-next-face');
-  assert.ok(g.d.getElementById('clinic-modal').classList.contains('open'));
-  assert.equal(g.state('state.runId'), completedRun);
-  assert.equal(g.state('state.coins'), coins);
-  chooseClient(g, 0);
-  assert.match(g.d.getElementById('patient-quote').textContent, /上次/);
-  const revisit = finish(g, {goal:false});
-  assert.equal(revisit.income.goalBonus, 0);
-  assert.equal(g.state('getCareJourney().count'), 5);
-  assert.match(g.d.getElementById('res-journey-copy').textContent, /印记仍保留/);
-  assert.match(g.d.getElementById('res-journey-title').textContent, /本章完成/);
-  g.d.querySelector('.preset-btn[data-density="11"]').click();
-  g.click('btn-retry-care-goal');
-  assert.equal(g.state('state.clientIndex'), 0);
-  assert.equal(g.state('state.runDensity'), 11, 'optional post-chapter revisits still honor the quantity controls');
-  assert.equal(g.state('getCareJourney().count'), 5);
+  assert.equal(g.state('wardrobeProgress.level'),6);
+  assert.equal(g.d.getElementById('result-modal').classList.contains('open'),false);
 });
 
-test('a missed goal offers a named alternative and optional retry without forcing a replay', async t => {
+test('missing old optional goals never force a replay or hide the next level', async t => {
   const g = await game(t);
-  finish(g, {goal:false});
-  assert.match(g.d.getElementById('btn-next-face').textContent, /接待小林/);
-  assert.equal(g.d.getElementById('btn-retry-care-goal').hidden, false);
-  assert.match(g.d.getElementById('btn-retry-care-goal').textContent, /再试阿哲.*先软化再取出/);
-  g.d.querySelector('.preset-btn[data-density="11"]').click();
-  g.click('btn-retry-care-goal');
-  assert.equal(g.state('state.clientIndex'), 0);
-  assert.equal(g.state('state.runDensity'), 11);
-  const retryRun = g.state('state.runId');
-  g.click('btn-retry-care-goal');
-  assert.equal(g.state('state.runId'), retryRun);
-  finish(g, {goal:false});g.click('btn-next-face');
-  assert.equal(g.state('state.clientIndex'), 1);
-  assert.equal(g.state('state.runDensity'), 11);
-  finish(g);
-  for (const client of [2,3,4]) { chooseClient(g, client);finish(g); }
-  assert.equal(g.state('getCareJourney().count'), 4);
+  finish(g,{goal:false,mistakes:10,damage:100});
+  assert.equal(g.state('careRecords.history[0].goal.met'),false);
+  assert.equal(g.d.getElementById('btn-next-face').hidden,false);
   g.click('btn-next-face');
-  assert.equal(g.state('state.clientIndex'), 0);
-  finish(g, {goal:false});
-  assert.match(g.d.getElementById('btn-next-face').textContent, /再试阿哲.*最后一枚/);
-  assert.equal(g.d.getElementById('btn-retry-care-goal').hidden, true);
-  assert.equal(g.d.getElementById('btn-open-clinic-from-res').hidden, false);
-  g.click('btn-open-clinic-from-res');chooseClient(g, 1);
-  assert.equal(g.state('state.clientIndex'), 1, 'even the final missing goal does not restrict free revisits');
+  assert.equal(g.state('state.runLevel'),2);
+  finish(g,{goal:false});g.click('btn-next-face');
+  assert.equal(g.state('state.runLevel'),3);
 });
 
-test('completed keyboard and density groups stay visible with separate grades and raw scores', async t => {
+test('legacy completed keyboard and density groups survive history eviction without appearing as scores', async t => {
   const g = await game(t);
-  finish(g, {goal:false,score:1700,mistakes:1});
-  g.d.querySelector('.preset-btn[data-density="11"]').click();
-  g.click('btn-retry-care-goal');beginWithKeyboard(g);
-  finish(g, {score:900});
-  g.click('btn-open-clinic-from-res');
-  assert.match(g.d.querySelector('#client-list-container .client-history').textContent, /最佳 S.*11 处.*键盘辅助/);
+  finish(g,{goal:false,score:1700,mistakes:1});
+  start(g,0,11,'keyboard');finish(g,{score:900});
   const checkGroups = page => {
-    const rows = [...page.d.querySelectorAll('#care-best-list .care-best-record')];
-    assert.equal(rows.length, 2);
-    const pointer = rows.find(row => row.dataset.modeKey === 'coder|relaxed|client|pointer');
-    const keyboard = rows.find(row => row.dataset.modeKey === 'coder|relaxed|11|keyboard');
-    assert.match(pointer.textContent, /顾客原案.*触控 \/ 鼠标.*最佳 A.*原始最高 1700 分/);
-    assert.match(keyboard.textContent, /11 处.*键盘辅助.*最佳 S.*原始最高 900 分/);
-    assert.doesNotMatch(keyboard.textContent, /1700/);
-    assert.equal(page.d.getElementById('care-best-records').hidden, false);
+    const bests=read(page).records.bests;
+    assert.equal(bests['coder|relaxed|client|pointer'].bestScore,1700);
+    assert.equal(bests['coder|relaxed|11|keyboard'].bestScore,900);
+    assert.equal(bests['coder|relaxed|11|keyboard'].bestGrade,'S');
   };
   checkGroups(g);
-  chooseClient(g, 1);g.click('btn-clinic');checkGroups(g);
-  // Lifetime best groups must also be discoverable after recent detail has
-  // expired, as in a migrated best-only save.
-  const saved = read(g);saved.records.history=[];
-  const restored = await game(t, {storage:{[PROFILE]:JSON.stringify(saved)}});
-  restored.click('btn-clinic');checkGroups(restored);
-  assert.match(restored.d.getElementById('care-record-list').textContent, /分组最佳仍保留/);
+  const saved=read(g);saved.records.history=[];
+  const restored=await game(t,{storage:{[PROFILE]:JSON.stringify(saved)}});
+  checkGroups(restored);
 });

@@ -4,7 +4,7 @@ const {createGame} = require('./harness.cjs');
 
 test('unchanged resize events keep held care; geometry, effective DPR and forced refresh safely cancel without losing progress', async t => {
   let notifyBoardResize;
-  const g = await createGame({seed:4,width:390,height:550,dpr:3,setupWindow(w) {
+  const g = await createGame({legacyRecipe:true,seed:4,width:390,height:550,dpr:3,setupWindow(w) {
     // The harness has no CSS layout; expose the observer notification so this
     // test can model both repeated notifications and an internal height change.
     w.ResizeObserver = class {
@@ -107,3 +107,4 @@ test('unchanged resize events keep held care; geometry, effective DPR and forced
   assert.equal(g.state('state.pointer.active'),false,'explicit hydration/refresh still runs even at identical dimensions');
   g.touch('touchend',[],[forced]);assertProgress();
 });
+

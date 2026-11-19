@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#faf9f5" />
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-  <meta name="description" content="一间小小的净肤馆。放慢节奏，体验热敷、清理与舒缓护理的微距解压小游戏。" />
-  <title>妙手净肤馆 · 慢慢照顾每一寸肌肤</title>
+  <meta name="description" content="慢慢清理，发现小惊喜。闯关收集蝴蝶结、发饰和裙子，为小女孩搭配一身喜欢的衣服。" />
+  <title>妙手净肤馆 · 小小换装奇遇</title>
   <style>
 
     :root {
@@ -484,6 +484,133 @@
       .care-stages { padding: 4px 7px; }
       .canvas-status { padding: 4px 6px; }
     }
+    /* A quiet play surface; the story and wardrobe live outside the board. */
+    [hidden] { display: none !important; }
+    #app-shell { width: min(960px, 100%); min-height: 0; }
+    #app-shell .studio-header { height: 56px; min-height: 56px; justify-content: center; padding: 0 20px; }
+    .level-heading { font-size: 16px; font-weight: 600; letter-spacing: 2px; }
+    #app-shell .studio-layout { display: flex; flex: 1; min-height: 0; }
+    #app-shell .treatment-panel { flex: 1; width: 100%; min-height: 0; padding-top: 16px; }
+    #app-shell #viewport-wrap { flex: 1; min-height: 100px; margin: 0 20px; }
+    #app-shell .tool-section { padding: 10px 20px 12px; }
+    #app-shell .tool-section-head { min-height: 28px; margin: 0; }
+    #app-shell .hint-banner { min-height: 34px; margin: 4px 0 8px; }
+    #app-shell .tool-step, #app-shell .shortcut-note, #app-shell .tool-badge { display: none; }
+    #app-shell .tool-btn { min-height: 65px; }
+    #app-shell .studio-footer { display: flex; flex-shrink: 0; min-height: 46px; height: auto; padding: 0 20px max(6px, var(--safe-bottom)); justify-content: center; border-top: 1px solid var(--line); }
+    .game-utilities { display: flex; justify-content: center; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .game-utilities button { border: 0; background: transparent; color: var(--muted); padding: 10px 8px; min-height: 44px; font-size: 12px; }
+    #game-settings-slots { display: contents; }
+    #game-settings-slots .icon-btn { min-height: 44px; }
+    .story-modal { background: #f4f1e8; padding: max(16px, var(--safe-top)) max(16px, var(--safe-right)) max(16px, var(--safe-bottom)) max(16px, var(--safe-left)); }
+    .story-modal .modal-card { width: min(940px, 100%); max-width: 940px; max-height: calc(100dvh - 32px); padding: 34px; border: 1px solid #dcded1; border-radius: 24px; background: #fcfaf4; box-shadow: 0 20px 80px #48533c0a; }
+    .story-brand { color: #718068; font-size: 12px; letter-spacing: 3px; margin-bottom: 26px; }
+    .home-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; align-items: center; }
+    .home-copy { padding: 8px 4px; }
+    .story-eyebrow { font-size: 11px; color: #9d7565; letter-spacing: 2px; margin-bottom: 14px; }
+    .home-copy h2 { font-family: var(--serif); font-size: clamp(28px, 3.8vw, 42px); font-weight: 500; letter-spacing: 2px; line-height: 1.45; }
+    .home-intro { color: var(--muted); font-size: 14px; line-height: 1.95; margin: 18px 0; max-width: 27em; }
+    .home-promise { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
+    .home-promise span { padding: 6px 10px; border-radius: 20px; background: #f1eee4; color: #7d7c68; font-size: 11px; }
+    .story-modal .primary-btn { border-radius: 12px; min-height: 48px; font-size: 14px; margin-top: 8px; }
+    .story-modal .secondary-btn { border-radius: 12px; min-height: 44px; font-size: 13px; }
+    .girl-stage { position: relative; background: #f0eee3; border: 1px solid #e4e3d5; border-radius: 140px 140px 24px 24px; padding: 20px 15px 12px; text-align: center; }
+    .girl-portrait svg { display: block; width: 100%; height: 340px; max-width: 300px; margin: 0 auto; }
+    .girl-caption { font-family: var(--serif); font-size: 13px; color: #7b7a64; margin: 4px 0 12px; }
+    .home-progress-note { color: #898a7a; font-size: 11px; line-height: 1.7; margin-top: 16px; }
+    .story-close { float: right; border: 0; background: #efeee5; color: var(--muted); border-radius: 50%; width: 44px; height: 44px; font-size: 22px; }
+    .wardrobe-layout { display: grid; grid-template-columns: minmax(200px, .85fr) minmax(0, 1.15fr); gap: 28px; margin-top: 22px; align-items: start; }
+    .wardrobe-heading { font-family: var(--serif); font-size: 27px; font-weight: 500; margin-bottom: 8px; }
+    .wardrobe-description { font-size: 13px; color: var(--muted); line-height: 1.8; }
+    .wardrobe-section-title { font-size: 13px; color: #63735b; font-weight: 500; margin: 16px 0 10px; }
+    .wardrobe-items { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .wardrobe-item { min-width: 0; border: 1px solid #dfdfd0; border-radius: 12px; padding: 8px 4px; background: #fffdf7; text-align: center; font-size: 11px; line-height: 1.6; }
+    .wardrobe-item svg { width: 64px; height: 64px; max-width: 100%; display: block; margin: 0 auto 5px; }
+    .wardrobe-item[aria-pressed='true'] { border-color: #81966f; background: #edf1e5; box-shadow: inset 0 0 0 1px #81966f; }
+    .wardrobe-item:disabled { opacity: .55; }
+    .wardrobe-item small { display: block; font-size: 10px; color: #818572; }
+    .wardrobe-reset { margin-top: 12px; display: flex; gap: 12px; }
+    .wardrobe-reset button { padding: 8px 0; min-height: 40px; border: 0; background: transparent; font-size: 11px; text-decoration: underline; text-underline-offset: 4px; color: var(--muted); }
+    #wardrobe-status { min-height: 24px; margin-top: 12px; color: var(--green); font-size: 12px; }
+    .gift-discovery { position: absolute; inset: 18px 14px auto; z-index: 24; margin: 0 auto; max-width: 350px; display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 16px; background: #fffcf2f5; border: 1px solid #e5d7b7; box-shadow: 0 8px 35px #684c2820; pointer-events: none; }
+    .gift-discovery svg { width: 64px; height: 64px; flex: 0 0 64px; }
+    .gift-discovery strong { display: block; color: #8a6543; font-size: 15px; margin-bottom: 5px; }
+    .gift-discovery p { color: #74745f; font-size: 12px; line-height: 1.7; }
+    #result-modal .result-heading { display: block; text-align: center; }
+    #result-modal .modal-card { max-width: 460px; border-radius: 22px; padding: 28px; }
+    #result-modal .result-kicker { letter-spacing: 2px; }
+    .reward-result { text-align: center; padding: 18px 0 6px; }
+    .reward-result .reward-illustration { display: flex; justify-content: center; gap: 12px; }
+    .reward-result svg { width: 104px; height: 104px; margin: 5px auto; }
+    .reward-result h3 { font-family: var(--serif); font-size: 23px; font-weight: 500; margin: 12px 0; color: #6f7759; }
+    .reward-result p { font-size: 13px; line-height: 1.9; color: var(--muted); }
+    #result-modal .primary-btn, #result-modal .secondary-btn { border-radius: 11px; min-height: 46px; }
+    @media (max-width: 700px) {
+      body { padding: 0; }
+      #app-shell { width: 100%; height: 100dvh; border: 0; border-radius: 0; min-height: 0; }
+      #app-shell .studio-header { height: calc(48px + var(--safe-top)); min-height: calc(48px + var(--safe-top)); padding-top: var(--safe-top); }
+      #app-shell .treatment-panel { padding-top: 8px; }
+      #app-shell #viewport-wrap { margin: 0 10px; }
+      #app-shell .tool-section { padding: 7px 10px; }
+      #app-shell .tool-btn { min-height: 58px; }
+      #app-shell .tool-desc { display: none; }
+      #app-shell .tool-icon, #app-shell .tool-icon .icon { width: 24px; height: 24px; }
+      #app-shell .studio-footer { padding-inline: 10px; min-height: 44px; }
+      .story-modal { padding: max(10px, var(--safe-top)) 10px max(10px, var(--safe-bottom)); }
+      .story-modal .modal-card { max-height: calc(100dvh - 20px - var(--safe-top) - var(--safe-bottom)); padding: 22px; border-radius: 20px; }
+      .story-brand { margin-bottom: 15px; font-size: 11px; }
+      .home-grid { display: flex; flex-direction: column; gap: 14px; }
+      .home-copy { display: contents; }
+      .home-copy .story-eyebrow { display: none; }
+      .home-copy h2 { order: 0; text-align: center; font-size: 28px; }
+      .home-grid .girl-stage { order: 1; width: 100%; border-radius: 110px 110px 18px 18px; padding: 3px 12px; }
+      .home-grid .girl-portrait svg { height: clamp(180px, 29dvh, 275px); }
+      .home-intro { order: 2; font-size: 12px; line-height: 1.8; margin: 0; text-align: center; }
+      .home-promise { display: none; }
+      .home-copy .home-buttons { order: 3; width: 100%; }
+      .home-progress-note { text-align: center; margin-top: 8px; }
+      .girl-caption { font-size: 11px; margin: 0 0 8px; }
+      .wardrobe-layout { grid-template-columns: 1fr; gap: 10px; margin-top: 15px; }
+      .wardrobe-layout .girl-portrait svg { height: 220px; }
+      .wardrobe-layout .girl-stage { border-radius: 20px; padding: 0; }
+      .wardrobe-heading { font-size: 25px; }
+      .wardrobe-description { font-size: 12px; }
+    }
+    @media (max-width: 700px) and (max-height: 700px) {
+      #home-modal .modal-card { padding: 16px; }
+      #home-modal .story-brand { margin-bottom: 10px; font-size: 10px; letter-spacing: 2px; }
+      #home-modal .home-grid { gap: 10px; }
+      #home-modal h2 { font-size: 24px; line-height: 1.3; }
+      #home-modal .girl-portrait svg { height: clamp(100px, 22dvh, 155px); }
+      #home-modal .girl-caption { font-size: 10px; line-height: 1.5; margin-bottom: 5px; }
+      #home-modal .home-intro { display: none; }
+      #home-modal .primary-btn { min-height: 44px; padding-block: 10px; font-size: 13px; }
+      #home-modal .secondary-btn { min-height: 44px; padding-block: 10px; font-size: 12px; }
+      #home-modal .home-progress-note { font-size: 10px; line-height: 1.6; margin-top: 6px; }
+    }
+    @media (max-height: 500px) and (orientation: landscape) {
+      #app-shell .studio-header { height: 38px; min-height: 38px; }
+      #app-shell .tool-section-head { display: none; }
+      #app-shell .hint-banner { min-height: 20px; margin: 0 0 4px; font-size: 11px; }
+      #app-shell .tool-btn { min-height: 44px; padding: 4px; flex-direction: row; gap: 6px; }
+      #app-shell .tool-desc { display: none; }
+      #app-shell .studio-footer { min-height: 36px; padding-bottom: 0; }
+      .game-utilities button { min-height: 36px; padding-block: 6px; }
+      #app-shell #practice-guide { display: none; }
+      .story-modal .modal-card { padding: 18px 22px; }
+      #home-modal .story-brand { margin-bottom: 10px; font-size: 10px; }
+      #home-modal .home-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 20px; }
+      #home-modal .home-copy { display: block; padding: 0; }
+      #home-modal .story-eyebrow, #home-modal .home-promise { display: none; }
+      #home-modal h2 { font-size: clamp(20px, 3.2vw, 26px); line-height: 1.25; text-align: left; }
+      #home-modal .home-intro { font-size: 11px; line-height: 1.65; margin: 10px 0; text-align: left; }
+      #home-modal .girl-stage { padding: 8px 10px; }
+      #home-modal .girl-portrait svg { height: min(210px, 58dvh); }
+      #home-modal .girl-caption { font-size: 11px; line-height: 1.5; margin: 0; }
+      #home-modal .primary-btn { min-height: 44px; padding-block: 10px; font-size: 13px; margin-top: 4px; }
+      #home-modal .secondary-btn { min-height: 44px; padding-block: 10px; font-size: 12px; margin-top: 6px; }
+      #home-modal .home-progress-note { font-size: 10px; line-height: 1.5; margin-top: 6px; text-align: left; }
+    }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
   </style>
 </head>
@@ -506,6 +633,8 @@
 
   <div id="app-shell">
     <header class="studio-header">
+      <h1 id="current-level" class="level-heading" tabindex="-1">第 1 关</h1>
+      <div hidden>
       <div class="brand"><svg class="icon brand-mark" aria-hidden="true"><use href="#i-brand"/></svg><div><div class="brand-title">妙手净肤馆</div><div id="chapter-caption" class="brand-caption">PORE MASTER CLINIC</div></div></div>
       <div class="top-actions">
         <div class="header-wallet"><span>诊所收入</span><span id="coin-val" class="coin-pill">¥ 0</span></div>
@@ -513,10 +642,11 @@
         <button id="btn-sound" class="icon-btn" type="button" title="音效开关" aria-label="关闭音效" aria-pressed="true"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m11 4-6 5H2v6h3l6 5Z"/><path class="sound-waves" d="M15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/><path class="sound-off-line" d="m16 9 6 6m0-6-6 6"/></svg><span id="sound-icon" class="action-label">音效开</span></button>
         <button id="btn-help" class="icon-btn" type="button" title="操作指南" aria-label="操作指南"><svg class="icon " aria-hidden="true"><use href="#i-help"/></svg></button>
       </div>
+      </div>
     </header>
     <div id="save-notice" class="save-notice" role="status" aria-live="polite" hidden><span class="save-notice-copy"></span><button id="btn-retry-save" class="save-retry" type="button" disabled>重试保存</button></div>
     <div class="studio-layout">
-      <aside class="case-panel" aria-label="本次护理记录">
+      <aside class="case-panel" aria-label="本次护理记录" hidden>
         <div class="case-intro"><div class="eyebrow"><span class="line"></span>护理档案 <span id="case-number">01</span></div><h1 id="care-stage-title">温热软化</h1><p id="care-summary">先热敷，再开始细致清理。</p></div>
         <div class="patient-bar">
           <div class="patient-info"><div class="patient-avatar-wrap"><div id="patient-avatar" class="patient-avatar" aria-hidden="true">哲</div></div><div class="patient-text-wrap"><div class="patient-name-line"><span id="patient-name">阿哲</span><span id="patient-mood" class="mood-badge">准备中</span></div><div id="patient-role" class="patient-role">程序员 · 混合肤质</div></div></div>
@@ -535,14 +665,15 @@
         <div class="case-foot"><svg class="face-study" viewBox="0 0 90 120" fill="none" stroke="currentColor" stroke-width=".85" aria-hidden="true"><path d="M20 31c0-17 13-26 27-25s25 11 24 29l-4 31c-2 13-11 26-23 28-12-2-22-15-24-28Z"/><path d="M20 39c-8-7-11 4-6 12l7 7m50-19c8-7 10 4 5 12l-8 7M29 41l9-2m16 0 9 2M46 43l-4 16 6 2M34 72c7 5 14 5 21-1M31 88l-3 18m30-19 4 19M12 118l16-12m34 0 16 12"/><ellipse cx="31" cy="57" rx="8" ry="10" fill="#c6d1b8" fill-opacity=".35" stroke-dasharray="2 2"/><path d="M44 23c9-1 15-5 19-10M25 24c10 0 17-7 21-18"/></svg><div class="case-note"><span class="case-note-label">本次护理部位</span><br><span id="case-zone-label">鼻翼与脸颊</span></div></div>
       </aside>
       <section class="treatment-panel" aria-label="护理工作台">
-        <div class="treatment-heading"><div><h2 id="care-zone">鼻翼与脸颊</h2><div id="care-focus" class="section-meta">先软化，再匀速取出</div></div><button id="btn-style-mode" class="icon-btn" type="button" aria-pressed="false" title="切换自然肌理与柔和肌理"><svg class="icon " aria-hidden="true"><use href="#i-style"/></svg><span id="style-mode-label">自然肌理</span></button></div>
+        <div class="treatment-heading" hidden><div><h2 id="care-zone">鼻翼与脸颊</h2><div id="care-focus" class="section-meta">先软化，再匀速取出</div></div><button id="btn-style-mode" class="icon-btn" type="button" aria-pressed="false" title="切换自然肌理与柔和肌理"><svg class="icon " aria-hidden="true"><use href="#i-style"/></svg><span id="style-mode-label">自然肌理</span></button></div>
         <main id="viewport-wrap" aria-label="微距皮肤操作区域">
           <canvas id="skin-canvas" tabindex="0" role="application" aria-label="护理画布：选择工具后按住或拖动；也可使用键盘辅助" aria-describedby="keyboard-care-help">键盘辅助：方向键选择目标，1–5 切换工具，按住空格或回车操作，松开停手，Esc 取消。</canvas>
           <p id="keyboard-care-status" class="keyboard-care-status" role="status" aria-live="polite" hidden></p>
-          <span id="keyboard-care-help" class="visually-hidden">键盘辅助：左或上选择上一处，右或下选择下一处；1–5 切换工具，按住空格或回车使用，松开停手；粉刺针在松键时破口，Esc 取消。清理完后按 6 涂冰膜。辅助成绩单独记录。</span>
-          <div class="canvas-topline"><ol class="care-stages" aria-label="护理流程"><li data-care-stage="0" aria-current="step"><span>01</span>热敷</li><li data-care-stage="1"><span>02</span>清理</li><li data-care-stage="2"><span>03</span>舒缓</li></ol><span id="canvas-status" class="canvas-status">已软化 0 / 8</span></div>
+          <span id="keyboard-care-help" class="visually-hidden">键盘辅助：左或上选择上一处，右或下选择下一处；1–5 切换工具，按住空格或回车使用，松开停手；粉刺针在松键时破口，Esc 取消。清理完后按 6 涂冰膜。</span>
+          <div class="canvas-topline" hidden><ol class="care-stages" aria-label="护理流程"><li data-care-stage="0" aria-current="step"><span>01</span>热敷</li><li data-care-stage="1"><span>02</span>清理</li><li data-care-stage="2"><span>03</span>舒缓</li></ol><span id="canvas-status" class="canvas-status">已软化 0 / 8</span></div>
+          <div id="gift-discovery" class="gift-discovery" role="status" aria-live="polite" hidden></div>
           <div class="ice-cta-group"><button id="btn-ice-finish" class="ice-finish-cta" type="button">涂抹舒缓冰膜</button><button id="btn-ice-quick" class="ice-quick-btn" type="button">一键敷膜 · 完成护理</button></div>
-          <div class="macro-frame-overlay"></div><div id="macro-reticle" class="macro-reticle">鼻翼沟与内侧脸颊 · 自然肌理</div>
+          <div class="macro-frame-overlay"></div><div id="macro-reticle" class="macro-reticle" hidden>鼻翼沟与内侧脸颊 · 自然肌理</div>
         </main>
         <div id="practice-guide" role="group" aria-label="上手引导" hidden><span id="practice-step">第 1 / 3 处</span><strong id="practice-label">黑头 · 按住圈内热敷</strong><button id="btn-skip-practice" type="button">跳过</button></div>
         <div class="tool-section"><div class="tool-section-head"><div id="active-tool-name" class="active-tool-title">热喷 · 温热软化</div><div class="tool-assist"><span class="shortcut-note">快捷键 1–5</span><button id="btn-care-next" class="next-tool-btn" type="button" hidden></button></div></div><p id="hint-banner" class="hint-banner" role="status" aria-live="polite" aria-atomic="true">按住皮肤缓缓移动，先让护理区域充分热敷。</p><nav class="toolbar-dock" aria-label="护理工具"><button id="tool-steam" class="tool-btn selected" type="button" data-tool="steam" aria-pressed="true" title="热喷 · 快捷键 1">
@@ -567,12 +698,29 @@
       </button></nav></div>
       </section>
     </div>
-    <footer class="studio-footer"><span>妙手净肤馆 <span class="footer-dot"></span> 护理模拟小游戏</span><span>按住操作，松开停手</span></footer>
+    <footer class="studio-footer"><nav class="game-utilities" aria-label="游戏菜单"><button id="btn-adventure-home" type="button">小女孩</button><button id="btn-wardrobe" type="button">衣橱</button><span id="game-settings-slots"></span></nav></footer>
+
+    <div id="home-modal" class="modal-backdrop story-modal open" role="dialog" aria-modal="true" aria-labelledby="home-title">
+      <div class="modal-card">
+        <div class="story-brand">妙手净肤馆 · 小小换装奇遇</div>
+        <div class="home-grid">
+          <div class="home-copy"><p class="story-eyebrow">每一次细心，都藏着小惊喜</p><h2 id="home-title">一起，把她的<br>小心愿穿在身上。</h2><p class="home-intro">小女孩的旧裙子已经打了好几块补丁。<br>慢慢闯关，找出藏起来的发饰和裙子，<br>为她搭配一身喜欢的衣服吧。</p><div class="home-promise"><span>轻松清理</span><span>发现礼物</span><span>自由装扮</span></div><div class="home-buttons"><button id="btn-start-adventure" class="primary-btn" type="button">进入游戏 · 帮小女孩装扮</button><button id="btn-home-wardrobe" class="secondary-btn" type="button">看看她的衣橱</button><p id="home-progress-note" class="home-progress-note">第 3 关起发现发饰 · 第 5 关发现新裙子</p></div></div>
+          <div class="girl-stage"><div id="home-girl" class="girl-portrait"></div><p id="home-girl-caption" class="girl-caption">「你愿意帮我挑一件新衣服吗？」</p></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="wardrobe-modal" class="modal-backdrop story-modal" role="dialog" aria-modal="true" aria-labelledby="wardrobe-title">
+      <div class="modal-card"><button id="btn-close-wardrobe" class="story-close" type="button" aria-label="关闭衣橱">×</button><div class="modal-header"><h2 id="wardrobe-title" class="wardrobe-heading">她的小小衣橱</h2><p class="wardrobe-description">把发现的小惊喜，变成她今天的穿搭。</p></div><div class="wardrobe-layout"><div class="girl-stage"><div id="wardrobe-girl" class="girl-portrait"></div><p class="girl-caption">每一套，都是你为她挑的。</p></div><div><h3 class="wardrobe-section-title">发间的小心意</h3><div id="wardrobe-hair" class="wardrobe-items"></div><h3 class="wardrobe-section-title">一件喜欢的裙子</h3><div id="wardrobe-dresses" class="wardrobe-items"></div><div class="wardrobe-reset"><button type="button" data-equip="none">摘下发饰</button><button type="button" data-equip="patched">穿回旧裙子</button></div><p id="wardrobe-status" role="status" aria-live="polite"></p></div></div></div>
+    </div>
 
     <!-- 通关结算面板（新增可拖动 Before / After 净肤前后滑动对比照！） -->
     <div id="result-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="result-title">
       <div class="modal-card">
-        <div class="modal-header result-heading"><div><p class="result-kicker">本次护理已完成</p><h2 id="result-title" class="modal-title">护理记录</h2><p id="result-subtitle" class="modal-subtitle">清理完成，留下一份护理前后的对照。</p></div><div class="result-rating"><span>护理评级</span><div id="result-rank" class="rank-badge">S</div></div></div>
+        <div class="modal-header result-heading"><div><p class="result-kicker">又完成了一次小小冒险</p><h2 id="result-title" class="modal-title">这一关完成啦</h2><p id="result-subtitle" class="modal-subtitle">谢谢你的细心照顾。</p></div><div class="result-rating" hidden><span>护理评级</span><div id="result-rank" class="rank-badge"></div></div></div>
+        <section id="reward-result" class="reward-result" aria-live="polite"></section>
+        <button id="btn-open-wardrobe-result" class="secondary-btn" type="button" hidden>给她换上新装扮</button>
+        <div id="legacy-settlement" hidden>
 
         <!-- 护理前 vs 护理后 交互滑动对比窗 -->
         <div id="ba-compare-box" class="ba-compare-wrap" role="slider" tabindex="0" aria-label="护理前后对比" aria-valuemin="6" aria-valuemax="94" aria-valuenow="50" aria-valuetext="护理前显示 50%">
@@ -620,9 +768,11 @@
           <button class="preset-btn" type="button" data-density="11" aria-pressed="false">11 处</button>
         </div></details>
 
-        <button id="btn-next-face" class="primary-btn" type="button">继续收集护理印记</button>
+        </div>
+        <button id="btn-next-face" class="primary-btn" type="button">进入下一关</button>
         <button id="btn-retry-care-goal" class="secondary-btn" type="button" hidden>再试本次目标</button>
-        <button id="btn-open-clinic-from-res" class="secondary-btn" type="button">自由接待 · 返回接诊台</button>
+        <button id="btn-open-clinic-from-res" class="secondary-btn" type="button" hidden>自由接待 · 返回接诊台</button>
+        <button id="btn-result-home" class="secondary-btn" type="button">回去看看小女孩</button>
       </div>
     </div>
 
@@ -688,8 +838,8 @@
           <p class="modal-subtitle">桌面端按 1–5 切换工具；触屏点击下方器械。</p>
         </div>
         <div class="guide-list">
-          <div class="guide-row"><strong>键盘辅助</strong><br>Tab 聚焦护理画布；← / ↑ 选择上一处，→ / ↓ 选择下一处。1–5 换工具，按住空格或回车操作，松开停手。粉刺针在松键时破口，Esc 可取消。完成清理后按 6，逐处涂抹冰膜。使用辅助后，本局会单独记录为键盘辅助成绩。</div>
-          <div class="guide-row"><strong>本次可选目标</strong><br><span id="help-care-goal"></span><br>按自己的节奏尝试，不影响正常完成护理。</div>
+          <div class="guide-row"><strong>键盘辅助</strong><br>Tab 聚焦护理画布；← / ↑ 选择上一处，→ / ↓ 选择下一处。1–5 换工具，按住空格或回车操作，松开停手。粉刺针在松键时破口，Esc 可取消。完成清理后按 6，逐处涂抹冰膜。键盘和触屏都能获得相同的关卡礼物。</div>
+          <div class="guide-row"><strong>收集她的小心愿</strong><br><span id="help-care-goal"></span><br>每 3 关发现发饰，每 5 关发现裙子；发现后完成本关，就能在衣橱里试穿。</div>
           <div class="guide-row"><strong>01 / 热喷</strong><br><span data-tool-guidance="steam"></span> 白头可轻挤，深层先用粉刺针破口。</div>
           <div class="guide-row"><strong>02 / 粉刺针</strong><br><span data-tool-guidance="needle"></span> 按住时可以查看放大镜，确认位置后再松手。</div>
           <div class="guide-row"><strong>03 / 轻柔挤压</strong><br><span data-tool-guidance="squeeze"></span></div>
@@ -1330,6 +1480,304 @@
     const skinCtx = skinLayer.getContext('2d');
     const motionPreference = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
 
+/* Original SVG artwork for Pore Master Clinic. No external assets or shared IDs. */
+function dressupGarmentMarkup(dress) {
+  const palettes = {
+    patched: {base:'#b8aa91', shade:'#9f9077', light:'#d9cfb9', trim:'#776d5e'},
+    dress_sky: {base:'#a6c8da', shade:'#7eacc3', light:'#dbeaf0', trim:'#638ca3'},
+    dress_peach: {base:'#edbaa9', shade:'#d99888', light:'#ffe4d6', trim:'#b97b70'},
+    dress_lilac: {base:'#bdb3d5', shade:'#9d90bf', light:'#e9e3f4', trim:'#82759f'}
+  };
+  const p = palettes[dress] || palettes.patched;
+  const patched = dress === 'patched' || !palettes[dress];
+  const hem = patched
+    ? 'L207 281 L195 286 L187 282 L178 293 L168 286 L157 291 L145 286 L132 293 L122 286 L110 292 L101 282 L88 285'
+    : 'L211 283 Q199 294 184 289 Q169 299 152 291 Q135 299 119 290 Q101 295 87 283';
+  let details = '';
+  if (patched) {
+    details = `<path d="M112 224 Q104 257 97 278M185 228 Q193 258 199 277" fill="none" stroke="${p.shade}" stroke-width="3" opacity=".55"/>
+      <path d="M102 251 L125 247 L130 272 L107 277Z" fill="#d7c6aa" stroke="#8e806a" stroke-width="1.2"/>
+      <path d="M102 251 L125 247 L130 272 L107 277Z" fill="none" stroke="#f3e6cf" stroke-width="2" stroke-dasharray="2.5 4"/>
+      <path d="M172 224 L192 228 L188 247 L169 244Z" fill="#a0a48b" stroke="#7c816d" stroke-width="1"/>
+      <path d="M172 224 L192 228 L188 247 L169 244Z" fill="none" stroke="#e1e3c9" stroke-width="2" stroke-dasharray="2 4"/>
+      <path d="M145 253 L153 249 L157 253M137 284 L141 279M183 283 L185 278" fill="none" stroke="#8d806c" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M129 199 L136 205 M133 198 L132 206" stroke="#dfd4bd" stroke-width="1.5" stroke-linecap="round"/>`;
+  } else if (dress === 'dress_sky') {
+    details = `<path d="M102 264 Q150 283 199 264L204 278Q151 299 93 278Z" fill="${p.light}"/>
+      <path d="M118 233 Q122 223 131 231L129 249Q115 255 114 241Z M177 232Q186 223 190 236L187 249Q176 253 173 243Z" fill="${p.light}" stroke="${p.shade}" stroke-width="1.2"/>
+      <path d="M150 218 C137 207 131 217 136 223 Q143 226 150 219 M150 218 C163 207 170 217 165 223 Q157 227 150 219" fill="#f7edda"/>
+      <circle cx="150" cy="219" r="3.5" fill="#e4cda8"/>`;
+  } else if (dress === 'dress_peach') {
+    details = `<path d="M106 242 Q150 257 195 242 L199 253 Q190 260 182 255 Q173 264 165 258 Q155 267 146 260 Q136 267 128 259 Q116 263 101 253Z" fill="${p.light}"/>
+      <path d="M94 276 Q151 296 206 276" fill="none" stroke="${p.light}" stroke-width="6" stroke-linecap="round"/>
+      <path d="M145 219 C130 205 126 219 135 224 L145 221 M154 219 C171 205 174 219 164 224L154 221" fill="#fff0df"/>
+      <ellipse cx="150" cy="220" rx="5.5" ry="4" fill="#c38a75"/>
+      <path d="M146 223 L141 238L151 233L158 238L154 223" fill="#fff0df"/>`;
+  } else {
+    details = `<path d="M94 277 Q150 296 205 277" fill="none" stroke="${p.light}" stroke-width="7"/>
+      <g fill="#faf6e8"><path d="M119 240l2.4 5 5.5.7-4 3.8 1 5.4-4.9-2.6-4.9 2.6.9-5.4-4-3.8 5.5-.7Z"/>
+      <path d="M175 256l2.4 5 5.5.7-4 3.8 1 5.4-4.9-2.6-4.9 2.6.9-5.4-4-3.8 5.5-.7Z"/>
+      <circle cx="153" cy="247" r="2.5"/><circle cx="137" cy="269" r="2"/><circle cx="181" cy="237" r="2"/></g>
+      <path d="M150 219 C138 206 128 217 138 225 L150 220 M150 219 C162 206 172 217 162 225L150 220" fill="#e9e3f4"/>
+      <circle cx="150" cy="219" r="4" fill="#85749f"/>`;
+  }
+  return `<g class="girl-garment">
+    <path d="M120 182 Q109 181 103 194 L95 212 Q105 222 119 219L129 198 M179 182 Q193 180 199 194L208 212Q197 223 183 219L173 198" fill="${p.base}" stroke="${p.trim}" stroke-width="1.5" stroke-linejoin="round"/>
+    <path d="M124 180 Q150 191 176 180 L184 218 Q191 246 205 273 ${hem} Q102 246 116 218Z" fill="${p.base}" stroke="${p.trim}" stroke-width="1.5" stroke-linejoin="round"/>
+    <path d="M126 185 Q119 210 125 225 Q118 256 111 279 Q124 276 131 281 L139 218 L139 186Z" fill="${p.light}" opacity=".24"/>
+    <path d="M173 187 L165 217 L177 283 Q187 285 199 279 Q187 250 183 220Z" fill="${p.shade}" opacity=".34"/>
+    <path d="M124 182 Q135 175 150 183Q166 175 176 182L167 199Q157 198 150 188Q143 198 133 199Z" fill="${patched ? '#ded3bc' : '#fff6e8'}" stroke="${patched ? '#a5967b' : p.shade}" stroke-width="1.2" stroke-linejoin="round"/>
+    <path d="M117 217 Q150 224 183 217" fill="none" stroke="${p.trim}" stroke-width="${patched ? '1.3' : '2.5'}" opacity=".55"/>
+    <circle cx="150" cy="202" r="2.3" fill="${p.trim}"/><circle cx="150" cy="211" r="2.3" fill="${p.trim}"/>
+    ${details}
+  </g>`;
+}
+
+function dressupAccessoryMarkup(hair, icon = false) {
+  if (hair === 'bow_rose') {
+    return `<g transform="translate(${icon ? '60 59' : '190 81'}) rotate(${icon ? '-8' : '16'}) scale(${icon ? '1.38' : '.78'})">
+      <path d="M-3 0C-12-15-29-20-30-9C-32 0-29 11-22 12C-15 13-8 5-3 2 M3 0C12-15 29-20 30-9C32 0 29 11 22 12C15 13 8 5 3 2" fill="#d98f9c" stroke="#b96c7f" stroke-width="1.6"/>
+      <path d="M-4 3L-13 28L-5 24L1 29L4 4 M4 3L15 25L20 18L28 20L10 1" fill="#e9acb3" stroke="#b96c7f" stroke-width="1.3" stroke-linejoin="round"/>
+      <path d="M-24-7Q-17-6-8-1M25-7Q17-6 8-1" fill="none" stroke="#f7ccd0" stroke-width="2.4" stroke-linecap="round"/>
+      <rect x="-6" y="-6" width="13" height="15" rx="5" fill="#c57a8a" stroke="#b96c7f" stroke-width="1.2"/>
+    </g>`;
+  }
+  if (hair === 'clip_star') {
+    return `<g transform="translate(${icon ? '59 62' : '192 96'}) rotate(-24) scale(${icon ? '1.4' : '.62'})">
+      <rect x="-27" y="-5" width="52" height="11" rx="5.5" fill="#b4c6ac" stroke="#7d9975" stroke-width="1.6"/>
+      <path d="M3-21L9-8L23-6L13 4L15 18L3 11L-10 18L-7 4L-18-6L-3-8Z" fill="#ecd590" stroke="#c7ab65" stroke-width="1.6" stroke-linejoin="round"/>
+      <path d="M1-11L-2-3L-9-2" fill="none" stroke="#fff3c4" stroke-width="3" stroke-linecap="round"/>
+    </g>`;
+  }
+  if (hair === 'band_lilac') {
+    return `<g transform="translate(${icon ? '60 64' : '150 81'}) scale(${icon ? '1.02' : '1.16'})">
+      <path d="M-39 20C-40-42 38-42 39 20" fill="none" stroke="#87749e" stroke-width="9" stroke-linecap="round"/>
+      <path d="M-38 13C-36-38 33-39 38 11" fill="none" stroke="#bcadd2" stroke-width="5" stroke-linecap="round"/>
+      <g transform="translate(28 -19)"><ellipse cy="-8" rx="5" ry="9" fill="#ddd2eb"/><ellipse cx="8" cy="-1" rx="9" ry="5" transform="rotate(25)" fill="#c6b4dc"/><ellipse cy="8" rx="5" ry="9" fill="#ddd2eb"/><ellipse cx="-8" cy="-1" rx="9" ry="5" transform="rotate(-25)" fill="#c6b4dc"/><circle r="5.5" fill="#f4dda1"/><circle cx="-1.5" cy="-1.5" r="1.4" fill="#fff2cb"/></g>
+    </g>`;
+  }
+  return '';
+}
+
+function girlIllustration(equipped = {}) {
+  const dresses = ['patched', 'dress_sky', 'dress_peach', 'dress_lilac'];
+  const accessories = ['none', 'bow_rose', 'clip_star', 'band_lilac'];
+  const dress = dresses.includes(equipped.dress) ? equipped.dress : 'patched';
+  const hair = accessories.includes(equipped.hair) ? equipped.hair : 'none';
+  const dressed = dress !== 'patched';
+  const names = {patched:'打着补丁的旧布裙', dress_sky:'晴空蓝裙', dress_peach:'蜜桃花边裙', dress_lilac:'星光紫裙', none:'自然头发', bow_rose:'玫瑰蝴蝶结', clip_star:'星星发夹', band_lilac:'丁香花发箍'};
+  return `<svg class="dressup-girl" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 380" role="img" aria-label="穿着${names[dress]}${hair === 'none' ? '' : `、戴着${names[hair]}`}的小女孩" focusable="false">
+    <ellipse cx="151" cy="352" rx="77" ry="11" fill="#d9cdb9" opacity=".35"/>
+    <path d="M80 324C51 291 50 242 67 211C34 166 58 118 83 103C76 49 131 29 168 46C210 29 250 79 226 119C260 146 256 195 235 218C258 257 236 308 212 324Z" fill="${dressed ? '#edf0df' : '#ede7da'}" opacity=".65"/>
+    <path d="M76 311Q64 300 69 286Q82 294 76 311M226 310Q240 296 234 282Q221 293 226 310" fill="#bfcab2" opacity=".8"/>
+    <path d="M75 323L75 306M228 323L229 304" stroke="#a5b297" stroke-width="2" stroke-linecap="round"/>
+    ${dressed ? '<g fill="#d8ba79"><path d="M69 101l3-8 3 8 8 3-8 3-3 8-3-8-8-3Z"/><path d="M230 161l2-6 2 6 6 2-6 2-2 6-2-6-6-2Z"/><circle cx="224" cy="68" r="2.5"/><circle cx="58" cy="232" r="2"/></g>' : ''}
+    <path d="M111 268L112 326Q119 335 131 327L137 270 M165 270L169 327Q182 335 190 325L187 266" fill="#edbd9d" stroke="#c69177" stroke-width="1.5"/>
+    <path d="M112 309L112 327Q121 333 132 327L133 310Q122 314 112 309 M168 310L170 328Q181 333 190 326L189 309Q179 314 168 310" fill="#f4ead6" stroke="#d8c9b3" stroke-width="1.2"/>
+    <path d="M111 324Q117 329 128 324Q139 330 135 341Q115 349 99 342Q95 333 111 324 M171 325Q180 330 189 324Q207 330 202 341Q187 350 168 342Q165 332 171 325" fill="${dressed ? '#8f6b61' : '#927c65'}" stroke="#745e50" stroke-width="1.8"/>
+    <path d="M101 340Q117 345 134 339 M170 339Q186 345 200 339" fill="none" stroke="#c1a58b" stroke-width="2" stroke-linecap="round"/>
+    <path d="M112 331L126 331M175 331L189 331" stroke="#d5bfa5" stroke-width="2" stroke-linecap="round"/>
+    <path d="M97 121Q84 157 94 187Q106 199 122 183L183 183Q201 196 211 177Q214 148 201 118Z" fill="#755548" stroke="#65473e" stroke-width="1.5"/>
+    <path d="M101 148Q96 169 106 179M198 145Q207 167 196 181" fill="none" stroke="#926e56" stroke-width="4" stroke-linecap="round"/>
+    <path d="M115 190Q103 193 98 210L86 244Q80 247 80 254Q81 263 88 264Q95 265 99 258L106 237L127 205 M183 190Q197 192 202 210L213 244Q220 247 220 254Q219 263 212 264Q204 264 202 256L195 236L174 205" fill="#f0c5a6" stroke="#c69177" stroke-width="1.5" stroke-linejoin="round"/>
+    <path d="M84 250L89 254M211 249L208 254" fill="none" stroke="#d6a083" stroke-width="1.2" stroke-linecap="round"/>
+    <path d="M137 162L136 183Q150 199 165 182L163 161Z" fill="#efbf9f" stroke="#c69177" stroke-width="1.2"/>
+    <path d="M137 166Q151 178 164 165L163 175Q150 183 137 176Z" fill="#dba98e" opacity=".6"/>
+    ${dressupGarmentMarkup(dress)}
+    <ellipse cx="99" cy="132" rx="10" ry="14" fill="#edb695" stroke="#c69177" stroke-width="1.3"/>
+    <ellipse cx="202" cy="132" rx="10" ry="14" fill="#edb695" stroke="#c69177" stroke-width="1.3"/>
+    <path d="M98 130Q105 128 104 137M203 130Q196 128 197 137" fill="none" stroke="#cd967a" stroke-width="1.3" stroke-linecap="round"/>
+    <path d="M100 100Q99 65 149 65Q198 65 201 104L198 139Q196 170 153 179Q110 173 102 146Z" fill="#f3cdb0" stroke="#bc8c71" stroke-width="1.7"/>
+    <path d="M104 123Q105 158 126 165Q141 177 155 177Q110 173 102 146Z" fill="#e9b596" opacity=".42"/>
+    <ellipse cx="119" cy="145" rx="11" ry="6.5" fill="#eaa4a0" opacity=".48"/><ellipse cx="182" cy="145" rx="11" ry="6.5" fill="#eaa4a0" opacity=".48"/>
+    <path d="M117 117Q123 113 131 116M169 116Q177 112 184 117" fill="none" stroke="#79584a" stroke-width="2.5" stroke-linecap="round"/>
+    <ellipse cx="126" cy="131" rx="4.7" ry="6.6" fill="#493b35"/><ellipse cx="176" cy="131" rx="4.7" ry="6.6" fill="#493b35"/>
+    <circle cx="127.4" cy="128.6" r="1.6" fill="#fff8ea"/><circle cx="177.4" cy="128.6" r="1.6" fill="#fff8ea"/>
+    <path d="M150 135Q147 143 153 143" fill="none" stroke="#d6a083" stroke-width="1.5" stroke-linecap="round"/>
+    <path d="${dressed ? 'M141 153Q151 164 162 152Q152 172 141 153Z' : 'M144 155Q151 160 159 154'}" fill="${dressed ? '#b97169' : 'none'}" stroke="#ad7563" stroke-width="1.7" stroke-linecap="round"/>
+    ${dressed ? '<path d="M147 160Q151 157 156 160" fill="none" stroke="#eda6a0" stroke-width="2" stroke-linecap="round"/>' : ''}
+    <path d="M96 125Q82 93 97 72Q110 47 145 48Q172 40 192 61Q217 76 205 123L193 133L191 103Q177 100 164 85Q154 106 130 111L136 98Q118 113 105 110L105 134Z" fill="#7b5949" stroke="#65473e" stroke-width="1.8" stroke-linejoin="round"/>
+    <path d="M103 89Q114 62 144 61M171 63Q190 68 196 87" fill="none" stroke="#a17a5b" stroke-width="5" stroke-linecap="round" opacity=".75"/>
+    <path d="M118 84Q128 69 144 68M175 81Q182 91 191 94" fill="none" stroke="#be9871" stroke-width="2" stroke-linecap="round" opacity=".55"/>
+    <path d="M150 54Q156 44 169 49" fill="none" stroke="#7b5949" stroke-width="4" stroke-linecap="round"/>
+    ${dress === 'patched' && hair === 'none' ? '<path d="M96 82Q80 72 83 64M98 104Q84 98 82 110M201 96Q217 85 215 78M201 147Q217 152 217 141M121 58Q119 45 126 42" fill="none" stroke="#7b5949" stroke-width="2.8" stroke-linecap="round"/>' : ''}
+    ${dressupAccessoryMarkup(hair)}
+  </svg>`;
+}
+
+function wardrobeItemIllustration(itemId) {
+  const names = {patched:'旧布裙', dress_sky:'晴空蓝裙', dress_peach:'蜜桃花边裙', dress_lilac:'星光紫裙', none:'取下发饰', bow_rose:'玫瑰蝴蝶结', clip_star:'星星发夹', band_lilac:'丁香花发箍'};
+  const safe = Object.prototype.hasOwnProperty.call(names, itemId) ? itemId : 'none';
+  const art = ['patched', 'dress_sky', 'dress_peach', 'dress_lilac'].includes(safe)
+    ? `<g transform="translate(-45 -107) scale(.7)">${dressupGarmentMarkup(safe)}</g>`
+    : safe === 'none'
+      ? '<circle cx="60" cy="60" r="25" fill="none" stroke="#b4b9a6" stroke-width="2"/><path d="M43 77L77 43" stroke="#b4b9a6" stroke-width="2" stroke-linecap="round"/>'
+      : dressupAccessoryMarkup(safe, true);
+  return `<svg class="wardrobe-item-art" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="${names[safe]}" focusable="false"><ellipse cx="60" cy="98" rx="31" ry="5" fill="#d9cdb9" opacity=".2"/>${art}</svg>`;
+}
+
+    const WARDROBE_ITEMS = [
+      { id: 'bow_rose', slot: 'hair', name: '莓果蝴蝶结', level: 3 },
+      { id: 'clip_star', slot: 'hair', name: '小星星发夹', level: 6 },
+      { id: 'band_lilac', slot: 'hair', name: '丁香花发箍', level: 9 },
+      { id: 'dress_sky', slot: 'dress', name: '晴空小裙子', level: 5 },
+      { id: 'dress_peach', slot: 'dress', name: '蜜桃花边裙', level: 10 },
+      { id: 'dress_lilac', slot: 'dress', name: '紫藤花裙子', level: 15 }
+    ];
+    let wardrobeProgress = normalizeWardrobeProgress(null);
+    let adventureEntered = false;
+    let wardrobeReturnModal = null;
+    let giftNoticeTimer = null;
+
+    function normalizeWardrobeProgress(raw) {
+      const known = new Set(WARDROBE_ITEMS.map(item => item.id));
+      const unlocked = [...new Set(Array.isArray(raw?.unlocked) ? raw.unlocked.filter(id => known.has(id)) : [])];
+      const selected = (slot, fallback) => WARDROBE_ITEMS.some(item => item.id === raw?.equipped?.[slot] && item.slot === slot)
+        && unlocked.includes(raw.equipped[slot]) ? raw.equipped[slot] : fallback;
+      return { version: 1, level: Number.isSafeInteger(raw?.level) && raw.level >= 1 && raw.level <= 1000000 ? raw.level : 1,
+        unlocked, equipped: { hair: selected('hair', 'none'), dress: selected('dress', 'patched') } };
+    }
+
+    function adventureRecipeFor(level) {
+      if (level <= 1) return { blackhead: 3, whitehead: 0, cyst: 0 };
+      if (level === 2) return { blackhead: 4, whitehead: 0, cyst: 0 };
+      if (level === 3) return { blackhead: 3, whitehead: 1, cyst: 0 };
+      if (level === 4) return { blackhead: 3, whitehead: 2, cyst: 0 };
+      return { blackhead: 4, whitehead: level >= 8 ? 3 : 2, cyst: level >= 7 ? 1 : 0 };
+    }
+
+    function wardrobeRewardsForLevel(level) {
+      if (!Number.isSafeInteger(level) || level < 3) return [];
+      const rewards = [];
+      if (level % 3 === 0) rewards.push(['bow_rose', 'clip_star', 'band_lilac'][(level / 3 - 1) % 3]);
+      if (level % 5 === 0) rewards.push(['dress_sky', 'dress_peach', 'dress_lilac'][(level / 5 - 1) % 3]);
+      return rewards;
+    }
+
+    function revealWardrobeFind(p) {
+      const id = p.giftId;
+      if (!id || !wardrobeRewardsForLevel(state.runLevel).includes(id) || state.discoveredGifts.includes(id)) return false;
+      const item = WARDROBE_ITEMS.find(item => item.id === id);
+      if (!item || !ensureCareControl()) return false;
+      state.discoveredGifts.push(id);
+      const notice = document.getElementById('gift-discovery');
+      notice.innerHTML = wardrobeItemIllustration(id) + '<div><strong>你的运气超棒！</strong><p>发现了' + item.name + '。<br>完成这一关，就能给她穿戴啦。</p></div>';
+      notice.hidden = false;
+      if (giftNoticeTimer) clearTimeout(giftNoticeTimer);
+      giftNoticeTimer = setTimeout(() => { notice.hidden = true; giftNoticeTimer = null; }, 4800);
+      saveCurrentSession(true);
+      return true;
+    }
+
+    function completeWardrobeLevel(record) {
+      if (!record || record.wardrobeLevel !== undefined || !state.settled || !ensureCareControl()) return;
+      if (state.legacyCareSession) {
+        record.legacyCareSession = true;
+        record.wardrobeLevel = 0;
+        record.wardrobeGifts = [];
+        record.newWardrobeGifts = [];
+        return;
+      }
+      const allowed = wardrobeRewardsForLevel(state.runLevel);
+      const gifts = [...new Set(state.discoveredGifts.filter(id => allowed.includes(id)))];
+      record.wardrobeLevel = state.runLevel;
+      record.wardrobeGifts = gifts;
+      record.newWardrobeGifts = gifts.filter(id => !wardrobeProgress.unlocked.includes(id));
+      wardrobeProgress.unlocked = [...new Set([...wardrobeProgress.unlocked, ...gifts])];
+      wardrobeProgress.level = Math.min(1000000, Math.max(wardrobeProgress.level, state.runLevel + 1));
+      renderWardrobe();
+    }
+
+    function equipWardrobeItem(id) {
+      if (!ensureCareControl()) return false;
+      const item = WARDROBE_ITEMS.find(item => item.id === id);
+      if (!['none', 'patched'].includes(id) && (!item || !wardrobeProgress.unlocked.includes(id))) return false;
+      const focusedItem = document.activeElement?.closest('#wardrobe-modal [data-equip]')?.dataset.equip;
+      const slot = id === 'none' ? 'hair' : id === 'patched' ? 'dress' : item.slot;
+      wardrobeProgress.equipped[slot] = id;
+      persistSaveData();
+      renderWardrobe();
+      if (focusedItem) document.querySelector('#wardrobe-modal [data-equip="' + focusedItem + '"]')?.focus({ preventScroll: true });
+      document.getElementById('wardrobe-status').textContent = item ? '换好啦，' + item.name + '很适合她。' : '已经换好啦。';
+      return true;
+    }
+
+    function renderWardrobe() {
+      document.getElementById('home-girl').innerHTML = girlIllustration(wardrobeProgress.equipped);
+      document.getElementById('wardrobe-girl').innerHTML = girlIllustration(wardrobeProgress.equipped);
+      const dressed = wardrobeProgress.equipped.dress !== 'patched';
+      document.getElementById('home-girl-caption').textContent = dressed ? '「谢谢你，我好喜欢这身新衣服！」'
+        : wardrobeProgress.equipped.hair !== 'none' ? '「这个发饰真好看，再一起找一件裙子吧。」' : '「你愿意帮我挑一件新衣服吗？」';
+      document.getElementById('home-progress-note').textContent = wardrobeProgress.unlocked.length
+        ? '已收集 ' + wardrobeProgress.unlocked.length + ' 件小惊喜 · 随时回来搭配'
+        : '第 3 关起发现发饰 · 第 5 关发现新裙子';
+      document.getElementById('btn-start-adventure').textContent = state.legacyCareSession && !state.settled ? '继续上次护理'
+        : wardrobeProgress.level > 1 || hasUnfinishedCareProgress()
+        ? '继续第 ' + (state.settled ? wardrobeProgress.level : state.runLevel) + ' 关 · 帮她收集新衣服'
+        : '进入游戏 · 帮小女孩装扮';
+      for (const slot of ['hair', 'dress']) {
+        const container = document.getElementById(slot === 'hair' ? 'wardrobe-hair' : 'wardrobe-dresses');
+        container.innerHTML = '';
+        for (const item of WARDROBE_ITEMS.filter(item => item.slot === slot)) {
+          const owned = wardrobeProgress.unlocked.includes(item.id);
+          const equipped = wardrobeProgress.equipped[slot] === item.id;
+          const button = document.createElement('button');
+          button.type = 'button'; button.className = 'wardrobe-item'; button.dataset.equip = item.id;
+          button.disabled = !owned;
+          button.setAttribute('aria-pressed', String(equipped));
+          button.setAttribute('aria-label', item.name + (equipped ? '，已穿戴' : owned ? '，点击穿戴' : '，第 ' + item.level + ' 关发现'));
+          button.innerHTML = wardrobeItemIllustration(item.id) + item.name + '<small>' + (equipped ? '正在穿戴' : owned ? '点击穿戴' : '第 ' + item.level + ' 关发现') + '</small>';
+          container.append(button);
+        }
+      }
+    }
+
+    function showAdventureHome() {
+      if (!careControl.owned) return;
+      releasePointer();
+      document.querySelectorAll('.modal-backdrop.open').forEach(modal => modal.classList.remove('open'));
+      state.paused = true;
+      renderWardrobe();
+      document.getElementById('home-modal').classList.add('open');
+      saveCurrentSession(true);
+      requestSceneFrame();
+    }
+
+    function startAdventure() {
+      if (!ensureCareControl()) return;
+      adventureEntered = true;
+      if (state.settled) {
+        state.clientIndex = (wardrobeProgress.level - 1) % CLIENTS.length;
+        generateLevel(0);
+        selectTool('steam');
+      }
+      document.getElementById('home-modal').classList.remove('open');
+      state.paused = Boolean(document.querySelector('.modal-backdrop.open'));
+      resizeCanvasIfChanged();
+      renderScene(false);
+      saveCurrentSession(true);
+      requestSceneFrame();
+    }
+
+    function openWardrobe() {
+      if (!ensureCareControl()) return;
+      wardrobeReturnModal = document.querySelector('.modal-backdrop.open');
+      wardrobeReturnModal?.classList.remove('open');
+      releasePointer(); state.paused = true;
+      renderWardrobe();
+      document.getElementById('wardrobe-status').textContent = '';
+      document.getElementById('wardrobe-modal').classList.add('open');
+      requestSceneFrame();
+    }
+
+    function closeWardrobe() {
+      document.getElementById('wardrobe-modal').classList.remove('open');
+      if (wardrobeReturnModal) wardrobeReturnModal.classList.add('open');
+      wardrobeReturnModal = null;
+      state.paused = Boolean(document.querySelector('.modal-backdrop.open'));
+      requestSceneFrame();
+    }
+
     const state = {
       width: 390,
       height: 640,
@@ -1343,6 +1791,9 @@
       clientIndex: 0,
       runId: '',
       runDensity: 0,
+      runLevel: 1,
+      legacyCareSession: false,
+      discoveredGifts: [],
       runControlMode: 'pointer',
       runStats: createRunStats(),
       actionSerial: 0,
@@ -1506,7 +1957,7 @@
       'pimples', 'surfaceResidues', 'lensSplatters', 'bruises', 'iceGelBlobs',
       'trophyTrayItems', 'flyingTrophies', 'dewDrops', 'swabStain',
       'initialPimples', 'sceneLayout', 'snapshotBasis', 'collectionLedger', 'collectionSerial',
-      'runId', 'runDensity', 'runControlMode', 'controlMode', 'runStats', 'actionSerial', 'resultRecorded', 'practiceGuide'
+      'runId', 'runDensity', 'runLevel', 'legacyCareSession', 'discoveredGifts', 'runControlMode', 'controlMode', 'runStats', 'actionSerial', 'resultRecorded', 'practiceGuide'
     ];
     let sessionSaveEnabled = false;
     let sessionSaveTimer = null;
@@ -1519,7 +1970,7 @@
     }
 
     function currentProfileResources() {
-      return { coins: state.coins, upgrades: state.upgrades, records: careRecords, guide: practiceGuideStatus };
+      return { coins: state.coins, upgrades: state.upgrades, records: careRecords, guide: practiceGuideStatus, wardrobe: wardrobeProgress };
     }
 
     function currentProfileContent() {
@@ -1673,6 +2124,7 @@
         lastProfileContent = '';
         lastResourceJSON = '';
         state.coins = profile.coins;
+        wardrobeProgress = normalizeWardrobeProgress(profile.wardrobe);
         for (const key of Object.keys(state.upgrades)) state.upgrades[key] = profile.upgrades?.[key] === true;
         const records = loadCareRecords(profile.records || null);
         careRecords.bests = records.bests;
@@ -1683,12 +2135,13 @@
         state.keyboardCare.hintKey = '';
         const session = profile.session ? JSON.stringify(profile.session) : null;
         if (!restoreCurrentSession(session)) {
-          state.clientIndex = 0;
+          state.clientIndex = (wardrobeProgress.level - 1) % CLIENTS.length;
           state.targetDensity = 0;
           generateLevel(0);
           selectTool('steam');
         }
         renderClinicModalContents();
+        renderWardrobe();
         renderScene(false);
       } finally { careControl.hydrating = false; }
     }
@@ -1998,6 +2451,11 @@
         state.targetDensity = data.targetDensity || 0;
         generateLevel(state.targetDensity);
         for (const key of SESSION_FIELDS) if (data[key] !== undefined) state[key] = data[key];
+        state.runLevel = Number.isSafeInteger(data.runLevel) && data.runLevel >= 1 && data.runLevel <= wardrobeProgress.level
+          ? data.runLevel : wardrobeProgress.level;
+        state.legacyCareSession = data.legacyCareSession === true || data.runLevel === undefined;
+        const allowedGifts = wardrobeRewardsForLevel(state.runLevel);
+        state.discoveredGifts = [...new Set(Array.isArray(data.discoveredGifts) ? data.discoveredGifts.filter(id => allowedGifts.includes(id)) : [])];
         // A view choice outlives a single treatment. Migrate a valid older
         // session only when there is no newer independent preference.
         if (!preferredStyleMode) rememberViewPreference(state.styleMode);
@@ -2008,7 +2466,10 @@
         state.runControlMode = data.runControlMode || (data.controlMode === 'keyboard' ? 'keyboard' : 'pointer');
         if (typeof normalizeRunStats === 'function') normalizeRunStats();
         if (typeof getCompletedBest === 'function') state.bestScore = getCompletedBest()?.bestScore || 0;
-        const hydrate = p => ({ ...p, cfg: CONFIG.TYPES[p.type.toUpperCase()], pressure: 0, tentOffsetX: 0, tentOffsetY: 0 });
+        const hydrate = p => ({ ...p, cfg: CONFIG.TYPES[p.type.toUpperCase()], pressure: 0, tentOffsetX: 0, tentOffsetY: 0,
+          linkedPore: p.type === 'blackhead' && p.linkedPore === true,
+          giftId: allowedGifts.includes(p.giftId) ? p.giftId : null,
+          bloodDropSize: p.type === 'blackhead' ? 0 : Math.min(1.6, p.bloodDropSize) });
         state.pimples = state.pimples.map(hydrate);
         if (Array.isArray(state.initialPimples)) state.initialPimples = state.initialPimples.map(hydrate);
         state.paused = false;
@@ -2283,6 +2744,7 @@
       state.bestScore = careRecords.bests[key].bestScore;
       careRecords.history.unshift(record);
       careRecords.history.length = Math.min(60, careRecords.history.length);
+      completeWardrobeLevel(record);
       persistSaveData();
       return record;
     }
@@ -2786,6 +3248,12 @@
       syncViewPreferenceControls();
       state.runId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 11)}`;
       state.runDensity = overrideDensity;
+      state.runLevel = wardrobeProgress.level;
+      state.legacyCareSession = false;
+      state.discoveredGifts = [];
+      document.getElementById('gift-discovery').hidden = true;
+      if (giftNoticeTimer) { clearTimeout(giftNoticeTimer); giftNoticeTimer = null; }
+      document.getElementById('current-level').textContent = '第 ' + state.runLevel + ' 关';
       // Assistance belongs to the current treatment; a fresh run is classified anew.
       state.controlMode = 'pointer';
       state.runControlMode = 'pointer';
@@ -2853,7 +3321,7 @@
 
       renderSkinTexture();
 
-      const recipe = careRecipeFor(client, overrideDensity);
+      const recipe = overrideDensity ? careRecipeFor(client, overrideDensity) : adventureRecipeFor(state.runLevel);
       const typePool = ['blackhead', 'whitehead', 'cyst'].flatMap(type => Array(recipe[type]).fill(type));
 
       typePool.forEach((typeKey, idx) => {
@@ -2880,6 +3348,8 @@
         state.pimples.push({
           id: idx + 1,
           type: typeKey,
+          linkedPore: state.runLevel >= 3 && typeKey === 'blackhead' && idx === 0,
+          giftId: null,
           cfg,
           x: 0,
           y: 0,
@@ -2925,12 +3395,14 @@
         });
       });
 
+      const gifts = wardrobeRewardsForLevel(state.runLevel);
+      gifts.forEach((id, index) => { const p = state.pimples[state.pimples.length - 1 - index]; if (p) p.giftId = id; });
       layoutTreatmentScene();
       state.initialPimples = state.pimples.map(({ cfg, ...p }) => JSON.parse(JSON.stringify(p)));
       state.snapshotBasis = null;
       startPracticeGuide(false);
       updateHUD();
-      setHint(state.practiceGuide && state.practiceGuide.active ? '跟着细线圈出的三处，慢慢熟悉工具；也可以随时跳过引导。' : '从热敷开始，按住操作区缓缓移动。', 'normal');
+      setHint(state.runLevel <= 2 ? '先按住热喷软化黑头，再用细胞夹缓缓取出。慢慢来就好。' : '从热敷开始，按住操作区缓缓移动。', 'normal');
       resultModalEl.classList.remove('open');
       requestSceneFrame();
     }
@@ -3246,7 +3718,7 @@
         const item = target.item;
         if (target.kind === 'pimple' && item.state >= P_STATE.HEALING) continue;
         const radius = target.kind === 'pimple' ? Math.max(25, (item.hitRadius || item.radius) * 1.6) : Math.max(18, (item.r || 4) * 2);
-        const distance = Math.hypot(pt.x - item.x, pt.y - item.y);
+        const distance = target.kind === 'pimple' ? distanceToPimple(item, pt.x, pt.y) : Math.hypot(pt.x - item.x, pt.y - item.y);
         if (distance <= radius && distance < closest) { selected = target; closest = distance; }
       }
       if (!selected && !clearEmpty) return;
@@ -3376,7 +3848,7 @@
       nextButton.title = nextTool ? `${careTargetLocation(suggested)}：${labels[nextTool]}` : '';
       const goal = evaluateCareGoal();
       updateText(document.getElementById('care-goal-current'), `${goal.title}：${goal.description} ${goal.progress}`);
-      updateText(document.getElementById('help-care-goal'), `${goal.title}：${goal.description} ${goal.progress}`);
+      updateText(document.getElementById('help-care-goal'), '当前第 ' + state.runLevel + ' 关。先热敷、清理，再用冰膜舒缓，慢慢完成就好。');
       updateCareGoalEntry(goal);
       updatePressureFeedback();
       updatePracticeGuide();
@@ -3473,6 +3945,8 @@
 
     function updateHUD() {
       normalizeRunStats();
+      updateText(document.getElementById('current-level'), state.legacyCareSession ? '继续上次护理' : '第 ' + state.runLevel + ' 关');
+      for (const p of state.pimples) if (p.state >= P_STATE.OOZING) revealWardrobeFind(p);
       updateText(scoreValEl, Math.round(state.score));
       persistSaveData();
 
@@ -3557,7 +4031,33 @@
      * 4. 真实物理曲线与挤出物计算
      * ============================================================================
      */
+    // Both visible openings belong to one target and one collectible plug.
+    // Local offsets keep rendering, pointer hit testing and resized scenes aligned.
+    function getPimpleMouthOffsets(p) {
+      const hx = p.headOffsetX || 0, hy = p.headOffsetY || 0;
+      if (p.type !== 'blackhead' || p.linkedPore !== true) return [{ x: hx, y: hy }];
+      const angle = p.shape.rot;
+      const dx = Math.cos(angle) * p.radius * .50;
+      const dy = Math.sin(angle) * p.radius * .50;
+      return [{ x: hx - dx, y: hy - dy }, { x: hx + dx, y: hy + dy }];
+    }
+
+    function getPimpleMouths(p) {
+      const x = p.x + (p.tentOffsetX || 0), y = p.y + (p.tentOffsetY || 0);
+      return getPimpleMouthOffsets(p).map(mouth => ({ x: x + mouth.x, y: y + mouth.y }));
+    }
+
+    function distanceToPimple(p, x, y) {
+      if (!p.linkedPore) return Math.hypot(x - p.x, y - p.y);
+      return Math.min(...getPimpleMouths(p).map(mouth => Math.hypot(x - mouth.x, y - mouth.y)));
+    }
+
     function computeRealisticBlackheadCurve(p, progress, originX = 0, originY = 0, pullTarget = null) {
+      if (p.linkedPore === true) {
+        const mouth = getPimpleMouthOffsets(p)[0];
+        originX += mouth.x;
+        originY += mouth.y;
+      }
       const extrudedLen = Math.max(2.5, p.wormTotalLen * progress);
       const stepPx = 1.6;
       const count = Math.max(3, Math.ceil(extrudedLen / stepPx) + 1);
@@ -3592,7 +4092,7 @@
       const collectionId = trophyIdFor(p);
       if (!placeTrophyOnSkin(collectionId, 'blackhead')) return false;
       const pts = computeRealisticBlackheadCurve(
-        p,
+        p.linkedPore ? { ...p, linkedPore: false } : p,
         1.0,
         p.x + p.wormCurlDir * 4.5,
         p.y + 1.5
@@ -3681,22 +4181,22 @@
       p.tentOffsetY = 0;
 
       if (p.type === 'blackhead') {
-        p.bloodDropSize = p.traumaLevel > 0.5 ? 1.4 : 0;
+        p.bloodDropSize = 0;
         p.serousDropSize = 0;
         if (pluckedCleanly) {
           p.state = P_STATE.HEALING;
           p.healProgress = 0;
-          setHint('已完整取出并放入收集盘，点开收集盘可放大查看。', 'good');
+          setHint('已经完整取出，这一处干净啦。', 'good');
         } else {
           setHint('黑头已露出。用细胞夹取出，或用清洁棉签擦净。', 'good');
         }
       } else if (p.type === 'whitehead') {
-        p.bloodDropSize = 1.8 + p.traumaLevel * 1.4;
-        p.serousDropSize = 3.0;
+        p.bloodDropSize = p.traumaLevel > .35 ? Math.min(1.4, .65 + p.traumaLevel * .6) : 0;
+        p.serousDropSize = 1.3;
         setHint('已经清理干净，可以停手了。换清洁棉签擦净残留。', 'good');
       } else {
-        p.bloodDropSize = 4.0 + p.traumaLevel * 1.6;
-        p.serousDropSize = 3.6;
+        p.bloodDropSize = p.traumaLevel > .45 ? Math.min(1.6, .75 + p.traumaLevel * .65) : 0;
+        p.serousDropSize = 1.8;
         setHint('深层清理已完成，用清洁棉签处理残留。', 'good');
       }
       updateHUD();
@@ -3830,7 +4330,7 @@
       let minDist = Infinity;
       for (const p of state.pimples) {
         if (p.state === P_STATE.HEALED) continue;
-        const d = Math.hypot(pt.x - p.x, pt.y - p.y);
+        const d = distanceToPimple(p, pt.x, pt.y);
         if (d <= (p.hitRadius || p.radius) * 1.5 && d < minDist) {
           minDist = d;
           hit = p;
@@ -3933,7 +4433,7 @@
           tipX = tip.x;
           tipY = tip.y;
         }
-        const d = Math.min(Math.hypot(pt.x - p.x, pt.y - p.y), Math.hypot(pt.x - tipX, pt.y - tipY));
+        const d = Math.min(distanceToPimple(p, pt.x, pt.y), Math.hypot(pt.x - tipX, pt.y - tipY));
         if (d < minD) {
           minD = d;
           target = p;
@@ -4134,7 +4634,7 @@
             p.surfacePusMound = Math.max(0, p.surfacePusMound - 0.6);
             state.swabStain.pus = Math.min(1, state.swabStain.pus + 0.12);
           }
-          if (p.bloodDropSize > 0) {
+          if (p.type !== 'blackhead' && p.bloodDropSize > 0) {
             state.swabStain.blood = Math.min(1, state.swabStain.blood + 0.14);
           }
           wipedAnything = true;
@@ -4171,7 +4671,7 @@
       let minD = maxDist;
       for (const p of state.pimples) {
         if (p.state === P_STATE.HEALED || p.state === P_STATE.HEALING) continue;
-        const d = Math.hypot(x - p.x, y - p.y);
+        const d = distanceToPimple(p, x, y);
         if (d < minD) {
           minD = d;
           best = p;
@@ -5022,7 +5522,7 @@
         } else if (target.state === P_STATE.OOZING) {
           if (ptr.squeezeForce > 0.40) {
             target.traumaLevel = Math.min(1, target.traumaLevel + dt * 0.8);
-            target.bloodDropSize = Math.min(6.8, Math.max(1.5, target.bloodDropSize) + dt * 1.9);
+            target.bloodDropSize = target.type === 'blackhead' ? 0 : Math.min(1.6, Math.max(.6, target.bloodDropSize) + dt * .3);
             addDamage(
               CONFIG.RULES.OVER_SQUEEZE_EMPTY_PORE_DPS * dt,
               target.x,
@@ -5889,10 +6389,12 @@
         }
         // 敷过冰膜后毛孔更紧致隐形
         const finalPoreR = p.iced ? 0.95 : 1.35;
-        ctx.fillStyle = isCreamy ? 'rgba(165, 105, 88, 0.15)' : 'rgba(105, 52, 38, 0.22)';
-        ctx.beginPath();
-        ctx.ellipse(p.x, p.y, finalPoreR, finalPoreR * 0.8, p.shape.rot, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.fillStyle = isCreamy ? 'rgba(208, 160, 140, 0.16)' : 'rgba(197, 147, 128, 0.20)';
+        for (const mouth of getPimpleMouths(p)) {
+          ctx.beginPath();
+          ctx.ellipse(mouth.x, mouth.y, finalPoreR, finalPoreR * 0.8, p.shape.rot, 0, Math.PI * 2);
+          ctx.fill();
+        }
         if (!cleanForSnapshot && state.currentTool === 'ice_brush' && !p.iced) {
           ctx.translate(p.x, p.y);
           renderSubtleClinicalGuides(p, false);
@@ -5968,13 +6470,15 @@
           : null;
         const pts = computeRealisticBlackheadCurve(p, p.extrudeProgress, 0, 0, pullLocal);
         const thick = Math.max(2.1, p.radius * 0.21);
+        if (p.linkedPore === true) renderLinkedBlackheadBridge(p, isCreamy, thick);
         renderRealisticSebumFilament(ctx, pts, thick, isCreamy, 1.5 + p.extrudeProgress * 2.2);
 
         ctx.save();
         ctx.strokeStyle = isCreamy ? 'rgba(248, 208, 190, 0.88)' : 'rgba(228, 174, 146, 0.88)';
         ctx.lineWidth = 1.6;
         ctx.beginPath();
-        ctx.arc(0, 0.7, thick * 1.05, 0.15, Math.PI - 0.15);
+        const rootMouth = getPimpleMouthOffsets(p)[0];
+        ctx.arc(rootMouth.x, rootMouth.y + .7, thick * 1.05, 0.15, Math.PI - 0.15);
         ctx.stroke();
         ctx.restore();
       }
@@ -6028,48 +6532,80 @@
       ctx.restore();
     }
 
+    function renderNaturalPoreMouth(p, x, y, radius, aspect, alpha, isCreamy) {
+      // A shallow skin-coloured depression remains once the dark tip is gone.
+      const wall = ctx.createLinearGradient(x - radius, y - radius, x + radius, y + radius);
+      wall.addColorStop(0, `rgba(216, 165, 145, ${alpha * .62})`);
+      wall.addColorStop(.48, `rgba(237, 193, 174, ${alpha * .78})`);
+      wall.addColorStop(1, `rgba(250, 221, 198, ${alpha * .72})`);
+      ctx.fillStyle = wall;
+      beginOrganicPath(ctx, x, y, radius * 1.2, radius * aspect * 1.22, p.shape, 1.5); ctx.fill();
+
+      const hollow = ctx.createRadialGradient(x, y + radius * .08, 0, x, y, radius);
+      hollow.addColorStop(0, `rgba(${isCreamy ? '235,191,173' : '226,174,155'},${alpha * .55})`);
+      hollow.addColorStop(1, 'rgba(245,211,191,0)');
+      ctx.fillStyle = hollow;
+      beginOrganicPath(ctx, x, y, radius * .88, radius * aspect * .80, p.shape, 1.65); ctx.fill();
+      renderPoreLip(p, x, y, radius * 1.12, radius * aspect, alpha * .33, isCreamy);
+    }
+
     function renderRealBlackhead(p, isCreamy, healFade) {
       const r = p.radius, swell = p.swellVisual;
       if (p.traumaLevel > .1 || swell > .05) {
         const skin = ctx.createRadialGradient(-r * .15, -r * .2, 0, 0, 0, r * 1.12);
         skin.addColorStop(0, `rgba(247,226,199,${swell * .28})`);
-        skin.addColorStop(.42, `rgba(177,109,91,${p.traumaLevel * .18 * healFade})`);
-        skin.addColorStop(1, 'rgba(177,109,91,0)');
+        skin.addColorStop(.42, `rgba(224,178,153,${p.traumaLevel * .12 * healFade})`);
+        skin.addColorStop(1, 'rgba(224,178,153,0)');
         ctx.fillStyle = skin; ctx.beginPath(); ctx.arc(0, 0, r * 1.12, 0, Math.PI * 2); ctx.fill();
       }
       if (p.state === P_STATE.OOZING || p.state === P_STATE.HEALING) return;
-      const poreR = r * (.35 + swell * .07) * (p.steamed >= .75 ? 1.12 : 1);
+      const poreR = r * (.35 + swell * .07) * (p.steamed >= .75 ? 1.12 : 1) * (p.linkedPore ? .82 : 1);
       const aspect = .78 + Math.sin(p.shape.p2) * .07;
-      const funnel = ctx.createRadialGradient(0, 0, poreR * .45, 0, 0, poreR * 1.45);
-      funnel.addColorStop(0, 'rgba(89,57,39,.51)');
-      funnel.addColorStop(.58, 'rgba(117,77,52,.24)');
-      funnel.addColorStop(1, 'rgba(143,99,67,0)');
-      ctx.fillStyle = funnel;
-      beginOrganicPath(ctx, 0, .5, poreR * 1.45, poreR * 1.23, p.shape, 1.5); ctx.fill();
-      ctx.fillStyle = isCreamy ? 'rgba(82,59,41,.74)' : 'rgba(61,43,31,.85)';
-      beginOrganicPath(ctx, 0, 0, poreR, poreR * aspect, p.shape, 1.45); ctx.fill();
-      renderPoreLip(p, 0, .2, poreR * 1.03, poreR * aspect, .72 + swell * .16, isCreamy);
-      if (p.state === P_STATE.INTACT || p.state === P_STATE.RUPTURED) {
-        const lift = -swell * 1.6, cap = poreR * .84;
-        if (p.pierced || p.steamed >= .75) {
-          ctx.fillStyle = 'rgba(225,203,158,.62)';
-          beginOrganicPath(ctx, 0, lift + .45, cap * 1.08, cap * aspect * 1.14, p.shape, 1.5); ctx.fill();
-        }
-        const plug = ctx.createLinearGradient(-cap, lift - cap, cap, lift + cap);
-        plug.addColorStop(0, isCreamy ? '#7e6b54' : '#695941');
-        plug.addColorStop(.45, isCreamy ? '#62503b' : '#4d402d');
-        plug.addColorStop(1, '#392f24');
-        ctx.fillStyle = plug;
-        beginOrganicPath(ctx, -.12, lift, cap, cap * aspect, p.shape, 1.65); ctx.fill();
-        ctx.save(); ctx.translate(0, lift); ctx.rotate(p.shape.rot);
-        ctx.strokeStyle = 'rgba(222,202,163,.30)'; ctx.lineWidth = .55;
-        ctx.beginPath(); ctx.moveTo(-cap * .51, -cap * .16);
-        ctx.quadraticCurveTo(-cap * .31, -cap * .29, -cap * .02, -cap * .25); ctx.stroke();
-        ctx.strokeStyle = 'rgba(26,23,18,.27)'; ctx.lineWidth = .50;
-        ctx.beginPath(); ctx.moveTo(cap * .05, -cap * .52);
-        ctx.lineTo(cap * .19, -cap * .13); ctx.lineTo(cap * .11, cap * .20); ctx.stroke();
+      const mouths = getPimpleMouthOffsets(p);
+      if (p.linkedPore && p.state !== P_STATE.EXTRUDING) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(247,221,187,.50)';
+        ctx.lineWidth = Math.max(1.4, r * .19); ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(mouths[0].x, mouths[0].y);
+        ctx.quadraticCurveTo(0, -r * .16, mouths[1].x, mouths[1].y); ctx.stroke();
         ctx.restore();
       }
+      for (const mouth of mouths) {
+        renderNaturalPoreMouth(p, mouth.x, mouth.y, poreR, aspect, .95, isCreamy);
+        if (p.state === P_STATE.INTACT || p.state === P_STATE.RUPTURED) {
+          const lift = mouth.y - swell * 1.6, cap = poreR * .84;
+          if (p.pierced || p.steamed >= .75) {
+            ctx.fillStyle = 'rgba(241,224,181,.75)';
+            beginOrganicPath(ctx, mouth.x, lift + .45, cap * 1.08, cap * aspect * 1.14, p.shape, 1.5); ctx.fill();
+          }
+          const plug = ctx.createLinearGradient(mouth.x - cap, lift - cap, mouth.x + cap, lift + cap);
+          plug.addColorStop(0, isCreamy ? '#76634e' : '#594939');
+          plug.addColorStop(.5, isCreamy ? '#594734' : '#3d3025');
+          plug.addColorStop(1, '#2e251d');
+          ctx.fillStyle = plug;
+          beginOrganicPath(ctx, mouth.x - .12, lift, cap, cap * aspect, p.shape, 1.65); ctx.fill();
+          ctx.strokeStyle = 'rgba(224,204,167,.24)'; ctx.lineWidth = .55;
+          ctx.beginPath(); ctx.moveTo(mouth.x - cap * .51, lift - cap * .16);
+          ctx.quadraticCurveTo(mouth.x - cap * .31, lift - cap * .29, mouth.x - cap * .02, lift - cap * .25); ctx.stroke();
+        }
+      }
+    }
+
+    function renderLinkedBlackheadBridge(p, isCreamy, thickness) {
+      const [end, start] = getPimpleMouthOffsets(p);
+      const points = [], count = 14;
+      const lift = Math.min(p.radius * .35, p.extrudeProgress * 5);
+      let length = 0;
+      for (let i = 0; i < count; i++) {
+        const t = i / (count - 1);
+        const point = { x: start.x + (end.x - start.x) * t,
+          y: start.y + (end.y - start.y) * t - Math.sin(t * Math.PI) * lift,
+          distFromRoot: length, hasDarkCap: false };
+        if (i) length += Math.hypot(point.x - points[i - 1].x, point.y - points[i - 1].y);
+        point.distFromRoot = length; points.push(point);
+      }
+      for (const point of points) point.distFromTip = length - point.distFromRoot;
+      renderRealisticSebumFilament(ctx, points, thickness * .80, isCreamy, .7);
     }
 
     function renderRealisticSebumFilament(targetCtx, pts, thickness, isCreamy, shadowOff = 2.2) {
@@ -6115,15 +6651,15 @@
         targetCtx.beginPath();
         targetCtx.moveTo(leftPts[0].x, leftPts[0].y);
         for (let i = 1; i < n; i++) targetCtx.lineTo(leftPts[i].x, leftPts[i].y);
-        targetCtx.arc(tip.x, tip.y, tipR, tipStartA, tipEndA, false);
+        targetCtx.arc(tip.x, tip.y, tipR, tipStartA, tipEndA, true);
         for (let i = n - 1; i >= 0; i--) targetCtx.lineTo(rightPts[i].x, rightPts[i].y);
-        targetCtx.arc(root.x, root.y, rootR, rootStartA, rootEndA, false);
+        targetCtx.arc(root.x, root.y, rootR, rootStartA, rootEndA, true);
         targetCtx.closePath();
       };
 
       targetCtx.save();
       targetCtx.translate(shadowOff, shadowOff * 1.2);
-      targetCtx.fillStyle = 'rgba(54, 24, 14, 0.28)';
+      targetCtx.fillStyle = 'rgba(117, 85, 58, 0.16)';
       buildPath();
       targetCtx.fill();
       targetCtx.restore();
@@ -6132,45 +6668,43 @@
       buildPath();
       targetCtx.clip();
 
-      targetCtx.fillStyle = isCreamy ? '#fff8da' : '#f4e6af';
-      targetCtx.fillRect(-400, -400, 1200, 1200);
+      const minX = Math.min(...pts.map(point => point.x)) - thickness * 2;
+      const maxX = Math.max(...pts.map(point => point.x)) + thickness * 2;
+      const minY = Math.min(...pts.map(point => point.y)) - thickness * 2;
+      const maxY = Math.max(...pts.map(point => point.y)) + thickness * 2;
+      // One continuous fill avoids the repeated crosswise bands from per-segment strokes.
+      const body = targetCtx.createLinearGradient(minX, minY, maxX, minY);
+      body.addColorStop(0, isCreamy ? '#f3e5b9' : '#eadbac');
+      body.addColorStop(.42, isCreamy ? '#fff9df' : '#faf0cc');
+      body.addColorStop(1, isCreamy ? '#f4e6bd' : '#eddfb5');
+      targetCtx.fillStyle = body;
+      targetCtx.fillRect(minX, minY, maxX - minX, maxY - minY);
 
-      for (let i = 0; i < n - 1; i++) {
-        const pA = pts[i];
-        const pB = pts[i + 1];
-        const dTip = pB.distFromTip;
-        let col = '#f8efc6';
-        if (hasDarkCap && dTip < 2.8) {
-          col = isCreamy ? '#4e2c18' : '#241209';
-        } else if (hasDarkCap && dTip < 5.6) {
-          col = isCreamy ? '#a87042' : '#7d5027';
-        } else if (dTip < 12) {
-          col = isCreamy ? '#f5df92' : '#e6cb78';
-        }
-        targetCtx.strokeStyle = col;
-        targetCtx.lineWidth = thickness * 2.4;
-        targetCtx.lineCap = 'round';
-        targetCtx.beginPath();
-        targetCtx.moveTo(pA.x, pA.y);
-        targetCtx.lineTo(pB.x, pB.y);
-        targetCtx.stroke();
-      }
-
-      targetCtx.strokeStyle = 'rgba(86, 46, 20, 0.30)';
-      targetCtx.lineWidth = 0.9;
+      targetCtx.strokeStyle = 'rgba(205, 181, 131, 0.22)';
+      targetCtx.lineWidth = .55;
       targetCtx.beginPath();
       targetCtx.moveTo(rightPts[0].x, rightPts[0].y);
       for (let i = 1; i < n; i++) targetCtx.lineTo(rightPts[i].x, rightPts[i].y);
       targetCtx.stroke();
 
       if (n > 3) {
-        targetCtx.strokeStyle = 'rgba(255, 255, 248, 0.76)';
-        targetCtx.lineWidth = Math.max(0.9, thickness * 0.32);
+        targetCtx.strokeStyle = 'rgba(255, 255, 248, 0.40)';
+        targetCtx.lineWidth = Math.max(.65, thickness * .24);
         targetCtx.lineCap = 'round';
         targetCtx.beginPath();
         targetCtx.moveTo(hlPts[1].x, hlPts[1].y);
         for (let i = 2; i < n - 1; i++) targetCtx.lineTo(hlPts[i].x, hlPts[i].y);
         targetCtx.stroke();
+      }
+
+      // Oxidation belongs only to the rounded terminal cap; the body stays ivory.
+      if (hasDarkCap) {
+        const cap = targetCtx.createRadialGradient(tip.x - tipR * .3, tip.y - tipR * .25,
+          0, tip.x, tip.y, tipR * 1.04);
+        cap.addColorStop(0, isCreamy ? '#66513e' : '#4c3b2b');
+        cap.addColorStop(1, isCreamy ? '#3c2c20' : '#2b2119');
+        targetCtx.fillStyle = cap;
+        targetCtx.beginPath(); targetCtx.arc(tip.x, tip.y, tipR * 1.04, 0, Math.PI * 2); targetCtx.fill();
       }
       targetCtx.restore();
     }
@@ -6299,22 +6833,13 @@
       const r = p.radius;
       const cleaned = p.state === P_STATE.HEALING ? 1 : p.wipeProgress;
       const shrink = (1 - cleaned * .24) * (p.state === P_STATE.HEALING ? (1 - p.healProgress * .68) : 1);
-      const holeR = Math.max(.9, r * (p.type === 'blackhead' ? .33 : .22) * shrink);
+      const holeR = Math.max(.9, r * (p.type === 'blackhead' ? .33 : .22) * shrink * (p.linkedPore ? .82 : 1));
       const aspect = .69 - cleaned * .18;
-      const hx = p.headOffsetX;
-      const hy = p.headOffsetY;
-
-      const wallG = ctx.createLinearGradient(hx - holeR, hy - holeR, hx + holeR, hy + holeR);
-      wallG.addColorStop(0, `rgba(119, 76, 56, ${.68 * healFade})`);
-      wallG.addColorStop(1, `rgba(235, 190, 157, ${.66 * healFade})`);
-      ctx.fillStyle = wallG;
-      beginOrganicPath(ctx, hx, hy, holeR * 1.22, holeR * aspect * 1.24, p.shape, 1.5);
-      ctx.fill();
-
-      ctx.fillStyle = `rgba(74, 48, 34, ${(isCreamy ? .63 : .74) * (1 - cleaned * .25) * healFade})`;
-      beginOrganicPath(ctx, hx, hy, holeR * .89, holeR * aspect * .78, p.shape, 1.65);
-      ctx.fill();
-      renderPoreLip(p, hx, hy, holeR * 1.16, holeR * aspect, .62 * healFade, isCreamy);
+      const mouths = getPimpleMouthOffsets(p);
+      const hx = mouths[0].x, hy = mouths[0].y;
+      for (const mouth of mouths) {
+        renderNaturalPoreMouth(p, mouth.x, mouth.y, holeR, aspect, healFade, isCreamy);
+      }
 
       if (p.state !== P_STATE.OOZING) return;
 
@@ -6338,24 +6863,24 @@
         ctx.fill();
       }
 
-      const bR = p.bloodDropSize * remain;
+      const bR = p.type === 'blackhead' ? 0 : Math.min(1.6, p.bloodDropSize) * remain;
       if (bR > 0.4) {
         const bx = hx - 1.0;
         const by = hy - 0.6;
-        ctx.fillStyle = 'rgba(48, 4, 10, 0.32)';
+        ctx.fillStyle = 'rgba(165, 92, 82, 0.15)';
         ctx.beginPath();
         ctx.arc(bx + 0.7, by + 1.0, bR, 0, Math.PI * 2);
         ctx.fill();
 
         const bG = ctx.createRadialGradient(bx + bR * 0.26, by + bR * 0.28, 0.2, bx, by, bR);
         if (isCreamy) {
-          bG.addColorStop(0, '#ffadc0');
-          bG.addColorStop(0.6, '#ff6482');
-          bG.addColorStop(1, '#c63250');
+          bG.addColorStop(0, '#edb4ad');
+          bG.addColorStop(0.6, '#cd8b84');
+          bG.addColorStop(1, '#b2736d');
         } else {
-          bG.addColorStop(0, '#ff384b');
-          bG.addColorStop(0.48, '#b50b1d');
-          bG.addColorStop(1, '#3b0208');
+          bG.addColorStop(0, '#e6a49a');
+          bG.addColorStop(0.48, '#c67f74');
+          bG.addColorStop(1, '#a6655d');
         }
         ctx.fillStyle = bG;
         ctx.beginPath();
@@ -6861,12 +7386,11 @@
           trayZoomCtx.fill();
 
           if (item.kind === 'blackhead') {
-            // 25X 超微距饱满半透明水滴状油脂囊袋
-            const g = trayZoomCtx.createLinearGradient(0, -18, 0, 18);
-            g.addColorStop(0, '#1f1008');
-            g.addColorStop(0.24, '#7d5027');
-            g.addColorStop(0.55, '#ead07c');
-            g.addColorStop(1, '#fbf3cf');
+            // Smooth ivory body, with oxidation restricted to its very tip.
+            const g = trayZoomCtx.createLinearGradient(-8, 0, 8, 0);
+            g.addColorStop(0, '#e9dbb4');
+            g.addColorStop(.4, '#fcf4d9');
+            g.addColorStop(1, '#eddfbc');
             trayZoomCtx.fillStyle = g;
             trayZoomCtx.beginPath();
             trayZoomCtx.moveTo(-4.5, -14);
@@ -6876,8 +7400,16 @@
             trayZoomCtx.quadraticCurveTo(-8.5, 4, -4.5, -14);
             trayZoomCtx.fill();
 
+            trayZoomCtx.save();
+            trayZoomCtx.clip();
+            trayZoomCtx.fillStyle = '#3a2b20';
+            trayZoomCtx.beginPath();
+            trayZoomCtx.ellipse(0, -15, 5.2, 3.3, 0, 0, Math.PI * 2);
+            trayZoomCtx.fill();
+            trayZoomCtx.restore();
+
             // 水润高光条
-            trayZoomCtx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            trayZoomCtx.strokeStyle = 'rgba(255, 255, 255, 0.48)';
             trayZoomCtx.lineWidth = 1.8;
             trayZoomCtx.lineCap = 'round';
             trayZoomCtx.beginPath();
@@ -7044,49 +7576,29 @@
     function openSettlementModal() {
       const record = recordCompletedCare();
       if (!record) return;
-      const client = currentClient();
-      const dmg = record.finalDamage;
-      const wCount = state.pimples.filter(p => p.type === 'whitehead').length;
-      const bCount = state.pimples.filter(p => p.type === 'blackhead').length;
-      const cCount = state.pimples.filter(p => p.type === 'cyst').length;
-      document.getElementById('result-rank').textContent = record.grade;
-      document.getElementById('result-title').textContent = `${client.name}的护理记录`;
-      document.getElementById('result-subtitle').textContent = record.grade === 'S' || record.grade === 'A'
-        ? client.happyQuote : '护理已经完成。下次可以放轻力度，给每一步多一点时间。';
-      document.getElementById('res-trophies').textContent =
-        `黑头提取物 ${state.trophiesPlucked} 颗 · 固态白芯 ${state.coreSeedsCollected} 颗`;
-      document.getElementById('res-coins-earned').textContent = `+¥${record.earnedCoins}`;
-      const income = record.income;
-      const validIncome = income && ['base', 'tip', 'goalBonus'].every(key => Number.isFinite(income[key]) && income[key] >= 0)
-        && income.base + income.tip + income.goalBonus === record.earnedCoins;
-      updateText(document.getElementById('res-income-detail'), validIncome
-        ? `护理酬金 ¥${income.base} + 评级小费 ¥${income.tip}${income.goalBonus ? ` + 首次目标奖励 ¥${income.goalBonus}` : ''}` : `本次护理收入 ¥${record.earnedCoins}`);
-      document.getElementById('res-score').textContent = String(record.score);
-      const resDmgEl = document.getElementById('res-damage');
-      resDmgEl.textContent = `${dmg}%`;
-      resDmgEl.style.color = dmg <= 20 ? 'var(--green)' : dmg <= 50 ? 'var(--accent-gold)' : 'var(--accent-danger)';
-      document.getElementById('res-breakdown').textContent = `白头 ${wCount} · 黑头 ${bCount} · 深层 ${cCount}`;
-      document.getElementById('res-perfect').textContent = `${record.stats.cleanExtractions} 处`;
-      document.getElementById('res-quality').textContent = `${careModeLabel(record.density, record.inputMode)} · 累计刺激 ${record.stats.totalDamage.toFixed(1)} · 误操作 ${record.stats.mistakes} 次 · 最长连贯 ${record.stats.maxStreak} 步`;
-      document.getElementById('res-goal').textContent = `可选目标「${record.goal.title}」${record.goal.met ? '已达成' : '本次未达成'} · ${record.goal.description}`;
-      updateText(document.getElementById('res-quality-reason'), describeCareQuality(record.stats, record.grade));
-      const journey = getSettlementJourney();
-      const next = journey.nextClient;
-      const retryCurrent = next?.id === client.id;
-      const nextCopy = next ? `${retryCurrent ? '最后一枚' : '下一枚'}：${next.name} · ${CARE_GOALS[next.id].title}。` : '';
-      const retainedCopy = !record.goal.met && journey.currentStamped ? `${client.name}的护理印记仍保留，本次未达目标不会撤回已完成的手记。` : '';
-      updateText(document.getElementById('res-journey-title'), journey.complete ? '五枚印记集齐 · 本章完成' : record.goalFirst ? `${client.name}的护理印记 · 已收下` : `护理手记 · ${journey.count} / ${CLIENTS.length}`);
-      updateText(document.getElementById('res-journey-copy'), journey.complete
-        ? `${retainedCopy}五种护理重点都留下了记录。可以安心休息，也可以回接诊台选择回访。`
-        : record.goal.met ? `这位顾客的印记已经留下，首次目标奖励只领取一次。${nextCopy}`
-        : journey.currentStamped ? `${retainedCopy}${nextCopy}`
-        : `这次护理已经完成，可选目标可以下次再试。${nextCopy}${retryCurrent ? '也可以回接诊台，自由选择其他顾客。' : `想继续练习，也可以再试${client.name}的目标。`}`);
-      updateText(document.getElementById('btn-next-face'), journey.complete ? '本章完成 · 选择回访'
-        : retryCurrent ? `再试${client.name} · 最后一枚印记` : `接待${next.name} · 下一枚印记`);
-      const retryButton = document.getElementById('btn-retry-care-goal');
-      retryButton.hidden = !journey.complete && (journey.currentStamped || retryCurrent);
-      updateText(retryButton, journey.complete ? `再护理${client.name} · 自由回访` : `再试${client.name}的目标 · ${record.goal.title}`);
-      document.getElementById('btn-open-clinic-from-res').hidden = journey.complete;
+      state.paused = true;
+      const level = record.wardrobeLevel || state.runLevel;
+      const gifts = (record.wardrobeGifts || []).map(id => WARDROBE_ITEMS.find(item => item.id === id)).filter(Boolean);
+      document.getElementById('result-title').textContent = record.legacyCareSession ? '上次护理完成啦' : '第 ' + level + ' 关完成啦';
+      document.getElementById('result-subtitle').textContent = '谢谢你的细心照顾，今天也收获了一点快乐。';
+      const reward = document.getElementById('reward-result');
+      if (gifts.length) {
+        reward.innerHTML = '<div class="reward-illustration">' + gifts.map(item => wardrobeItemIllustration(item.id)).join('')
+          + '</div><h3>你的运气超棒！</h3><p>找到了' + gifts.map(item => item.name).join('和')
+          + '。<br>' + (record.newWardrobeGifts?.length ? '已经收进衣橱，快给小女孩试试看吧。' : '这份小惊喜已经在衣橱里，可以重新搭配哦。') + '</p>';
+      } else {
+        const nextGift = record.legacyCareSession ? '旧进度已经完成，接下来从简单的第 1 关开始。'
+          : level < 3 ? '再完成 ' + (3 - level) + ' 关，就能发现第一件发饰。'
+          : '下一次清理，也许又藏着她喜欢的小惊喜。';
+        reward.innerHTML = '<div class="reward-illustration">' + girlIllustration(wardrobeProgress.equipped)
+          + '</div><h3>离她的小心愿，又近了一步。</h3><p>' + nextGift + '<br>不着急，按自己的节奏继续吧。</p>';
+      }
+      document.getElementById('btn-open-wardrobe-result').hidden = wardrobeProgress.unlocked.length === 0;
+      document.getElementById('btn-open-wardrobe-result').textContent = gifts.length ? '给她换上新装扮' : '去衣橱看看';
+      document.getElementById('btn-next-face').textContent = '进入第 ' + wardrobeProgress.level + ' 关';
+      document.getElementById('btn-retry-care-goal').hidden = true;
+      document.getElementById('btn-open-clinic-from-res').hidden = true;
+      document.getElementById('gift-discovery').hidden = true;
       persistSaveData();
       state.compareSplit = 0.5;
       resultModalEl.classList.add('open');
@@ -7187,6 +7699,8 @@
 
     function closeStudioModal(modal) {
       if (modal.id === 'storage-gate-modal' || !careControl.owned) return;
+      if (modal.id === 'home-modal') return;
+      if (modal.id === 'wardrobe-modal') { closeWardrobe(); return; }
       modal.classList.remove('open');
       if (modal.id === 'reset-modal') {
         const returnToClinic = pendingTreatmentChange?.returnToClinic;
@@ -7202,6 +7716,17 @@
     }
 
     function bindUIControls() {
+      const settings = document.getElementById('game-settings-slots');
+      settings.append(document.getElementById('btn-sound'), document.getElementById('btn-help'));
+      document.getElementById('btn-start-adventure').addEventListener('click', startAdventure);
+      document.getElementById('btn-adventure-home').addEventListener('click', showAdventureHome);
+      document.getElementById('btn-result-home').addEventListener('click', showAdventureHome);
+      for (const id of ['btn-wardrobe', 'btn-home-wardrobe', 'btn-open-wardrobe-result']) document.getElementById(id).addEventListener('click', openWardrobe);
+      document.getElementById('btn-close-wardrobe').addEventListener('click', closeWardrobe);
+      document.getElementById('wardrobe-modal').addEventListener('click', event => {
+        const button = event.target.closest('[data-equip]');
+        if (button && !button.disabled) equipWardrobeItem(button.dataset.equip);
+      });
       document.querySelectorAll('[data-tool-guidance]').forEach(element => { element.textContent = TOOL_GUIDANCE[element.dataset.toolGuidance]; });
       document.getElementById('btn-skip-practice').addEventListener('click', () => {
         finishPracticeGuide(true);
@@ -7377,10 +7902,11 @@
 
       document.getElementById('btn-next-face').addEventListener('click', () => {
         if (!state.settled || !resultModalEl.classList.contains('open')) return;
-        const journey = getSettlementJourney();
-        if (journey.complete) { openClinic(); return; }
-        const next = journey.nextClient;
-        requestTreatmentChange(next.id === currentClient().id ? 'restart' : 'next', CLIENTS.indexOf(next), state.targetDensity);
+        if (!ensureCareControl()) return;
+        state.clientIndex = (wardrobeProgress.level - 1) % CLIENTS.length;
+        generateLevel(0);
+        selectTool('steam');
+        saveCurrentSession(true);
       });
       document.getElementById('btn-retry-care-goal').addEventListener('click', () => {
         if (!state.settled || !resultModalEl.classList.contains('open')) return;
@@ -7409,9 +7935,11 @@
           const first = modalFocusTargets(open)[0];
           if (first) first.focus({ preventScroll: true });
         } else {
+          const leavingHome = activeModal?.id === 'home-modal';
           activeModal = null;
           panels.forEach(panel => { panel.inert = false; });
-          const restore = previousFocus?.isConnected && previousFocus !== document.body
+          const restore = leavingHome ? document.getElementById('current-level')
+            : previousFocus?.isConnected && previousFocus !== document.body
             && !previousFocus.disabled && !previousFocus.closest('[hidden], [inert], .modal-backdrop:not(.open)')
             && previousFocus.getClientRects().length ? previousFocus : canvas;
           restore.focus({ preventScroll: true });
@@ -7424,7 +7952,7 @@
       window.addEventListener('keydown', e => {
         const open = document.querySelector('.modal-backdrop.open');
         if (!open) return;
-        if (e.key === 'Escape' && open !== resultModalEl && open.id !== 'storage-gate-modal') {
+        if (e.key === 'Escape' && open !== resultModalEl && open.id !== 'storage-gate-modal' && open.id !== 'home-modal') {
           e.preventDefault();
           closeStudioModal(open);
         }
@@ -7555,7 +8083,10 @@
       bindCareStorage();
       bindSceneScheduling();
       resizeCanvas();
-      careControlReady = startCareStorage();
+      careControlReady = startCareStorage().then(ready => {
+        if (ready && !adventureEntered) showAdventureHome();
+        return ready;
+      });
 
       // Teaching and compact layouts can change the board without a window resize.
       if (typeof ResizeObserver === 'function') {
@@ -7583,3 +8114,4 @@
   </script>
 </body>
 </html>
+

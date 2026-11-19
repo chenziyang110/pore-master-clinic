@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const {createGame} = require('./harness.cjs');
 
 async function game(t, options = {}) {
-  const g = await createGame({seed:61234, ...options});
+  const g = await createGame({legacyRecipe:true,seed:61234, ...options});
   t.after(() => { assert.deepEqual(g.runtimeErrors, []); g.close(); });
   g.frame();
   return g;
@@ -138,3 +138,4 @@ test('real squeeze-then-collect paths preserve goal progress and extraction qual
     assert.equal(resumed.state('state.trophiesPlucked+state.coreSeedsCollected'), 1);
   }
 });
+

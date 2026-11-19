@@ -1,0 +1,62 @@
+name: Browser layout
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: browser-layout-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  browser:
+    name: Chrome / desktop and phones
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+      - name: Prepare Chinese fonts for readable screenshots
+        timeout-minutes: 3
+        run: |
+          set -euo pipefail
+          qa_font_tmp="$(mktemp -d "${RUNNER_TEMP}/pore-cjk.XXXXXX")"
+          trap 'rm -rf "$qa_font_tmp"' EXIT
+          qa_font_dir="${HOME}/.local/share/fonts/pore-master-clinic-ci"
+          # Official Ubuntu package and checksum:
+          # https://packages.ubuntu.com/noble/all/fonts-noto-cjk/download
+          timeout --signal=TERM --kill-after=5s 140s \
+            curl --fail --location --silent --show-error --proto '=https' \
+              --connect-timeout 15 --max-time 60 --retry 1 --retry-delay 2 --retry-max-time 120 \
+              --output "$qa_font_tmp/fonts.deb" \
+              'https://archive.ubuntu.com/ubuntu/pool/main/f/fonts-noto-cjk/fonts-noto-cjk_20230817+repack1-3_all.deb'
+          printf '%s  %s\n' \
+            '7d64b985f6fe128c99eae5610d5c047338e572bdcfb2bb09736be01b824a7f6c' \
+            "$qa_font_tmp/fonts.deb" | sha256sum --check --status
+          dpkg-deb --extract "$qa_font_tmp/fonts.deb" "$qa_font_tmp/unpacked"
+          install -d "$qa_font_dir"
+          install -m 644 "$qa_font_tmp"/unpacked/usr/share/fonts/opentype/noto/*.ttc "$qa_font_dir/"
+          fc-cache -f "$qa_font_dir"
+          fc-match -f '%{family}\n' 'sans-serif:lang=zh-cn'
+          fc-match -f '%{family}\n' 'serif:lang=zh-cn'
+      - name: Check real browser layouts and capture screenshots
+        run: node scripts/browser-smoke.cjs
+      - name: Upload screenshots and layout report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: browser-layout-${{ github.run_attempt }}
+          path: qa-output/
+          if-no-files-found: error
+          retention-days: 7

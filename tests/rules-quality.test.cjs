@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const {createGame} = require('./harness.cjs');
 
 async function gameFor(t, options = {}) {
-  const g = await createGame({seed:43, ...options});
+  const g = await createGame({legacyRecipe:true,seed:43, ...options});
   t.after(() => { assert.deepEqual(g.runtimeErrors, []); g.close(); });
   g.frame();
   g.click('btn-skip-practice');
@@ -182,24 +182,14 @@ test('each customer retains its authored mix at eight and eleven targets across 
   assert.doesNotMatch(g.d.querySelector('.level-presets').textContent, /进阶|难度/);
 });
 
-test('the actual next-customer controls carry eleven targets into a pure blackhead session', async t => {
-  const g = await gameFor(t);
-  // The first three stamps are already collected. With this goal history,
-  // the next new customer after this care is the blackhead specialist.
-  g.evaluate(`for(const client of CLIENTS.slice(0,3))
-    careRecords.bests[careModeKey(client.id,0,'pointer')]={clientId:client.id,density:0,inputMode:'pointer',
-      bestScore:1000,bestGrade:'S',completions:1,goalMet:true};`);
-  g.click('btn-clinic');
-  g.d.querySelectorAll('#client-list-container .client-card')[3].click();
-  // Only completed cleaning is a fixture; ice, settlement, density and next
-  // customer navigation use the same controls as the browser.
-  g.evaluate('state.pimples.forEach(p=>{p.state=P_STATE.HEALED;p.healProgress=1;});updateHUD();');
-  g.click('btn-ice-quick');g.frame(65);
-  assert.equal(g.state('state.settled'), true);
-  g.d.querySelector('.preset-btn[data-density="11"]').click();
-  g.click('btn-next-face');
-  assert.equal(g.state('state.clientIndex'), 4);
-  assert.equal(g.state('state.pimples.length'), 11);
-  assert.equal(g.state('state.pimples.every(p=>p.type==="blackhead")'), true);
-  assert.equal(g.state('state.runDensity'), 11);
+test('legacy custom-density restoration keeps an authored pure-blackhead recipe', async t => {
+  const g=await gameFor(t);
+  g.evaluate('state.clientIndex=4;generateLevel(11);saveCurrentSession(true);');
+  assert.equal(g.state('state.pimples.length'),11);
+  assert.equal(g.state('state.pimples.every(p=>p.type==="blackhead")'),true);
+  assert.equal(g.state('state.runDensity'),11);
+  const restored=await gameFor(t,{storage:g.storage()});
+  assert.equal(restored.state('state.clientIndex'),4);
+  assert.equal(restored.state('state.pimples.length'),11);
+  assert.equal(restored.state('state.pimples.every(p=>p.type==="blackhead")'),true);
 });

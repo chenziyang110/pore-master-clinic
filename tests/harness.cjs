@@ -186,6 +186,13 @@ async function createGame(options = {}) {
     url: options.url || 'https://pore-master-clinic.test/', runScripts: 'dangerously', pretendToBeVisual: true, virtualConsole,
     beforeParse(w) {
       w.addEventListener('error', e => runtimeErrors.push(e.error?.stack || e.message));
+      // Mechanics suites can explicitly request the historical customer mix.
+      // Install the fixture before the game's load handler so normal startup,
+      // session validation and hydration still execute without resetting saves.
+      // Product/default adventure tests always use the real level recipes.
+      if (options.legacyRecipe) w.addEventListener('load', () => {
+        w.eval('if (typeof adventureRecipeFor === "function") adventureRecipeFor = () => careRecipeFor(currentClient(), state.targetDensity);');
+      }, {once:true});
       disconnectStorage = storageHub.connect(w);
       for (const [key, value] of Object.entries(options.storage || {})) w.localStorage.setItem(key, value);
       if (options.seed !== undefined) {
@@ -247,6 +254,13 @@ async function createGame(options = {}) {
   const w=dom.window,d=w.document,evaluate=source=>w.eval(source);
   if(d.readyState!=='complete')await new Promise(resolve=>w.addEventListener('load',resolve,{once:true}));
   await evaluate('typeof careControlReady === "undefined" ? undefined : careControlReady');
+  if (!options.stayHome) {
+    const enter = d.getElementById('btn-start-adventure');
+    if (enter?.closest('.modal-backdrop.open') && !enter.disabled) {
+      enter.click();
+      await Promise.resolve();
+    }
+  }
   const frame=(count=1,dt=1000/60)=>{for(let i=0;i<count;i++){now+=dt;const callbacks=[...raf.values()];raf.clear();for(const callback of callbacks)callback(now);}};
   const timestampInput=(event, timestamp)=>{inputTime=timestamp ?? Math.max(now,inputTime+1000/60);Object.defineProperty(event,'timeStamp',{value:inputTime});return event;};
   const mouse=(target,type,x,y,timestamp)=>{if(typeof target==='string')target=d.getElementById(target);target.dispatchEvent(timestampInput(new w.MouseEvent(type,{bubbles:true,button:0,buttons:type==='mouseup'?0:1,clientX:x,clientY:y}),timestamp));};
@@ -258,3 +272,4 @@ async function createGame(options = {}) {
   return {w,d,evaluate,state:evaluate,frame,mouse,touch,click,resize,storage,close,runtimeErrors,pixels};
 }
 module.exports={createGame,createStorageHub};
+
