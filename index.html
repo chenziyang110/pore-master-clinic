@@ -13,7 +13,7 @@
       --paper: #faf9f5;
       --surface: #f1f1e9;
       --ink: #303e36;
-      --muted: #737b70;
+      --muted: #626c60;
       --line: #dddfd4;
       --green: #4b6554;
       --green-soft: #e9eee4;
@@ -151,6 +151,12 @@
     .hint-banner { min-height: 40px; color: #677060; font-size: 12px; line-height: 1.65; margin-bottom: 9px; overflow-wrap: anywhere; }
     .hint-banner.warn { color: #a8554c; }
     .hint-banner.good { color: var(--green); }
+    .save-notice { display: flex; align-items: center; gap: 10px; flex-shrink: 0; padding: 9px 18px; color: #794b2d; background: #fff2df; border-bottom: 1px solid #e4c9a5; font-size: 12px; line-height: 1.5; }
+    .save-notice[hidden] { display: none; }
+    .save-notice-copy { flex: 1; min-width: 0; }
+    .save-retry { flex-shrink: 0; min-height: 36px; padding: 6px 10px; border: 1px solid #b79670; border-radius: 6px; background: #fffaf1; color: #704526; font-size: 12px; }
+    .save-retry[hidden] { display: none; }
+    .modal-card > .save-notice { position: sticky; top: 0; z-index: 2; margin: 0 0 16px; padding: 10px; border: 1px solid #e4c9a5; border-radius: 6px; }
     .toolbar-dock { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
     .tool-btn { position: relative; box-shadow: inset 0 1px 0 rgba(255,255,255,.65); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 83px; padding: 8px 4px; border: 1px solid #e3e5dc; border-radius: 8px; color: #697562; background: #f6f6f0; transition: background .15s ease, border-color .15s ease, color .15s ease; }
     .tool-btn:hover { background: #f0f2e9; color: var(--green); border-color: #b5c1aa; }
@@ -160,7 +166,7 @@
     .tool-icon { display: flex; align-items: center; justify-content: center; height: 31px; }
     .tool-icon .icon { height: 30px; width: 30px; stroke-width: 1.15; }
     .tool-name { font-size: 12px; font-weight: 500; white-space: nowrap; }
-    .tool-desc { font-size: 9px; color: #828c79; white-space: nowrap; }
+    .tool-desc { font-size: 11px; color: #66735d; white-space: nowrap; }
     .tool-badge { position: absolute; top: 6px; right: 6px; min-width: 14px; height: 14px; padding: 0 4px; display: none; justify-content: center; align-items: center; color: #6f765e; background: #e4e6d8; border-radius: 4px; font-size: 8px; font-weight: 500; }
     .tool-badge.ice, .tool-badge.mint { color: #53715d; background: #d8e4d4; }
     .tool-badge.show { display: inline-flex; }
@@ -238,6 +244,30 @@
     .result-rating .rank-badge { width: 53px; height: 53px; border-radius: 9px; margin: 0; font-size: 34px; }
     .summary-grid { padding-bottom: 6px; }
     .summary-item .val { font-family: Georgia, 'PingFang SC', serif; font-size: 23px; }
+    .care-quality-status { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 9px; width: 100%; margin-top: 13px; min-height: 36px; padding: 7px 0; color: var(--green); background: none; border: 0; border-bottom: 1px solid var(--line); text-align: left; font-size: 12px; line-height: 1.5; }
+    .care-quality-status span:last-child { color: #626c5f; font-size: 11px; }
+    .care-quality-status[data-grade='B'], .care-quality-status[data-grade='C'] { color: #8b594e; }
+    #care-journal-count { font-variant-numeric: tabular-nums; }
+    .care-journey { margin: 16px 0 22px; padding: 16px 0; border-block: 1px solid var(--line); }
+    .care-journey-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+    .care-journey-heading h3 { font: 500 18px var(--serif); }
+    .care-journey-count { color: var(--green); font: 20px Georgia, serif; }
+    .care-stamps { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; list-style: none; margin: 15px 0; }
+    .care-stamp { display: flex; align-items: center; flex-direction: column; gap: 6px; color: #717969; font-size: 11px; text-align: center; }
+    .care-stamp-seal { display: grid; place-items: center; width: 39px; height: 39px; border: 1px dashed #aeb8a3; border-radius: 50%; color: #687760; font: 18px var(--serif); }
+    .care-stamp.is-met .care-stamp-seal { border: 2px solid #809476; background: #e8eee1; color: #405e49; }
+    .care-journey-copy, .result-income-detail, .result-journey-note, .client-focus { color: #616e5c; font-size: 12px; line-height: 1.7; }
+    .care-journey-copy { margin-top: 7px; }
+    #btn-journey-next { margin-top: 12px; }
+    .result-income-detail { margin-top: -5px; margin-bottom: 14px; }
+    .result-score-note { display: block; color: #626c5f; font-size: 10px; line-height: 1.5; margin-top: 4px; }
+    .result-journey-note { padding: 12px 14px; margin: 12px 0; border-left: 3px solid #8da17d; background: #edf1e6; }
+    .result-journey-note strong { display: block; color: #405e49; margin-bottom: 4px; font-weight: 500; }
+    .client-focus { margin-top: 3px; font-size: 11px; }
+    .client-stamp-note { color: #49684d; font-size: 10px; }
+    #app-shell.chapter-complete .brand-mark { color: #927443; }
+    #app-shell.chapter-complete #chapter-caption { color: #7b653d; letter-spacing: 1px; }
+    @media (max-width: 760px) { .care-quality-status { margin-top: 6px; min-height: 32px; padding: 4px 0; } .care-stamps { gap: 4px; } .care-stamp-seal { width: 35px; height: 35px; } }
     .session-settings { padding: 13px 0; margin: 8px 0 16px; border-block: 1px solid var(--line); color: var(--muted); font-size: 11px; }
     .session-settings summary { cursor: pointer; padding: 4px 0; }
     .session-settings .level-presets { margin: 12px 0 2px; }
@@ -433,6 +463,57 @@
       .tool-name { font-size: 10.5px; }
       #practice-guide { margin-block: 1px 0; font-size: 10px; line-height: 18px; }
     }
+    /* Keep the instruction and its action readable before secondary details. */
+    .hint-banner { font-size: 13px; color: #53624f; }
+    .next-tool-btn { min-height: 36px; padding: 6px 10px; border: 1px solid #c2ceba; border-radius: 6px; background: #edf2e8; font-size: 12px; }
+    .tool-name, .guide-row, .modal-subtitle { font-size: 13px; }
+    .client-desc { font-size: 12px; }
+    @media (max-width: 760px) {
+      .patient-role, .stat-label, #damage-val, .tray-text, #trophy-count { font-size: 11px; }
+      .tool-section { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 7px 8px; padding: 8px 12px calc(8px + env(safe-area-inset-bottom,0px)); }
+      .tool-section-head, .tool-assist { display: contents; }
+      .active-tool-title, .shortcut-note { display: none; }
+      .hint-banner { grid-column: 1; grid-row: 1; align-self: center; min-height: 0; margin: 0; font-size: 12px; line-height: 1.5; }
+      .next-tool-btn { grid-column: 2; grid-row: 1; align-self: center; max-width: 116px; min-height: 40px; font-size: 12px; white-space: normal; }
+      .toolbar-dock { grid-column: 1 / -1; grid-row: 2; }
+      .tool-btn { min-height: 60px; }
+      .tool-name { font-size: 12px; }
+      .care-stages, .canvas-status { font-size: 11px; }
+      .care-stages { gap: 7px; }
+      .keyboard-care-status { font-size: 12px; }
+      #practice-guide { min-height: 36px; font-size: 12px; line-height: 1.4; }
+      #btn-skip-practice { min-height: 36px; font-size: 12px; }
+      .save-notice { padding: 7px 12px; }
+      .care-quality-status { min-height: 32px; font-size: 12px; }
+    }
+    @media (max-width: 760px) and (max-height: 700px) and (orientation: portrait) {
+      .patient-role { display: none; }
+      .patient-name-line { font-size: 14px; }
+      .patient-info { min-height: 30px; }
+      .case-stats { gap: 6px; }
+      .stat-label, #damage-val { font-size: 10px; }
+      .stat-value { font-size: 18px; }
+      .tray-text, #trophy-count { font-size: 10px; }
+      #viewport-wrap { min-height: 200px; }
+      #app-shell.has-save-warning #viewport-wrap { min-height: 150px; }
+      .treatment-heading { min-height: 36px; }
+      #btn-style-mode { min-height: 32px; font-size: 11px; }
+      .tool-section { gap: 5px 8px; padding-top: 6px; padding-bottom: calc(6px + env(safe-area-inset-bottom,0px)); }
+      .care-quality-status { margin-top: 4px; padding-block: 3px; }
+    }
+    @media (max-width: 1000px) and (orientation: landscape) and (max-height: 520px) {
+      .tool-section { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 5px 8px; padding: 5px 9px 7px; }
+      .tool-section-head, .tool-assist { display: contents; }
+      .active-tool-title, .shortcut-note { display: none; }
+      .hint-banner { grid-column: 1; grid-row: 1; min-height: 0; margin: 0; font-size: 12px; line-height: 1.4; align-self: center; }
+      .next-tool-btn { grid-column: 2; grid-row: 1; min-height: 36px; font-size: 12px; align-self: center; }
+      .toolbar-dock { grid-column: 1 / -1; grid-row: 2; }
+      .tool-btn { min-height: 52px; }
+      .tool-name { font-size: 12px; }
+      #practice-guide { min-height: 32px; font-size: 12px; }
+      #btn-skip-practice { min-height: 32px; font-size: 12px; }
+      .care-quality-status { font-size: 12px; line-height: 1.4; }
+    }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
   </style>
 </head>
@@ -455,7 +536,7 @@
 
   <div id="app-shell">
     <header class="studio-header">
-      <div class="brand"><svg class="icon brand-mark" aria-hidden="true"><use href="#i-brand"/></svg><div><div class="brand-title">妙手净肤馆</div><div class="brand-caption">PORE MASTER CLINIC</div></div></div>
+      <div class="brand"><svg class="icon brand-mark" aria-hidden="true"><use href="#i-brand"/></svg><div><div class="brand-title">妙手净肤馆</div><div id="chapter-caption" class="brand-caption">PORE MASTER CLINIC</div></div></div>
       <div class="top-actions">
         <div class="header-wallet"><span>诊所收入</span><span id="coin-val" class="coin-pill">¥ 0</span></div>
         <button id="btn-clinic" class="icon-btn clinic-button" type="button" title="接诊与器械升级" aria-label="接诊与器械升级"><svg class="icon " aria-hidden="true"><use href="#i-clinic"/></svg><span class="action-label">接诊台</span></button>
@@ -463,6 +544,7 @@
         <button id="btn-help" class="icon-btn" type="button" title="操作指南" aria-label="操作指南"><svg class="icon " aria-hidden="true"><use href="#i-help"/></svg></button>
       </div>
     </header>
+    <div id="save-notice" class="save-notice" role="status" aria-live="polite" hidden><span class="save-notice-copy"></span><button id="btn-retry-save" class="save-retry" type="button" disabled>重试保存</button></div>
     <div class="studio-layout">
       <aside class="case-panel" aria-label="本次护理记录">
         <div class="case-intro"><div class="eyebrow"><span class="line"></span>护理档案 <span id="case-number">01</span></div><h1 id="care-stage-title">温热软化</h1><p id="care-summary">先热敷，再开始细致清理。</p></div>
@@ -472,16 +554,17 @@
           <p id="patient-quote" class="patient-quote">最近作息有些乱，想清理一下鼻翼。</p><div id="patient-steam-tag">已充分热敷</div>
         </div>
         <div class="case-stats">
-          <div class="stat-card"><div class="stat-label"><span>护理得分</span><span id="combo-tag" class="combo-pill">连贯 2 步</span></div><div id="score-val" class="stat-value gold">0</div><span id="best-score-label">本档最高 0</span></div>
+          <div class="stat-card"><div class="stat-label"><span>护理得分</span><span id="combo-tag" class="combo-pill">连贯 2 步</span></div><div id="score-val" class="stat-value gold">0</div><span id="best-score-label">完成护理后留下最佳评级</span></div>
           <div class="stat-card"><div class="stat-label"><span>清理进度</span></div><div id="progress-val" class="stat-value">0 / 8</div><div class="progress-track" role="progressbar" aria-label="清理进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="care-progress-fill"></span></div></div>
           <div class="stat-card damage-stat"><div class="stat-label"><span>即时刺激度</span><span id="damage-val">0%</span></div><div class="damage-bar-track"><div id="damage-fill" class="damage-bar-fill"></div></div></div>
         </div>
+        <button id="btn-quality-details" class="care-quality-status" type="button" aria-label="查看本局表现和评级说明"><span id="care-quality-label">本局表现 S</span><span id="care-quality-history">误操作 0 次 · 累计刺激 0.0</span></button>
         <div class="condition-list" aria-label="本次清理内容"><span>黑头 <b id="count-blackhead">5</b></span><span>白头 <b id="count-whitehead">2</b></span><span>深层 <b id="count-cyst">1</b></span></div>
         <button id="btn-tray-inspect" class="tray-trigger-box" type="button" title="查看本次收集盘"><svg class="icon " aria-hidden="true"><use href="#i-tray"/></svg><span class="tray-text"><span>收集盘</span><span id="trophy-count">已收集 0 颗</span></span><span class="tray-arrow" aria-hidden="true">↗</span></button>
-        <div class="case-foot"><svg class="face-study" viewBox="0 0 90 120" fill="none" stroke="currentColor" stroke-width=".85" aria-hidden="true"><path d="M20 31c0-17 13-26 27-25s25 11 24 29l-4 31c-2 13-11 26-23 28-12-2-22-15-24-28Z"/><path d="M20 39c-8-7-11 4-6 12l7 7m50-19c8-7 10 4 5 12l-8 7M29 41l9-2m16 0 9 2M46 43l-4 16 6 2M34 72c7 5 14 5 21-1M31 88l-3 18m30-19 4 19M12 118l16-12m34 0 16 12"/><ellipse cx="31" cy="57" rx="8" ry="10" fill="#c6d1b8" fill-opacity=".35" stroke-dasharray="2 2"/><path d="M44 23c9-1 15-5 19-10M25 24c10 0 17-7 21-18"/></svg><div class="case-note"><span class="case-note-label">本次护理部位</span><br><span id="case-zone-label">鼻翼与脸颊</span><br><button id="btn-plan" class="text-button" type="button">护理手记 <span aria-hidden="true">↗</span></button></div></div>
+        <div class="case-foot"><svg class="face-study" viewBox="0 0 90 120" fill="none" stroke="currentColor" stroke-width=".85" aria-hidden="true"><path d="M20 31c0-17 13-26 27-25s25 11 24 29l-4 31c-2 13-11 26-23 28-12-2-22-15-24-28Z"/><path d="M20 39c-8-7-11 4-6 12l7 7m50-19c8-7 10 4 5 12l-8 7M29 41l9-2m16 0 9 2M46 43l-4 16 6 2M34 72c7 5 14 5 21-1M31 88l-3 18m30-19 4 19M12 118l16-12m34 0 16 12"/><ellipse cx="31" cy="57" rx="8" ry="10" fill="#c6d1b8" fill-opacity=".35" stroke-dasharray="2 2"/><path d="M44 23c9-1 15-5 19-10M25 24c10 0 17-7 21-18"/></svg><div class="case-note"><span class="case-note-label">本次护理部位</span><br><span id="case-zone-label">鼻翼与脸颊</span><br><button id="btn-plan" class="text-button" type="button">护理手记 <span id="care-journal-count">0/5</span> <span aria-hidden="true">↗</span></button></div></div>
       </aside>
       <section class="treatment-panel" aria-label="护理工作台">
-        <div class="treatment-heading"><div><h2 id="care-zone">鼻翼与脸颊</h2><div class="section-meta">局部观察 · 手动护理</div></div><button id="btn-style-mode" class="icon-btn" type="button" aria-pressed="false" title="切换自然肌理与柔和肌理"><svg class="icon " aria-hidden="true"><use href="#i-style"/></svg><span id="style-mode-label">自然肌理</span></button></div>
+        <div class="treatment-heading"><div><h2 id="care-zone">鼻翼与脸颊</h2><div id="care-focus" class="section-meta">先软化，再匀速取出</div></div><button id="btn-style-mode" class="icon-btn" type="button" aria-pressed="false" title="切换自然肌理与柔和肌理"><svg class="icon " aria-hidden="true"><use href="#i-style"/></svg><span id="style-mode-label">自然肌理</span></button></div>
         <main id="viewport-wrap" aria-label="微距皮肤操作区域">
           <canvas id="skin-canvas" tabindex="0" role="application" aria-label="护理画布：选择工具后按住或拖动；也可使用键盘辅助" aria-describedby="keyboard-care-help">键盘辅助：方向键选择目标，1–5 切换工具，按住空格或回车操作，松开停手，Esc 取消。</canvas>
           <p id="keyboard-care-status" class="keyboard-care-status" role="status" aria-live="polite" hidden></p>
@@ -536,10 +619,12 @@
           <div id="res-coins-earned" style="font-size:20px;font-weight:500;color:var(--green);">+¥220</div>
         </div>
 
+        <p id="res-income-detail" class="result-income-detail"></p>
         <div class="summary-grid">
           <div class="summary-item">
-            <div class="label">护理得分</div>
+            <div class="label">原始得分</div>
             <div id="res-score" class="val" style="color: var(--accent-gold);">0</div>
+            <small class="result-score-note">含连贯与器械奖励</small>
           </div>
           <div class="summary-item">
             <div class="label">结束时刺激度</div>
@@ -555,12 +640,13 @@
           </div>
         </div>
 
-        <div class="result-quality-note"><p id="res-quality"></p><p id="res-goal"></p><p>评级参考累计刺激与误操作。损伤或夹断按一次连续操作计数；棉签和冰膜可以舒缓，历史记录会保留。</p></div>
+        <div class="result-quality-note"><p id="res-quality"></p><p id="res-quality-reason"></p><p id="res-goal"></p><p>评级参考累计刺激与误操作。损伤或夹断按一次连续操作计数；棉签和冰膜可以舒缓，历史记录会保留。</p></div>
 
-        <details class="session-settings"><summary>下一次护理设置</summary><div class="level-presets" role="group" aria-label="自由难度档位">
+        <div id="res-journey" class="result-journey-note"><strong id="res-journey-title"></strong><p id="res-journey-copy"></p></div>
+        <details class="session-settings"><summary>下一次护理设置</summary><div class="level-presets" role="group" aria-label="下一次护理数量">
           <button class="preset-btn active" type="button" data-density="0" aria-pressed="true">按顾客安排</button>
-          <button class="preset-btn" type="button" data-density="8" aria-pressed="false">标准 · 8 处</button>
-          <button class="preset-btn" type="button" data-density="11" aria-pressed="false">进阶 · 11 处</button>
+          <button class="preset-btn" type="button" data-density="8" aria-pressed="false">8 处</button>
+          <button class="preset-btn" type="button" data-density="11" aria-pressed="false">11 处</button>
         </div></details>
 
         <button id="btn-next-face" class="primary-btn" type="button">接待下一位顾客</button>
@@ -597,6 +683,7 @@
           <p class="modal-subtitle">继续当前护理，或接待另一位顾客。</p>
         </div>
 
+        <section id="care-journey" class="care-journey" aria-labelledby="journey-title"><div class="care-journey-heading"><h3 id="journey-title">五位顾客的护理手记</h3><span id="journey-count" class="care-journey-count">0 / 5</span></div><ol id="journey-stamps" class="care-stamps" aria-label="顾客护理印记"></ol><p id="journey-status" class="care-journey-copy"></p><p id="journey-next" class="care-journey-copy"></p><button id="btn-journey-next" class="secondary-btn" type="button"></button></section>
         <div class="modal-section-label">今日顾客</div>
         <div id="client-list-container" class="client-list"></div>
 
@@ -605,6 +692,7 @@
           <span id="shop-coin-label" style="color:var(--accent-gold);">余额 ¥0</span>
         </div>
         <div class="client-list" id="upgrade-list-container"></div>
+        <p id="shop-completion-note" class="care-journey-copy"></p>
 
         <details class="session-settings"><summary>已完成的护理 <span id="care-record-count">0</span></summary><div id="care-record-list"></div></details>
 
@@ -615,7 +703,7 @@
     <!-- Care notes remain available without occupying the main toolbar. -->
     <div id="plan-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="plan-title">
       <div class="modal-card"><button class="modal-close" type="button" data-close-modal="plan-modal" aria-label="关闭弹窗"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button><div class="modal-header"><h2 id="plan-title" class="modal-title">护理手记</h2><p class="modal-subtitle">不用赶进度。清理、收集，再看看前后的变化。</p></div>
-        <div class="guide-list"><div class="guide-row"><strong>本次可选目标</strong><br><span id="care-goal-current"></span><br>不影响通关，也不限制顾客选择。</div><div class="guide-row"><strong>按自己的节奏</strong><br>轻松模式没有倒计时，也不会强制失败。力度超过 90% 会增加刺激，出现“松一点”时往外放松；低力度也可以完成清理。</div><div class="guide-row"><strong>连贯操作与评级</strong><br>每次有效处理记一步，损伤或夹断会中断，停下来休息不会清零。第 3 步起得分 ×1.25，第 6 步起 ×1.5。S：累计刺激不超过 14 且零失误；A：不超过 32、至多 2 次；B：不超过 58、至多 5 次；其余为 C。</div><div class="guide-row"><strong>给这次护理留个记录</strong><br>敷膜后才会计入最高分。成绩按顾客和护理档位分别保存；在接诊台查看最近的完成记录与可选目标。</div></div>
+        <div class="guide-list"><div class="guide-row"><strong>这位顾客的护理重点</strong><br><span id="plan-care-focus"></span></div><div class="guide-row"><strong>本次可选目标</strong><br><span id="care-goal-current"></span><br>首次达成会留下这位顾客的印记，并获得 ¥60 目标奖励。每位顾客只领一次，不限护理数量和输入方式。</div><div class="guide-row"><strong>按自己的节奏</strong><br>轻松模式没有倒计时，也不会强制失败。力度超过 90% 会增加刺激，出现“松一点”时往外放松；低力度也可以完成清理。</div><div class="guide-row"><strong>连贯操作与评级</strong><br>每次有效处理记一步，损伤或夹断会中断，停下来休息不会清零。第 3 步起得分 ×1.25，第 6 步起 ×1.5。S：累计刺激不超过 14 且零失误；A：不超过 32、至多 2 次；B：不超过 58、至多 5 次；其余为 C。</div><div class="guide-row"><strong>给这次护理留个记录</strong><br>敷膜后才会计入最高分。最佳评级按顾客、护理数量和输入方式保存。原始得分包含连贯与器械奖励；比较手法时先看评级和误操作。在接诊台查看五枚护理印记与完成记录。</div></div>
         <button id="btn-close-plan" class="primary-btn" type="button">回到护理台</button>
       </div>
     </div>
@@ -630,11 +718,11 @@
         <div class="guide-list">
           <div class="guide-row"><strong>键盘辅助</strong><br>Tab 聚焦护理画布；← / ↑ 选择上一处，→ / ↓ 选择下一处。1–5 换工具，按住空格或回车操作，松开停手。粉刺针在松键时破口，Esc 可取消。完成清理后按 6，逐处涂抹冰膜。使用辅助后，本局会单独记录为键盘辅助成绩。</div>
           <div class="guide-row"><strong>本次可选目标</strong><br><span id="help-care-goal"></span><br>按自己的节奏尝试，不影响正常完成护理。</div>
-          <div class="guide-row"><strong>01 / 热喷</strong><br>按住并缓慢移动。充分软化的黑头可以直接夹取；白头可轻挤，深层先用粉刺针破口。</div>
-          <div class="guide-row"><strong>02 / 粉刺针</strong><br>按住查看放大镜，松开挑开未破口的尖端。黑头可先挑松再夹取；已露出一半的黑头也可直接针取。</div>
-          <div class="guide-row"><strong>03 / 轻柔挤压</strong><br>鼠标或单指在瑕疵旁按住，向中心缓缓推。也可以用双指从两侧向内捏合。</div>
-          <div class="guide-row"><strong>04 / 细胞夹</strong><br>黑头充分软化、挑松或露头后可以夹取；白头和深层破口后也可夹取。缓慢向外拖动，进度满格即取出；皮肤上的残留可点按收进盘。</div>
-          <div class="guide-row"><strong>05 / 清洁棉签</strong><br>轻轻擦净残留。再点一次棉签可换新。全部清理后，涂抹冰膜完成本次护理。</div>
+          <div class="guide-row"><strong>01 / 热喷</strong><br><span data-tool-guidance="steam"></span> 白头可轻挤，深层先用粉刺针破口。</div>
+          <div class="guide-row"><strong>02 / 粉刺针</strong><br><span data-tool-guidance="needle"></span> 按住时可以查看放大镜，确认位置后再松手。</div>
+          <div class="guide-row"><strong>03 / 轻柔挤压</strong><br><span data-tool-guidance="squeeze"></span></div>
+          <div class="guide-row"><strong>04 / 细胞夹</strong><br><span data-tool-guidance="tweezers"></span> 进度满格即取出；皮肤上的提取物也可点按收进盘。</div>
+          <div class="guide-row"><strong>05 / 清洁棉签</strong><br><span data-tool-guidance="swab"></span> 全部清理后，涂抹冰膜完成本次护理。</div>
         </div>
         <button id="btn-replay-practice" class="secondary-btn" type="button">重新跟随操作引导</button>
         <button id="btn-close-help" class="primary-btn" type="button">知道了，开始护理</button>
@@ -758,6 +846,10 @@
         role: '程序员 · 混合肤质',
         avatar: '👨‍💻',
         name: '阿哲',
+        focus: '先软化，再匀速取出',
+        rhythm: '先沿鼻翼热敷，再一颗颗完整夹取；白头和深层留给细致处理。',
+        stamp: '软',
+        revisitQuote: '上次先热敷再清理很舒服，今天也慢慢来。',
         zoneId: 'nose_cheek',
         zoneLabel: '部位：鼻翼沟与内侧脸颊 · 真实微距',
         quote: '最近作息有些乱，想清理一下鼻翼。',
@@ -773,6 +865,10 @@
         role: '学生 · 敏感肤质',
         avatar: '🧑‍🎓',
         name: '小林',
+        focus: '轻手护理，少量多次',
+        rhythm: '白头较多，放轻挤压力度，擦净一处再开始下一处；停下来休息也没关系。',
+        stamp: '轻',
+        revisitQuote: '上次一点也不紧张，今天就交给你了。',
         zoneId: 'nose_cheek',
         zoneLabel: '部位：内侧苹果肌与鼻旁 · 真实微距',
         quote: '最近忙着备考，想给皮肤一点照顾。',
@@ -788,6 +884,10 @@
         role: '主播 · 下巴护理',
         avatar: '👩‍🎤',
         name: '薇薇',
+        focus: '深层护理，先破口再轻推',
+        rhythm: '深层目标较多，先破口，再沿目标方向轻推；露头后可夹取，最后擦净。',
+        stamp: '细',
+        revisitQuote: '上次下巴照顾得很细，这次也想慢慢清理。',
         zoneId: 'chin_jaw',
         zoneLabel: '部位：下巴与唇周三角区 · 真实微距',
         quote: '想重点清理下巴，动作轻一些就好。',
@@ -803,6 +903,10 @@
         role: '混合护理 · 进阶',
         avatar: '🌶️',
         name: '大鹏',
+        focus: '混合护理，随状态换工具',
+        rhythm: '三类目标交替出现，先照顾眼前这一处；取出、擦净、收进盘里再继续。',
+        stamp: '齐',
+        revisitQuote: '上次一盘收得整整齐齐，今天再来拜托你。',
         zoneId: 'nose_cheek',
         zoneLabel: '部位：重油重辣全混合重灾区 · 大师挑战',
         quote: '今天需要多一点耐心，几种类型都有。',
@@ -818,6 +922,10 @@
         role: '鼻部护理 · 自由练习',
         avatar: '🍓',
         name: '黑头专场',
+        focus: '连续夹取，完整收集',
+        rhythm: '只有黑头。热敷充分后缓缓拉出，按自己的节奏把每一颗收进盘里。',
+        stamp: '净',
+        revisitQuote: '上次一颗也没夹断，今天继续享受慢慢收集。',
         zoneId: 'nose_tip',
         zoneLabel: '部位：鼻头重度皮脂黑头带 · 纯享解压专场',
         quote: '专注于十二处黑头，按自己的节奏慢慢清理。',
@@ -837,6 +945,7 @@
       strawberry_nose: { id: 'unbroken_blackheads', title: '完整收集', description: '收齐本次黑头，全程不夹断。' }
     };
     const CARE_RECORDS_KEY = 'pimple_clinic_records_v2';
+    const CARE_GOAL_FIRST_REWARD = 60;
 
     const UPGRADES = [
       {
@@ -1356,6 +1465,8 @@
     let preferredStyleMode = readViewPreference();
     if (preferredStyleMode) state.styleMode = preferredStyleMode;
     let pendingTreatmentChange = null;
+    // A local focus hint only: never serialize an object from the current board.
+    let pointerCareTarget = null;
 
     function readViewPreference() {
       try {
@@ -1406,9 +1517,11 @@
       id: typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
       owned: false, hydrating: false, volatile: false, acquiredAt: 0,
       releaseLock: null, request: null, heartbeat: null, waitTimer: null,
-      unsavedDraft: null, conflict: false, resumeModal: null
+      unsavedDraft: null, conflict: false, resumeModal: null, saveIssue: false
     };
     let careControlReady = Promise.resolve(false);
+    let careSaveRetryReady = Promise.resolve(false);
+    let saveRetryBusy = false;
     let profileRevision = 0;
     let lastProfileRaw = null;
     let lastProfileContent = '';
@@ -1437,31 +1550,93 @@
       return { coins: state.coins, upgrades: state.upgrades, records: careRecords, guide: practiceGuideStatus };
     }
 
+    function currentProfileContent() {
+      return JSON.stringify({ ...currentProfileResources(), session: currentSessionEnvelope() }, (key, value) => key === 'cfg' ? undefined : value);
+    }
+
+    function syncSaveNotice() {
+      const warning = careControl.volatile || careControl.saveIssue || Boolean(careControl.unsavedDraft) || careControl.conflict;
+      document.getElementById('app-shell').classList.toggle('has-save-warning', warning);
+      const copy = careControl.conflict ? '这页有未保存的操作，请先处理接续提示。'
+        : careControl.volatile ? '本局仅临时保留，关闭页面会丢失进度。'
+        : '进度尚未保存，请保留当前页面。';
+      document.querySelectorAll('.save-notice').forEach(notice => {
+        notice.hidden = !warning;
+        updateText(notice.querySelector('.save-notice-copy'), warning ? copy : '');
+        const retry = notice.querySelector('.save-retry');
+        retry.hidden = !careControl.owned || careControl.conflict;
+        retry.disabled = !warning || retry.hidden || saveRetryBusy;
+        updateText(retry, saveRetryBusy ? '正在保存…' : '重试保存');
+      });
+    }
+
+    async function retryPendingCareSave() {
+      if (saveRetryBusy || !careControl.owned || careControl.conflict) return false;
+      saveRetryBusy = true;
+      syncSaveNotice();
+      let saved = false;
+      try {
+        releasePointer();
+        if (careControl.volatile) {
+          const probe = `${CARE_OWNER_KEY}:retry:${careControl.id}`;
+          localStorage.setItem(probe, '1');
+          localStorage.removeItem(probe);
+          // Acquire the normal writer lock before publishing this in-memory
+          // care. The original baseline fence protects any newer saved game.
+          careControl.unsavedDraft = { content: currentProfileContent(), baseline: lastProfileRaw };
+          careControl.volatile = false;
+          careControl.owned = false;
+          sessionSaveEnabled = false;
+          careControlReady = acquireCareControl(false, true);
+          saved = await careControlReady && !careControl.unsavedDraft && !careControl.saveIssue;
+        } else saved = saveCurrentSession(true);
+        if (saved) setHint('护理进度已保存，可以继续了。', 'good');
+      } catch (_) {
+        careControl.saveIssue = true;
+      } finally {
+        saveRetryBusy = false;
+        syncSaveNotice();
+        if (saved && document.activeElement?.classList.contains('save-retry')) {
+          const modal = document.querySelector('.modal-backdrop.open');
+          const target = modal ? modal.querySelector('button:not([disabled]):not(.save-retry), [tabindex="0"], summary') : canvas;
+          target?.focus({ preventScroll: true });
+        }
+      }
+      return saved;
+    }
+
     function careOwnershipIsCurrent() {
       if (!careControl.owned) return false;
       if (careControl.volatile) return true;
       try {
         const owner = JSON.parse(localStorage.getItem(CARE_OWNER_KEY) || 'null');
         return owner?.id === careControl.id && localStorage.getItem(PROFILE_KEY) === lastProfileRaw;
-      } catch (_) { return false; }
+      } catch (_) {
+        // A failed ownership read must not discard work since the last save.
+        // Reacquiring still checks this original baseline before using it.
+        careControl.unsavedDraft = { content: currentProfileContent(), baseline: lastProfileRaw };
+        careControl.saveIssue = true;
+        return false;
+      }
     }
 
     function ensureCareControl() {
       if (careControl.hydrating) return true;
       if (careOwnershipIsCurrent()) return true;
-      if (careControl.owned) pauseForOtherPage();
+      if (careControl.owned) pauseForOtherPage(careControl.saveIssue
+        ? '暂时无法确认已保存的进度。这页的操作仍保留在内存中，请保持页面打开，恢复后点击“在这里继续”。' : undefined);
       return false;
     }
 
     function saveCurrentSession(force = false) {
       if (sessionSaveTimer) { clearTimeout(sessionSaveTimer); sessionSaveTimer = null; }
       if (!sessionSaveEnabled || careControl.hydrating || !ensureCareControl()) return false;
-      if (careControl.volatile) return true;
+      if (careControl.volatile) { syncSaveNotice(); return true; }
       let content;
       try {
         const resources = currentProfileResources();
-        content = JSON.stringify({ ...resources, session: currentSessionEnvelope() }, (key, value) => key === 'cfg' ? undefined : value);
-        if (!force && content === lastProfileContent) { careControl.unsavedDraft = null; careControl.conflict = false; return true; }
+        content = currentProfileContent();
+        if (!force && content === lastProfileContent) { careControl.unsavedDraft = null; careControl.conflict = false; careControl.saveIssue = false; syncSaveNotice(); return true; }
         const nextRevision = profileRevision + 1;
         const raw = JSON.stringify({ version: 3, revision: nextRevision, writer: careControl.id, ...JSON.parse(content) });
         // The active page holds the origin-wide Web Lock. One write commits the
@@ -1473,9 +1648,13 @@
         lastResourceJSON = JSON.stringify(resources);
         careControl.unsavedDraft = null;
         careControl.conflict = false;
+        careControl.saveIssue = false;
+        syncSaveNotice();
         return true;
       } catch (_) {
         if (content) careControl.unsavedDraft = { content, baseline: lastProfileRaw };
+        careControl.saveIssue = true;
+        syncSaveNotice();
         setHint('这次进度暂未保存，请先保留当前页面；稍后操作时会再次尝试。', 'warn');
         return false;
       }
@@ -1509,6 +1688,7 @@
 
     function hydrateCareProfile(snapshot) {
       careControl.hydrating = true;
+      careControl.saveIssue = false;
       sessionSaveEnabled = false;
       pendingTreatmentChange = null;
       preferredStyleMode = readViewPreference() || preferredStyleMode;
@@ -1554,9 +1734,11 @@
         ? '这页还有未保存的操作，另一页面已经保存了更新。当前操作仍保留在这页，请先不要刷新。' : message;
       document.getElementById('storage-gate-status').textContent = careControl.conflict
         ? '选择“使用已保存进度”会放弃这页未保存的操作，接着另一页面的最新进度继续。'
+        : careControl.unsavedDraft ? '重新接续前会先检查已保存的版本；如有较新进度，会请你选择。'
         : '切换后，原页面会暂停，护理进度和收入会一起保留。';
       document.getElementById('storage-gate-modal').classList.add('open');
       updateHandoffButtons(Boolean(careControl.request?.takeover));
+      syncSaveNotice();
     }
 
     function pauseForOtherPage(message) {
@@ -1576,7 +1758,7 @@
       showCareGate(message);
     }
 
-    function activateCareControl() {
+    function activateCareControl(preserveMemory = false) {
       try {
         const snapshot = readCareProfile();
         if (careControl.unsavedDraft) {
@@ -1590,9 +1772,13 @@
         careControl.acquiredAt = Date.now();
         localStorage.setItem(CARE_OWNER_KEY, JSON.stringify({ id: careControl.id, updatedAt: careControl.acquiredAt }));
         careControl.owned = true;
-        hydrateCareProfile(snapshot);
+        if (preserveMemory) {
+          lastProfileRaw = snapshot.raw;
+          profileRevision = snapshot.profile.revision;
+          lastProfileContent = '';
+        } else hydrateCareProfile(snapshot);
         sessionSaveEnabled = true;
-        state.paused = false;
+        state.paused = preserveMemory ? Boolean(document.querySelector('.modal-backdrop.open')) : false;
         saveCurrentSession(true);
         requestSceneFrame();
         if (!navigator.locks?.request) {
@@ -1620,7 +1806,7 @@
       }, 1800);
     }
 
-    function acquireCareControl(takeover = false) {
+    function acquireCareControl(takeover = false, preserveMemory = false) {
       if (careControl.request) return careControl.request.ready;
       const request = { takeover, token: `${careControl.id}-${Date.now()}`, controller: new AbortController() };
       request.ready = new Promise(resolve => { request.resolve = resolve; });
@@ -1640,7 +1826,7 @@
             showCareGate(); finishRequest(false); return;
           }
           const held = new Promise(resolve => { careControl.releaseLock = resolve; });
-          const granted = activateCareControl();
+          const granted = activateCareControl(preserveMemory);
           finishRequest(granted);
           if (granted) await held;
         }).catch(error => {
@@ -1656,7 +1842,7 @@
           if (careControl.request !== request) return;
           let owner = null;
           try { owner = JSON.parse(localStorage.getItem(CARE_OWNER_KEY) || 'null'); } catch (_) {}
-          if (!owner || owner.id === careControl.id || Date.now() - owner.updatedAt > 15000) finishRequest(activateCareControl());
+          if (!owner || owner.id === careControl.id || Date.now() - owner.updatedAt > 15000) finishRequest(activateCareControl(preserveMemory));
           else if (takeover) request.poll = setTimeout(attempt, 500);
           else { showCareGate(); finishRequest(false); }
         };
@@ -1698,12 +1884,25 @@
         state.paused = false;
         requestSceneFrame();
         setHint('当前浏览器无法保存进度。这次仍可正常护理，请先保留当前页面。', 'warn');
+        syncSaveNotice();
         return Promise.resolve(true);
       }
       return acquireCareControl(false);
     }
 
     function bindCareStorage() {
+      const notice = document.getElementById('save-notice');
+      document.querySelectorAll('.modal-card').forEach(card => {
+        const copy = notice.cloneNode(true);
+        copy.removeAttribute('id');
+        copy.querySelector('.save-retry').removeAttribute('id');
+        const header = card.querySelector('.modal-header');
+        if (header) header.after(copy);
+        else card.append(copy);
+      });
+      document.querySelectorAll('.save-retry').forEach(button => {
+        button.addEventListener('click', () => { careSaveRetryReady = retryPendingCareSave(); });
+      });
       document.getElementById('btn-continue-here').addEventListener('click', () => {
         if (careControl.conflict) { careControl.unsavedDraft = null; careControl.conflict = false; }
         careControlReady = acquireCareControl(true);
@@ -1747,12 +1946,14 @@
           if (modal) modal.classList.add('open');
           state.paused = Boolean(modal);
           setHint('已回到这次护理。当前浏览器仍无法保存，请先保留这个页面。', 'warn');
+          syncSaveNotice();
           careControlReady = Promise.resolve(true);
         } else careControlReady = acquireCareControl(false);
       });
     }
 
     function restoreCurrentSession(raw) {
+      pointerCareTarget = null;
       try {
         if (!raw || raw.length > 700000) return false;
         const saved = JSON.parse(raw);
@@ -1845,7 +2046,10 @@
 
     function persistSaveData() {
       if (sessionSaveEnabled && !careControl.hydrating && careControl.owned && JSON.stringify(currentProfileResources()) !== lastResourceJSON) saveCurrentSession();
-      updateText(bestScoreLabelEl, `本档最高 ${state.bestScore}`);
+      const best = getCompletedBest();
+      updateText(bestScoreLabelEl, best ? `本档最佳 ${best.bestGrade} · 原始最高 ${best.bestScore} 分` : '完成护理后留下最佳评级');
+      bestScoreLabelEl.title = '原始得分包含连贯与器械奖励，比较手法时先看评级与误操作。';
+      updateCareJourneySummary();
       updateText(coinValEl, `¥ ${state.coins}`);
       queueSessionSave();
     }
@@ -1914,12 +2118,92 @@
             empty.bests[key] = { clientId: best.clientId, density: best.density, inputMode: best.inputMode === 'keyboard' ? 'keyboard' : 'pointer', bestScore: best.bestScore, bestGrade: best.bestGrade, completions: best.completions, goalMet: Boolean(best.goalMet) };
           }
         }
+        // Older history-only records must retain their stamps after the
+        // rolling 60-entry history expires. Rebuild missing lifetime groups.
+        const historicalBests = new Map();
+        const gradeOrder = ['S', 'A', 'B', 'C'];
+        for (const record of empty.history) {
+          const key = careModeKey(record.clientId, record.density, record.inputMode);
+          const prior = historicalBests.get(key);
+          historicalBests.set(key, {
+            clientId: record.clientId, density: record.density, inputMode: record.inputMode,
+            bestScore: Math.max(prior?.bestScore || 0, record.score),
+            bestGrade: prior && gradeOrder.indexOf(prior.bestGrade) < gradeOrder.indexOf(record.grade) ? prior.bestGrade : record.grade,
+            completions: (prior?.completions || 0) + 1,
+            goalMet: Boolean(prior?.goalMet || record.goal.met)
+          });
+        }
+        for (const [key, best] of historicalBests) {
+          if (!empty.bests[key]) empty.bests[key] = best;
+          else if (best.goalMet) empty.bests[key].goalMet = true;
+        }
       } catch (_) {}
       return empty;
     }
 
     function getCompletedBest(clientId = currentClient().id, density = state.runDensity, inputMode = state.runControlMode) {
       return careRecords.bests[careModeKey(clientId, density, inputMode)] || null;
+    }
+
+    // Journey stamps are derived from the existing canonical records. A stamp
+    // earned in any quantity/input group also consumes its one-time reward.
+    function hasCompletedCareGoal(clientId) {
+      return Object.values(careRecords.bests).some(best => best.clientId === clientId && best.goalMet)
+        || careRecords.history.some(record => record.clientId === clientId && record.goal.met);
+    }
+
+    function getCareJourney() {
+      const completed = CLIENTS.filter(client => hasCompletedCareGoal(client.id));
+      return { completed, count: completed.length, complete: completed.length === CLIENTS.length,
+        nextClient: CLIENTS.find(client => !hasCompletedCareGoal(client.id)) || null };
+    }
+
+    function updateCareJourneySummary() {
+      const journey = getCareJourney();
+      updateText(document.getElementById('care-journal-count'), `${journey.count}/${CLIENTS.length}`);
+      const planButton = document.getElementById('btn-plan');
+      planButton.setAttribute('aria-label', `护理手记，已收集 ${journey.count} / ${CLIENTS.length} 枚印记${journey.complete ? '，本章完成' : ''}`);
+      document.getElementById('app-shell').classList.toggle('chapter-complete', journey.complete);
+      updateText(document.getElementById('chapter-caption'), journey.complete ? '五枚印记 · 本章完成' : 'PORE MASTER CLINIC');
+    }
+
+    function renderCareJourney() {
+      const journey = getCareJourney();
+      updateText(document.getElementById('journey-count'), `${journey.count} / ${CLIENTS.length}`);
+      const stamps = document.getElementById('journey-stamps');
+      stamps.replaceChildren();
+      for (const client of CLIENTS) {
+        const met = hasCompletedCareGoal(client.id);
+        const item = document.createElement('li');
+        item.className = 'care-stamp' + (met ? ' is-met' : '');
+        item.setAttribute('aria-label', `${client.name}：${CARE_GOALS[client.id].title}，${met ? '印记已收下' : '尚未达成'}`);
+        const seal = document.createElement('span'); seal.className = 'care-stamp-seal'; seal.textContent = client.stamp; seal.setAttribute('aria-hidden', 'true');
+        const label = document.createElement('span'); label.textContent = client.name;
+        item.append(seal, label); stamps.appendChild(item);
+      }
+      updateText(document.getElementById('journey-status'), journey.complete
+        ? '五枚护理印记已集齐，这一章完成了。可以回来重访顾客，也可以安心休息。'
+        : `完成各位顾客的可选目标，留下五枚印记。首次达成每位顾客的目标，另得 ¥${CARE_GOAL_FIRST_REWARD}。`);
+      updateText(document.getElementById('journey-next'), journey.nextClient
+        ? `下一枚：${journey.nextClient.name} · ${CARE_GOALS[journey.nextClient.id].title}` : '每一枚印记，都是一次细致照顾的记录。');
+      const nextButton = document.getElementById('btn-journey-next');
+      nextButton.hidden = journey.complete;
+      if (journey.nextClient) {
+        const index = CLIENTS.indexOf(journey.nextClient);
+        const continuing = index === state.clientIndex && !state.settled;
+        nextButton.dataset.clientIndex = String(index);
+        updateText(nextButton, continuing ? `继续${journey.nextClient.name}的护理` : `接待${journey.nextClient.name} · 收集下一枚`);
+      }
+    }
+
+    function describeCareQuality(stats, grade = getCareGrade(stats)) {
+      if (grade === 'S') return '全程没有误操作，累计刺激保持在轻柔范围内。';
+      const reasons = [];
+      if (stats.snaps > 0) reasons.push(`夹取过快造成 ${stats.snaps} 次夹断`);
+      const other = Math.max(0, stats.mistakes - (stats.snaps || 0));
+      if (other > 0) reasons.push(`有 ${other} 次力度或落点失误`);
+      if (stats.totalDamage > 14) reasons.push(`累计刺激 ${stats.totalDamage.toFixed(1)}，超过 S 级的 14`);
+      return `${reasons.join('；') || '本次累计刺激和误操作影响了评级'}。下次可以放轻力度，夹取时更慢一些。`;
     }
 
     function getCareGrade(stats = normalizeRunStats()) {
@@ -1972,13 +2256,16 @@
       if (!state.settled || !state.pimples.length || state.pimples.some(p => p.state < P_STATE.HEALING)) return null;
       const client = currentClient();
       const grade = getCareGrade();
+      const goal = evaluateCareGoal();
+      const goalFirst = goal.met && !hasCompletedCareGoal(client.id);
+      const income = { base: client.bounty, tip: ({ S: 80, A: 40, B: 10, C: 0 })[grade], goalBonus: goalFirst ? CARE_GOAL_FIRST_REWARD : 0 };
       const record = {
         runId: state.runId, clientId: client.id, density: state.runDensity, mode: 'relaxed', inputMode: state.runControlMode,
         upgrades: { ...state.upgrades },
-        score: Math.round(state.score), grade, earnedCoins: client.bounty + ({ S: 80, A: 40, B: 10, C: 0 })[grade],
+        score: Math.round(state.score), grade, earnedCoins: income.base + income.tip + income.goalBonus, income, goalFirst,
         completedAt: Date.now(), stats: { ...state.runStats, toolsUsed: { ...state.runStats.toolsUsed } },
         finalDamage: Math.round(state.damage), collected: state.trophiesPlucked + state.coreSeedsCollected,
-        goal: evaluateCareGoal()
+        goal
       };
       if (state.resultRecorded) return record;
       state.resultRecorded = true;
@@ -2206,10 +2493,18 @@
           const ly = seededRand(seedBase + 301 + i * 2.1) * h;
           const len = 5 + seededRand(seedBase + 302 + i) * 12;
           const ang = .35 + (seededRand(seedBase + 400 + i) - .5) * 1.0 + (ly / h - .5) * .35;
-          skinCtx.strokeStyle = 'rgba(133,93,72,.050)';
+          skinCtx.strokeStyle = 'rgba(133,93,72,.055)';
           skinCtx.beginPath(); skinCtx.moveTo(lx, ly);
           skinCtx.quadraticCurveTo(lx + Math.cos(ang) * len * .5, ly + Math.sin(ang) * len * .5 + 1.0, lx + Math.cos(ang) * len, ly + Math.sin(ang) * len);
           skinCtx.stroke();
+          if (i % 3 === 0) {
+            // Short branches make a skin surface, rather than isolated drawn hairs.
+            const bx = lx + Math.cos(ang) * len * .58;
+            const by = ly + Math.sin(ang) * len * .58 + .45;
+            skinCtx.strokeStyle = 'rgba(133,93,72,.035)';
+            skinCtx.beginPath(); skinCtx.moveTo(bx, by);
+            skinCtx.quadraticCurveTo(bx - 1, by + 2, bx + len * .10, by + len * .32); skinCtx.stroke();
+          }
         }
         skinCtx.restore();
       }
@@ -2233,6 +2528,11 @@
         skinCtx.beginPath(); skinCtx.ellipse(0, 0, r * 1.55, r * 1.35, 0, 0, Math.PI * 2); skinCtx.fill();
         skinCtx.strokeStyle = 'rgba(255,246,225,.16)'; skinCtx.lineWidth = .45;
         skinCtx.beginPath(); skinCtx.ellipse(r * .15, r * .21, r * .82, r * .69, 0, .15, Math.PI * .8); skinCtx.stroke();
+        if (!isCreamy && variation > .62) {
+          skinCtx.strokeStyle = `rgba(132,91,68,${.035 + seb * .025})`;
+          skinCtx.beginPath(); skinCtx.moveTo(r * .8, r * .25);
+          skinCtx.quadraticCurveTo(r * 1.7, r * .35, r * 2.8, r * 1.1); skinCtx.stroke();
+        }
         skinCtx.restore();
       }
 
@@ -2460,8 +2760,26 @@
       return drops.some(drop => sp.x + drop.dx + drop.rr >= 0 && sp.x + drop.dx - drop.rr <= width && sp.y + drop.dy + drop.rr >= 0 && sp.y + drop.dy - drop.rr <= height);
     }
 
+    function careRecipeFor(client, count = 0) {
+      const types = ['blackhead', 'whitehead', 'cyst'];
+      const total = types.reduce((sum, type) => sum + client.recipe[type], 0);
+      if (!count || count === total) return { ...client.recipe };
+      // Largest-remainder allocation keeps the customer's proportions and exact
+      // target count. A zero in the original recipe can never gain a new type.
+      const portions = types.map((type, index) => {
+        const exact = client.recipe[type] * count / total;
+        return { type, index, count: Math.floor(exact), remainder: exact % 1 };
+      });
+      let remaining = count - portions.reduce((sum, portion) => sum + portion.count, 0);
+      for (const portion of [...portions].sort((a, b) => b.remainder - a.remainder || a.index - b.index)) {
+        if (remaining > 0 && client.recipe[portion.type] > 0) { portion.count += 1; remaining -= 1; }
+      }
+      return Object.fromEntries(portions.map(portion => [portion.type, portion.count]));
+    }
+
     function generateLevel(overrideDensity = 0) {
       if (!ensureCareControl()) return;
+      pointerCareTarget = null;
       pendingTreatmentChange = null;
       state.targetDensity = overrideDensity;
       syncDensityControls();
@@ -2524,7 +2842,9 @@
       document.getElementById('case-zone-label').textContent = document.getElementById('care-zone').textContent;
       setPatientMood('😟');
       patientNameEl.textContent = client.name;
-      patientQuoteEl.textContent = client.quote;
+      patientQuoteEl.textContent = hasCompletedCareGoal(client.id) ? client.revisitQuote : client.quote;
+      updateText(document.getElementById('care-focus'), client.focus);
+      updateText(document.getElementById('plan-care-focus'), client.rhythm);
       patientQuoteEl.style.color = 'var(--muted)';
       patientSteamTagEl.style.display = 'none';
       iceFinishBtnEl.classList.remove('show');
@@ -2533,20 +2853,8 @@
 
       renderSkinTexture();
 
-      const typePool = [];
-      if (overrideDensity > 0) {
-        typePool.push('blackhead', 'blackhead', 'whitehead', 'cyst');
-        while (typePool.length < overrideDensity) {
-          const roll = Math.random();
-          if (roll < 0.42) typePool.push('blackhead');
-          else if (roll < 0.76) typePool.push('whitehead');
-          else typePool.push('cyst');
-        }
-      } else {
-        for (let i = 0; i < client.recipe.blackhead; i++) typePool.push('blackhead');
-        for (let i = 0; i < client.recipe.whitehead; i++) typePool.push('whitehead');
-        for (let i = 0; i < client.recipe.cyst; i++) typePool.push('cyst');
-      }
+      const recipe = careRecipeFor(client, overrideDensity);
+      const typePool = ['blackhead', 'whitehead', 'cyst'].flatMap(type => Array(recipe[type]).fill(type));
 
       typePool.forEach((typeKey, idx) => {
         const cfg = typeKey === 'whitehead'
@@ -2887,6 +3195,71 @@
       return true;
     }
 
+    const TOOL_GUIDANCE = {
+      steam: '按住缓缓移动；黑头充分软化后可直接夹取。',
+      needle: '对准未破口尖端再松开；黑头可先挑松，露出一半后可针取。移出操作区松手可取消。',
+      squeeze: '在瑕疵旁按住，向中心缓缓推；双指也可向内捏合。白头与已破口深层先轻挤到露头。',
+      tweezers: '黑头充分软化、挑松或露头后可夹取；白头与深层先轻挤到露头，再缓缓外拉。',
+      swab: '轻轻擦净残留；再点一次棉签，即可换新。'
+    };
+
+    function tweezerPreparationHint(p) {
+      if (p.state === P_STATE.OOZING) return '这里已排空，换清洁棉签擦净残留。';
+      if (p.type === 'blackhead') return '先充分热敷或用粉刺针挑松，也可以轻挤到露头再夹取。';
+      if (p.type === 'cyst' && !p.pierced) return '深层目标先用粉刺针破口，再轻挤到露头后夹取。';
+      return p.pierced ? '这处已挑开，先轻挤到露头，再用细胞夹取出。' : '白头先轻挤到露头，再用细胞夹取出。';
+    }
+
+    function currentPointerCareTarget() {
+      if (!pointerCareTarget) return null;
+      const { kind, item } = pointerCareTarget;
+      const items = kind === 'pimple' ? state.pimples : kind === 'residue' ? state.surfaceResidues : state.lensSplatters;
+      if (!items.includes(item) || (kind === 'pimple' && item.state >= P_STATE.HEALING)) { pointerCareTarget = null; return null; }
+      return { kind, item, x: item.x, y: item.y };
+    }
+
+    function toolGuidanceFor(tool, selected = currentPointerCareTarget()) {
+      if (selected?.kind === 'pimple') {
+        const p = selected.item;
+        if (tool === 'tweezers' && !canTweezePimple(p)) return tweezerPreparationHint(p);
+        if (tool === 'tweezers') return `${p.type === 'blackhead' ? '这处黑头可以夹取' : '这处已露头'}，夹住后缓慢向外拉。`;
+        if (tool === 'squeeze' && p.type === 'cyst' && !p.pierced) return '这处深层先用粉刺针破口，再沿外围轻轻向内推。';
+        if (tool === 'needle' && !needleActionFor(p)) return p.state === P_STATE.OOZING
+          ? '这处已排空，换棉签擦净残留。' : p.pierced && p.state === P_STATE.INTACT
+          ? '这处已挑开，换轻柔挤压，先挤到露头。' : '这处已露头，换细胞夹或继续轻柔挤压。';
+      }
+      return TOOL_GUIDANCE[tool] || '';
+    }
+
+    function pointIsInsideCare(pt) {
+      return pt.x >= 0 && pt.y >= 0 && pt.x < state.width && pt.y < state.height;
+    }
+
+    function rememberPointerCareTarget(pt, clearEmpty = false) {
+      if (state.paused || state.settled || !pointIsInsideCare(pt)) return;
+      let selected = null, closest = Infinity;
+      const candidates = state.pimples.map(item => ({ kind: 'pimple', item }));
+      for (const item of state.surfaceResidues) candidates.push({ kind: 'residue', item });
+      if (state.currentTool === 'swab') for (const item of state.lensSplatters) candidates.push({ kind: 'splatter', item });
+      for (const target of candidates) {
+        const item = target.item;
+        if (target.kind === 'pimple' && item.state >= P_STATE.HEALING) continue;
+        const radius = target.kind === 'pimple' ? Math.max(25, (item.hitRadius || item.radius) * 1.6) : Math.max(18, (item.r || 4) * 2);
+        const distance = Math.hypot(pt.x - item.x, pt.y - item.y);
+        if (distance <= radius && distance < closest) { selected = target; closest = distance; }
+      }
+      if (!selected && !clearEmpty) return;
+      if (pointerCareTarget?.item === selected?.item) return;
+      pointerCareTarget = selected;
+      updateCareGuidance();
+      if (!isKeyboardCareFocused()) setHint(toolGuidanceFor(state.currentTool, selected), 'normal');
+    }
+
+    function finishPointerNeedle(pt) {
+      if (pointIsInsideCare(pt)) handleNeedleTap(pt);
+      else setHint('已取消这次针操作。重新对准后再按住。', 'normal');
+    }
+
     function needleActionFor(p) {
       if (p.type === 'blackhead' && p.state === P_STATE.EXTRUDING && p.extrudeProgress >= 0.5) return 'extract';
       if (p.state === P_STATE.INTACT && !p.pierced) return p.type === 'blackhead' ? 'loosen' : 'pierce';
@@ -2942,7 +3315,7 @@
       updateText(document.getElementById('canvas-status'), status);
       if (state.currentTool === 'ice_brush') updateText(document.getElementById('active-tool-name'), `舒缓冰膜 · 已覆盖 ${iced} / ${total}`);
 
-      const selected = isKeyboardCareFocused() ? currentKeyboardTarget() : null;
+      const selected = isKeyboardCareFocused() ? currentKeyboardTarget() : currentPointerCareTarget();
       const nextTool = remaining === 0 ? '' : !selected ? getRecommendedTool()
         : selected.kind === 'pimple' ? (selected.item.state < P_STATE.HEALING ? getRecommendedTool(selected.item) : '')
         : selected.kind === 'splatter' || !['worm', 'core_seed'].includes(selected.item.kind) ? 'swab' : 'tweezers';
@@ -2950,7 +3323,7 @@
       nextButton.hidden = !nextTool || nextTool === state.currentTool || state.iceFinishing || state.settled;
       nextButton.dataset.tool = nextTool;
       const labels = { steam: '先热敷', needle: '用粉刺针', squeeze: '轻柔挤压', tweezers: '换细胞夹', swab: '换棉签' };
-      if (nextTool) updateText(nextButton, `${labels[nextTool]} →`);
+      if (nextTool) updateText(nextButton, `${selected ? '这处' : '下一处'}：${labels[nextTool]} →`);
       const goal = evaluateCareGoal();
       updateText(document.getElementById('care-goal-current'), `${goal.title}：${goal.description} ${goal.progress}`);
       updateText(document.getElementById('help-care-goal'), `${goal.title}：${goal.description} ${goal.progress}`);
@@ -3007,7 +3380,7 @@
         ? currentKeyboardTarget()?.item === p ? '按住空格或回车护理' : '用方向键选到练习目标'
         : instructions[tool] || '继续轻缓操作';
       updateText(document.getElementById('practice-label'), `${names[p.type]} · ${instruction}`);
-      if (keyboardFocused) return;
+      if (keyboardFocused || (currentPointerCareTarget() && currentPointerCareTarget().item !== p)) return;
       const next = document.getElementById('btn-care-next');
       const labels = { steam: '先热敷', needle: '用粉刺针', squeeze: '轻柔挤压', tweezers: '换细胞夹', swab: '换棉签' };
       next.dataset.tool = tool;
@@ -3070,7 +3443,13 @@
 
       const dmgRounded = Math.round(state.damage);
       updateText(damageValEl, `${dmgRounded}%`);
-      damageValEl.title = `累计刺激 ${state.runStats.totalDamage.toFixed(1)} · 误操作 ${state.runStats.mistakes} 次`;
+      damageValEl.title = '即时刺激可以通过擦净与敷膜舒缓；本局累计表现保留在下方。';
+      const grade = getCareGrade(state.runStats);
+      updateText(document.getElementById('care-quality-label'), `本局表现 ${grade}`);
+      updateText(document.getElementById('care-quality-history'), `误操作 ${state.runStats.mistakes} 次 · 累计刺激 ${state.runStats.totalDamage.toFixed(1)}`);
+      const qualityButton = document.getElementById('btn-quality-details');
+      qualityButton.dataset.grade = grade;
+      qualityButton.setAttribute('aria-label', `本局表现 ${grade}，误操作 ${state.runStats.mistakes} 次，累计刺激 ${state.runStats.totalDamage.toFixed(1)}，查看评级说明`);
       damageFillEl.style.width = `${dmgRounded}%`;
       damageValEl.style.color = dmgRounded < 25 ? 'var(--green)' : dmgRounded < 55 ? 'var(--accent-gold)' : 'var(--accent-danger)';
 
@@ -3446,10 +3825,11 @@
         setHint('破口完成。沿红肿区域外围，缓缓向内推。', 'good');
       } else if (hit.type === 'blackhead') {
         addScore(30, hit.x, hit.y, '挑松黑头');
-        setHint('黑头已松动，轻挤露头后再用细胞夹取出。', 'good');
+        setHint('黑头已松动，可直接用细胞夹缓缓取出，也可轻挤到露头。', 'good');
       } else {
         hit.surfacePusMound = 1.9;
         spawnFloatingText(hit.x, hit.y - 16, '挑开薄皮', '#a8f0d4');
+        setHint('薄皮已挑开，先轻挤到露头，再夹取或继续轻挤。', 'good');
       }
       updateHUD();
     }
@@ -3508,12 +3888,9 @@
         return;
       }
 
+      rememberPointerCareTarget({ x: target.x, y: target.y }, true);
       if (!canTweezePimple(target)) {
-        const message = target.state === P_STATE.OOZING ? '这里已排空，换清洁棉签擦净残留。'
-          : target.type === 'blackhead' ? '先充分热敷或用粉刺针挑松，也可以轻挤到露头再夹取。'
-          : target.type === 'cyst' && !target.pierced ? '深层目标先用粉刺针破口，再轻挤到露头。'
-          : '先轻挤到破口，白头和深层的剩余部分都能夹取。';
-        setHint(message, 'normal');
+        setHint(tweezerPreparationHint(target), 'normal');
         return;
       }
 
@@ -4029,6 +4406,7 @@
       ptr.inputTime = timestamp;
       ptr.x = pt.x;
       ptr.y = pt.y;
+      if (!state.tweezers.clampedPimple) rememberPointerCareTarget(pt);
       if (ptr.mode === 'tweezers') {
         // Input devices report at different rates. Use the time between samples
         // so the same physical drag has the same speed on a mouse or touch screen.
@@ -4085,6 +4463,7 @@
         if (touches.length === 0) return;
         const pt = getCanvasPoint(touches[0].clientX, touches[0].clientY);
         beginPointerStroke(pt, e.timeStamp);
+        rememberPointerCareTarget(pt, true);
 
         // 点击画布右上角战利品弯盘也可直接弹出 25X 检视窗
         if (state.trophyTrayItems.length > 0 && pt.x > state.width - 96 && pt.y < 92) {
@@ -4105,7 +4484,7 @@
           state.pointer.mode = 'needle';
           state.pointer.x = pt.x;
           state.pointer.y = pt.y;
-          setHint('对准浅色尖端或未取出的黑头，松开完成操作。', 'good');
+          setHint('对准尖端后松手；想取消时，移出操作区再松开。', 'good');
           return;
         }
         if (state.currentTool === 'steam') {
@@ -4154,6 +4533,7 @@
           state.pointer.lockedPimple = findNearestSqueezeTarget(
             midX, midY, CONFIG.INTERACTION.TWO_FINGER_CAPTURE_PX
           );
+          rememberPointerCareTarget(state.pointer.lockedPimple || { x: midX, y: midY }, true);
           state.pointer.rawForce = 0.08;
         } else if (touches.length === 1) {
           startMirrorPinch(pt);
@@ -4200,6 +4580,7 @@
             state.pointer.lockedPimple = findNearestSqueezeTarget(
               midX, midY, CONFIG.INTERACTION.TWO_FINGER_CAPTURE_PX
             );
+            rememberPointerCareTarget(state.pointer.lockedPimple || { x: midX, y: midY }, true);
 
             const shrink = Math.max(0, state.pointer.initSpan - span);
             const closenessBonus = span < 66 ? (66 - span) / 46 : 0;
@@ -4218,7 +4599,7 @@
         const secondEnded = ended.some((touch, index) => touchIdentity(touch, index) === state.pointer.secondTouchId);
         if (primary && state.pointer.active && state.pointer.mode === 'needle' && !state.paused && !state.settled && !state.iceFinishing) {
           const pt = getCanvasPoint(primary.clientX, primary.clientY);
-          handleNeedleTap(pt);
+          finishPointerNeedle(pt);
         }
         if (primary || e.touches.length === 0 || (secondEnded && state.pointer.mode === 'two-finger')) {
           releasePointer();
@@ -4237,6 +4618,7 @@
         sound.unlock();
         const pt = getCanvasPoint(e.clientX, e.clientY);
         beginPointerStroke(pt, e.timeStamp);
+        rememberPointerCareTarget(pt, true);
         state.pointer.hoverX = pt.x;
         state.pointer.hoverY = pt.y;
 
@@ -4258,7 +4640,7 @@
           state.pointer.mode = 'needle';
           state.pointer.x = pt.x;
           state.pointer.y = pt.y;
-          setHint('对准浅色尖端或未取出的黑头，松开完成操作。', 'good');
+          setHint('对准尖端后松手；想取消时，移出操作区再松开。', 'good');
           return;
         }
         if (state.currentTool === 'steam') {
@@ -4293,6 +4675,7 @@
         state.pointer.hoverX = pt.x;
         state.pointer.hoverY = pt.y;
 
+        if (!state.pointer.active) rememberPointerCareTarget(pt, true);
         if (!state.pointer.active || state.settled || state.paused || state.iceFinishing) return;
         if (state.currentTool !== 'squeeze') {
           movePointerTool(pt, e.timeStamp);
@@ -4301,10 +4684,11 @@
         }
       });
 
-      window.addEventListener('mouseup', () => {
+      window.addEventListener('mouseup', e => {
+        if (e.button !== 0) return;
         if (state.pointer.active) {
           if (state.pointer.mode === 'needle' && !state.settled && !state.paused) {
-            handleNeedleTap({ x: state.pointer.x, y: state.pointer.y });
+            finishPointerNeedle(getCanvasPoint(e.clientX, e.clientY));
           }
           releasePointer();
         }
@@ -4365,6 +4749,7 @@
       const target = findNearestSqueezeTarget(pt.x, pt.y, CONFIG.INTERACTION.MOUSE_CAPTURE_PX);
       const cx = target ? target.x : pt.x;
       const cy = target ? target.y : pt.y;
+      if (target) rememberPointerCareTarget({ x: cx, y: cy }, true);
 
       let dx = pt.x - cx;
       let dy = pt.y - cy;
@@ -5454,15 +5839,24 @@
 
       const healFade = p.state === P_STATE.HEALING ? (1 - p.healProgress * 0.88) : 1;
 
-      // 细胞夹拉扯时毛孔周围一圈受牵拉泛白皮丘
+      // Skin stays attached to the original follicle while the plug is lifted.
       if (isClampedByTweezer && state.tweezers.pullRatio > 0.05) {
-        const tentG = ctx.createRadialGradient(0, 0, 1, 0, 0, p.radius * 1.15);
-        tentG.addColorStop(0, `rgba(255, 245, 232, ${state.tweezers.pullRatio * 0.48})`);
+        const pull = Math.min(1, state.tweezers.pullRatio);
+        const tx = -p.tentOffsetX * .55, ty = -p.tentOffsetY * .55;
+        const tentG = ctx.createRadialGradient(0, 0, .5, tx, ty, p.radius * 1.12);
+        tentG.addColorStop(0, `rgba(255, 240, 217, ${pull * .34})`);
         tentG.addColorStop(1, 'rgba(255, 245, 232, 0)');
         ctx.fillStyle = tentG;
-        ctx.beginPath();
-        ctx.arc(0, 0, p.radius * 1.15, 0, Math.PI * 2);
-        ctx.fill();
+        beginOrganicPath(ctx, tx, ty, p.radius * 1.12, p.radius * .84, p.shape, 1.3); ctx.fill();
+        ctx.save();
+        ctx.rotate(Math.atan2(p.tentOffsetY, p.tentOffsetX));
+        ctx.strokeStyle = `rgba(137,91,65,${pull * .14})`;
+        ctx.lineWidth = .55;
+        for (const side of [-1, 1]) {
+          ctx.beginPath(); ctx.moveTo(-p.radius * .84, side * p.radius * .40);
+          ctx.quadraticCurveTo(-p.radius * .48, side * p.radius * .14, -p.radius * .22, side * p.radius * .25); ctx.stroke();
+        }
+        ctx.restore();
       }
 
       let compressX = 1;
@@ -5490,7 +5884,7 @@
       if (p.surfacePusMound > 0.25 && p.state !== P_STATE.HEALING) {
         const mr = p.surfacePusMound * (p.state === P_STATE.OOZING ? (1 - p.wipeProgress) : 1);
         if (mr > 0.3) {
-          renderViscousPusDollop(p.headOffsetX, p.headOffsetY - 0.8, mr, isCreamy);
+          renderViscousPusDollop(p.headOffsetX, p.headOffsetY - 0.8, mr, isCreamy, p.shape);
         }
       }
 
@@ -5521,6 +5915,51 @@
       ctx.restore();
     }
 
+    // These marks use the saved shape/id, so an untouched comparison and the live
+    // surface have exactly the same texture. No frame-time random variation.
+    function renderFollicleTexture(p, rx, ry, cy, isCreamy, strength = 1) {
+      if (isCreamy) strength *= .55;
+      const seed = p.id * 71 + p.shape.p1 * 17;
+      for (let i = 0; i < 9; i++) {
+        const angle = seededRand(seed + i * 2.7) * Math.PI * 2;
+        const distance = .40 + seededRand(seed + 30 + i * 3.1) * .46;
+        const x = Math.cos(angle) * rx * distance;
+        const y = cy + Math.sin(angle) * ry * distance;
+        const size = .30 + seededRand(seed + 60 + i) * .33;
+        ctx.fillStyle = `rgba(123,81,62,${.13 * strength})`;
+        ctx.beginPath(); ctx.ellipse(x, y, size, size * .64, angle, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = `rgba(255,236,208,${.22 * strength})`; ctx.lineWidth = .45;
+        ctx.beginPath(); ctx.moveTo(x - size * .6, y + size * .8);
+        ctx.quadraticCurveTo(x + size, y + size * 1.2, x + size * 1.5, y + size * .2); ctx.stroke();
+      }
+      ctx.lineWidth = .45;
+      ctx.strokeStyle = `rgba(132,86,67,${.11 * strength})`;
+      for (let i = 0; i < 3; i++) {
+        const side = i === 1 ? -1 : 1;
+        const x = side * rx * (.48 + .10 * Math.sin(p.shape.p2 + i));
+        const y = cy + ry * (-.4 + i * .38);
+        ctx.beginPath(); ctx.moveTo(x, y);
+        ctx.quadraticCurveTo(x + side * rx * .15, y + ry * .09, x + side * rx * .28, y + ry * .05); ctx.stroke();
+      }
+    }
+
+    function renderPoreLip(p, x, y, rx, ry, alpha, isCreamy) {
+      ctx.save(); ctx.translate(x, y); ctx.rotate(p.shape.rot);
+      ctx.lineCap = 'round'; ctx.lineWidth = .65;
+      ctx.strokeStyle = `rgba(128,86,65,${alpha * .35})`;
+      ctx.beginPath(); ctx.moveTo(-rx * 1.34, -ry * .18);
+      ctx.bezierCurveTo(-rx * .85, -ry * .93, rx * .32, -ry * 1.2, rx * .91, -ry * .64); ctx.stroke();
+      ctx.strokeStyle = `rgba(${isCreamy ? '255,238,213' : '250,223,189'},${alpha * .70})`;
+      ctx.beginPath(); ctx.moveTo(-rx * .78, ry * .61);
+      ctx.bezierCurveTo(-rx * .2, ry * 1.14, rx * .87, ry * .90, rx * 1.24, ry * .18); ctx.stroke();
+      ctx.strokeStyle = `rgba(132,88,66,${alpha * .16})`; ctx.lineWidth = .45;
+      ctx.beginPath(); ctx.moveTo(-rx * 1.18, ry * .12);
+      ctx.quadraticCurveTo(-rx * 1.7, ry * .15, -rx * 2.15, ry * .62); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(rx * 1.1, -ry * .26);
+      ctx.quadraticCurveTo(rx * 1.60, -ry * .68, rx * 2.02, -ry * .55); ctx.stroke();
+      ctx.restore();
+    }
+
     function renderRealBlackhead(p, isCreamy, healFade) {
       const r = p.radius, swell = p.swellVisual;
       if (p.traumaLevel > .1 || swell > .05) {
@@ -5532,30 +5971,36 @@
       }
       if (p.state === P_STATE.OOZING || p.state === P_STATE.HEALING) return;
       const poreR = r * (.35 + swell * .07) * (p.steamed >= .75 ? 1.12 : 1);
+      const aspect = .78 + Math.sin(p.shape.p2) * .07;
       const funnel = ctx.createRadialGradient(0, 0, poreR * .45, 0, 0, poreR * 1.45);
       funnel.addColorStop(0, 'rgba(89,57,39,.51)');
       funnel.addColorStop(.58, 'rgba(117,77,52,.24)');
       funnel.addColorStop(1, 'rgba(143,99,67,0)');
       ctx.fillStyle = funnel;
-      beginOrganicPath(ctx, 0, .5, poreR * 1.45, poreR * 1.32, p.shape, .65); ctx.fill();
+      beginOrganicPath(ctx, 0, .5, poreR * 1.45, poreR * 1.23, p.shape, 1.5); ctx.fill();
       ctx.fillStyle = isCreamy ? 'rgba(82,59,41,.74)' : 'rgba(61,43,31,.85)';
-      beginOrganicPath(ctx, 0, 0, poreR, poreR * .90, p.shape, .8); ctx.fill();
-      ctx.strokeStyle = 'rgba(250,229,202,.32)'; ctx.lineWidth = .65;
-      ctx.beginPath(); ctx.ellipse(0, .2, poreR * 1.08, poreR * .98, p.shape.rot, .12, 1.5); ctx.stroke();
+      beginOrganicPath(ctx, 0, 0, poreR, poreR * aspect, p.shape, 1.45); ctx.fill();
+      renderPoreLip(p, 0, .2, poreR * 1.03, poreR * aspect, .72 + swell * .16, isCreamy);
       if (p.state === P_STATE.INTACT || p.state === P_STATE.RUPTURED) {
         const lift = -swell * 1.6, cap = poreR * .84;
         if (p.pierced || p.steamed >= .75) {
           ctx.fillStyle = 'rgba(225,203,158,.62)';
-          beginOrganicPath(ctx, 0, lift + .4, cap * 1.07, cap * .99, p.shape, .7); ctx.fill();
+          beginOrganicPath(ctx, 0, lift + .45, cap * 1.08, cap * aspect * 1.14, p.shape, 1.5); ctx.fill();
         }
         const plug = ctx.createLinearGradient(-cap, lift - cap, cap, lift + cap);
-        plug.addColorStop(0, isCreamy ? '#8a7359' : '#77614a');
-        plug.addColorStop(.45, isCreamy ? '#68523c' : '#51402e');
-        plug.addColorStop(1, '#3e3025');
+        plug.addColorStop(0, isCreamy ? '#7e6b54' : '#695941');
+        plug.addColorStop(.45, isCreamy ? '#62503b' : '#4d402d');
+        plug.addColorStop(1, '#392f24');
         ctx.fillStyle = plug;
-        beginOrganicPath(ctx, 0, lift, cap, cap * .87, p.shape, .8); ctx.fill();
-        ctx.strokeStyle = 'rgba(229,205,167,.36)'; ctx.lineWidth = .7;
-        ctx.beginPath(); ctx.ellipse(-cap * .18, lift - cap * .18, cap * .55, cap * .38, p.shape.rot, 3.7, 5.4); ctx.stroke();
+        beginOrganicPath(ctx, -.12, lift, cap, cap * aspect, p.shape, 1.65); ctx.fill();
+        ctx.save(); ctx.translate(0, lift); ctx.rotate(p.shape.rot);
+        ctx.strokeStyle = 'rgba(222,202,163,.30)'; ctx.lineWidth = .55;
+        ctx.beginPath(); ctx.moveTo(-cap * .51, -cap * .16);
+        ctx.quadraticCurveTo(-cap * .31, -cap * .29, -cap * .02, -cap * .25); ctx.stroke();
+        ctx.strokeStyle = 'rgba(26,23,18,.27)'; ctx.lineWidth = .50;
+        ctx.beginPath(); ctx.moveTo(cap * .05, -cap * .52);
+        ctx.lineTo(cap * .19, -cap * .13); ctx.lineTo(cap * .11, cap * .20); ctx.stroke();
+        ctx.restore();
       }
     }
 
@@ -5664,86 +6109,97 @@
 
     function renderRealWhitehead(p, isCreamy, healFade) {
       const r = p.radius, swell = p.swellVisual;
-      const halo = ctx.createRadialGradient(0, 0, r * .12, 0, 0, r * 1.5);
-      halo.addColorStop(0, `rgba(178,106,93,${(isCreamy ? .16 : .22) * healFade})`);
-      halo.addColorStop(.55, `rgba(189,121,101,${.07 * healFade})`);
+      const settled = p.state === P_STATE.OOZING ? 1 - p.wipeProgress * .65 : healFade;
+      const halo = ctx.createRadialGradient(-r * .10, r * .12, r * .12, 0, 0, r * 1.45);
+      halo.addColorStop(0, `rgba(178,106,93,${(isCreamy ? .12 : .17) * settled})`);
+      halo.addColorStop(.55, `rgba(189,121,101,${.055 * settled})`);
       halo.addColorStop(1, 'rgba(189,121,101,0)');
       ctx.fillStyle = halo;
-      beginOrganicPath(ctx, 0, 0, r * 1.5, r * 1.36, p.shape, .7); ctx.fill();
+      ctx.fillRect(-r * 1.5, -r * 1.5, r * 3, r * 3);
       if (p.state === P_STATE.HEALING || p.state === P_STATE.OOZING) return;
       const remaining = p.state === P_STATE.EXTRUDING ? .42 + p.pusRemaining * .58 : 1;
       const dome = r * (.88 + swell * .12) * (.65 + remaining * .35);
       const lift = -swell * 2.0;
-      const shadow = ctx.createRadialGradient(dome * .12, dome * .30, 0, dome * .12, dome * .30, dome * 1.1);
-      shadow.addColorStop(0, 'rgba(123,81,57,.14)'); shadow.addColorStop(.50, 'rgba(123,81,57,.055)'); shadow.addColorStop(.82, 'rgba(123,81,57,0)'); shadow.addColorStop(1, 'rgba(123,81,57,0)');
-      ctx.fillStyle = shadow; beginOrganicPath(ctx, dome * .12, dome * .30, dome * 1.05, dome * .83, p.shape, .6); ctx.fill();
-      const mound = ctx.createRadialGradient(-dome * .32, lift - dome * .38, dome * .04, 0, lift, dome * 1.1);
-      mound.addColorStop(0, isCreamy ? 'rgba(248,216,188,.92)' : 'rgba(239,197,167,.91)');
-      mound.addColorStop(.42, 'rgba(221,163,137,.81)');
-      mound.addColorStop(.72, 'rgba(189,124,104,.42)');
-      mound.addColorStop(.92, 'rgba(184,117,99,.08)'); mound.addColorStop(1, 'rgba(184,117,99,0)');
-      ctx.fillStyle = mound; beginOrganicPath(ctx, 0, lift, dome * 1.12, dome, p.shape, .7); ctx.fill();
-      const head = r * (.40 + swell * .13) * remaining;
-      const core = ctx.createRadialGradient(-head * .30, lift - head * .35, 0, 0, lift, head * 1.1);
-      core.addColorStop(0, '#fff5da'); core.addColorStop(.40, '#f1dfb6');
-      core.addColorStop(.76, 'rgba(213,188,139,.94)'); core.addColorStop(1, 'rgba(189,151,116,.09)');
-      ctx.fillStyle = core; beginOrganicPath(ctx, 0, lift, head * 1.08, head * .95, p.shape, .85); ctx.fill();
-      ctx.strokeStyle = 'rgba(255,248,227,.72)'; ctx.lineWidth = .8;
-      ctx.beginPath(); ctx.ellipse(-head * .14, lift - head * .15, head * .68, head * .57, p.shape.rot, 3.45, 5.0); ctx.stroke();
+      const aspect = .73 + Math.sin(p.shape.p2) * .08;
+      ctx.save(); ctx.translate(r * .06, lift); ctx.rotate(p.shape.rot * .35); ctx.scale(1, .82 + Math.sin(p.shape.p3) * .07);
+      const mound = ctx.createRadialGradient(-dome * .29, -dome * .34, dome * .12, 0, 0, dome * 1.13);
+      mound.addColorStop(0, isCreamy ? 'rgba(249,224,198,.64)' : 'rgba(242,210,180,.61)');
+      mound.addColorStop(.38, 'rgba(225,177,147,.44)');
+      mound.addColorStop(.70, 'rgba(181,119,96,.20)');
+      mound.addColorStop(.94, 'rgba(184,117,99,.020)'); mound.addColorStop(1, 'rgba(184,117,99,0)');
+      ctx.fillStyle = mound; ctx.fillRect(-dome * 1.2, -dome * 1.2, dome * 2.4, dome * 2.4); ctx.restore();
+      renderFollicleTexture(p, dome, dome * .82, lift, isCreamy, .78);
+      const head = r * (.37 + swell * .11) * remaining;
+      const hx = r * .05 * Math.sin(p.shape.p1), hy = lift - r * .04;
+      renderPoreLip(p, hx, hy, head * 1.05, head * aspect, .53, isCreamy);
+      // A matte, uneven keratin cap sits just under the skin film. A linear wash
+      // avoids a luminous pearl highlight at every target's centre.
+      const core = ctx.createLinearGradient(hx - head * .7, hy - head, hx + head * .5, hy + head);
+      core.addColorStop(0, isCreamy ? '#f5ead4' : '#eee1c5');
+      core.addColorStop(.55, isCreamy ? '#ede0bf' : '#e4d2ab');
+      core.addColorStop(1, isCreamy ? '#d7bd94' : '#cfb38b');
+      ctx.fillStyle = core;
+      beginOrganicPath(ctx, hx, hy, head, head * aspect, p.shape, 2.0); ctx.fill();
+      ctx.save(); ctx.translate(hx, hy); ctx.rotate(p.shape.rot);
+      ctx.strokeStyle = 'rgba(255,247,225,.48)'; ctx.lineWidth = .7; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(-head * .61, -head * .14);
+      ctx.quadraticCurveTo(-head * .29, -head * .48, head * .17, -head * .44); ctx.stroke();
+      ctx.strokeStyle = 'rgba(168,139,101,.20)'; ctx.lineWidth = .45;
+      ctx.beginPath(); ctx.moveTo(-head * .08, head * .19);
+      ctx.quadraticCurveTo(head * .18, head * .07, head * .46, head * .13); ctx.stroke();
       if (p.pierced) {
-        ctx.strokeStyle = 'rgba(133,89,62,.62)'; ctx.lineWidth = .9; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(-head * .25, lift + .3); ctx.lineTo(head * .23, lift - .45); ctx.stroke();
+        ctx.strokeStyle = 'rgba(128,93,65,.60)'; ctx.lineWidth = .8;
+        ctx.beginPath(); ctx.moveTo(-head * .31, .25);
+        ctx.quadraticCurveTo(-head * .07, -head * .10, head * .26, -.35); ctx.stroke();
       }
+      ctx.restore();
     }
 
     function renderRealCyst(p, isCreamy, healFade) {
       const r = p.radius, swell = p.swellVisual;
       const haloR = r * (1.65 + swell * .12);
-      const redness = (isCreamy ? .19 : .26) + p.traumaLevel * .14;
+      const spent = p.state === P_STATE.HEALING || p.state === P_STATE.OOZING;
+      const settled = p.state === P_STATE.OOZING ? 1 - p.wipeProgress * .68 : healFade;
+      const redness = (isCreamy ? .14 : .19) + p.traumaLevel * .14;
       const halo = ctx.createRadialGradient(0, 0, r * .16, 0, 0, haloR);
-      halo.addColorStop(0, `rgba(172,91,81,${redness * healFade})`);
-      halo.addColorStop(.53, `rgba(183,108,91,${redness * .38 * healFade})`);
+      halo.addColorStop(0, `rgba(172,91,81,${redness * settled})`);
+      halo.addColorStop(.53, `rgba(183,108,91,${redness * .38 * settled})`);
       halo.addColorStop(1, 'rgba(183,108,91,0)');
-      ctx.fillStyle = halo; beginOrganicPath(ctx, 0, 0, haloR, haloR * .84, p.shape, .65); ctx.fill();
-      if (p.state === P_STATE.HEALING || p.state === P_STATE.OOZING) return;
+      ctx.fillStyle = halo; ctx.fillRect(-haloR, -haloR, haloR * 2, haloR * 2);
       const remaining = p.state === P_STATE.EXTRUDING ? .58 + p.pusRemaining * .42 : 1;
-      const rx = r * (1.08 + swell * .12) * remaining, ry = rx * .86;
+      const rx = r * (1.08 + swell * .12) * remaining;
+      const ry = rx * (.75 + Math.sin(p.shape.p2) * .06);
       const lift = -swell * 2.4;
-      const shadow = ctx.createRadialGradient(rx * .10, ry * .31, 0, rx * .10, ry * .31, rx * 1.15);
-      shadow.addColorStop(0, 'rgba(113,68,52,.18)'); shadow.addColorStop(.48, 'rgba(113,68,52,.065)'); shadow.addColorStop(.80, 'rgba(113,68,52,0)'); shadow.addColorStop(1, 'rgba(113,68,52,0)');
-      ctx.fillStyle = shadow; beginOrganicPath(ctx, rx * .10, ry * .31, rx * 1.12, ry * .96, p.shape, .6); ctx.fill();
-      ctx.save(); ctx.translate(0, lift); ctx.rotate(p.shape.rot * .20); ctx.scale(1, ry / rx);
-      const body = ctx.createRadialGradient(-rx * .31, -rx * .39, r * .04, 0, 0, rx * 1.10);
-      body.addColorStop(0, isCreamy ? 'rgba(242,195,170,.94)' : 'rgba(231,172,149,.94)');
-      body.addColorStop(.38, isCreamy ? 'rgba(219,153,132,.88)' : 'rgba(209,138,120,.88)');
-      body.addColorStop(.65, 'rgba(180,106,94,.65)');
-      body.addColorStop(.84, 'rgba(167,97,85,.09)'); body.addColorStop(.96, 'rgba(167,97,85,0)'); body.addColorStop(1, 'rgba(167,97,85,0)');
-      ctx.fillStyle = body; ctx.fillRect(-rx * 1.2, -rx * 1.2, rx * 2.4, rx * 2.4); ctx.restore();
-      const sheen = ctx.createRadialGradient(-rx * .29, lift - ry * .37, 0, -rx * .29, lift - ry * .37, r * .43);
-      sheen.addColorStop(0, `rgba(255,232,207,${.14 + swell * .10})`); sheen.addColorStop(1, 'rgba(255,232,207,0)');
-      ctx.fillStyle = sheen; ctx.beginPath(); ctx.arc(-rx * .29, lift - ry * .37, r * .43, 0, Math.PI * 2); ctx.fill();
-      if (!isCreamy) {
-        for (let i = 0; i < 8; i++) {
-          const a = i * .78 + p.shape.p1, distance = r * (.34 + (i % 3) * .14);
-          const x = Math.cos(a) * distance, y = lift + Math.sin(a) * distance * .8;
-          ctx.fillStyle = 'rgba(125,77,62,.11)'; ctx.beginPath(); ctx.ellipse(x, y, .55, .40, a, 0, Math.PI * 2); ctx.fill();
-          ctx.fillStyle = 'rgba(255,226,196,.16)'; ctx.beginPath(); ctx.arc(x + .3, y + .45, .35, 0, Math.PI * 2); ctx.fill();
-        }
-      }
       ctx.save();
-      ctx.strokeStyle = 'rgba(139,85,70,.12)'; ctx.lineWidth = .45; ctx.lineCap = 'round';
-      for (let i = 0; i < 3; i++) {
-        const y = lift + ry * (.18 + i * .16);
-        const x = rx * (-.42 + i * .17);
-        ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + r * .13, y + 1.1, x + r * .25, y - .4); ctx.stroke();
-      }
+      if (spent) ctx.globalAlpha *= .18 * settled;
+      // The deep bump is a broad fold in the surrounding tissue, with a flatter
+      // shoulder and an off-centre warm plane, not a freestanding glossy sphere.
+      ctx.save(); ctx.translate(-rx * .06, lift); ctx.rotate(p.shape.rot * .32); ctx.scale(1, ry / rx);
+      const body = ctx.createRadialGradient(-rx * .31, -rx * .30, rx * .15, 0, 0, rx * 1.16);
+      body.addColorStop(0, isCreamy ? 'rgba(241,207,182,.51)' : 'rgba(233,193,165,.48)');
+      body.addColorStop(.35, isCreamy ? 'rgba(217,158,136,.48)' : 'rgba(207,145,126,.47)');
+      body.addColorStop(.65, 'rgba(176,110,94,.28)');
+      body.addColorStop(.86, 'rgba(167,97,85,.05)'); body.addColorStop(1, 'rgba(167,97,85,0)');
+      ctx.fillStyle = body; ctx.fillRect(-rx * 1.2, -rx * 1.2, rx * 2.4, rx * 2.4);
       ctx.restore();
+      const plane = ctx.createRadialGradient(-rx * .24, lift - ry * .20, rx * .10, -rx * .18, lift - ry * .08, rx * .85);
+      plane.addColorStop(0, `rgba(250,220,190,${.075 + swell * .07})`);
+      plane.addColorStop(1, 'rgba(250,220,190,0)');
+      ctx.fillStyle = plane;
+      ctx.fillRect(-rx * 1.1, lift - rx, rx * 2.1, rx * 2);
+      renderFollicleTexture(p, rx, ry, lift, isCreamy, 1.1);
+      ctx.restore();
+      if (spent) return;
       const hx = p.headOffsetX, hy = lift + p.headOffsetY;
-      const tipR = r * (.16 + swell * .055) * (.6 + remaining * .4);
-      const cap = ctx.createRadialGradient(hx - tipR * .25, hy - tipR * .3, 0, hx, hy, tipR * 1.35);
-      cap.addColorStop(0, p.pierced ? 'rgba(246,224,181,.95)' : 'rgba(244,216,175,.80)');
-      cap.addColorStop(.45, 'rgba(230,192,147,.62)'); cap.addColorStop(1, 'rgba(210,153,120,0)');
-      ctx.fillStyle = cap; ctx.beginPath(); ctx.ellipse(hx, hy, tipR * 1.35, tipR * 1.18, p.targetAngle, 0, Math.PI * 2); ctx.fill();
+      const tipR = r * (.14 + swell * .055) * (.6 + remaining * .4);
+      const cap = ctx.createLinearGradient(hx - tipR, hy - tipR, hx + tipR, hy + tipR);
+      cap.addColorStop(0, p.pierced ? 'rgba(237,214,178,.82)' : 'rgba(227,185,149,.54)');
+      cap.addColorStop(1, 'rgba(192,139,108,.32)');
+      ctx.fillStyle = cap;
+      beginOrganicPath(ctx, hx, hy, tipR * 1.04, tipR * .62, p.shape, 1.8); ctx.fill();
+      renderPoreLip(p, hx, hy, tipR * 1.10, tipR * .70, .48 + swell * .20, isCreamy);
+      ctx.fillStyle = 'rgba(148,96,73,.32)';
+      beginOrganicPath(ctx, hx + .3, hy + .1, .70, .48, p.shape, 1.2); ctx.fill();
       if (p.pierced) {
         ctx.save(); ctx.translate(hx, hy); ctx.rotate(p.targetAngle + Math.PI * .5);
         ctx.strokeStyle = isCreamy ? '#9e6454' : '#784a3d'; ctx.lineWidth = 1.35; ctx.lineCap = 'round';
@@ -5753,46 +6209,44 @@
       }
     }
 
-    function renderViscousPusDollop(cx, cy, r, isCreamy) {
+    function renderViscousPusDollop(cx, cy, r, isCreamy, shape) {
       ctx.save();
-      ctx.fillStyle = 'rgba(78, 34, 24, 0.28)';
-      ctx.beginPath();
-      ctx.arc(cx + 0.9, cy + 1.3, r * 1.04, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.fillStyle = 'rgba(102, 73, 45, 0.18)';
+      beginOrganicPath(ctx, cx + .55, cy + .75, r * 1.06, r * .80, shape, 1.5); ctx.fill();
 
-      const g = ctx.createRadialGradient(cx - r * 0.28, cy - r * 0.28, 0.4, cx, cy, r);
-      g.addColorStop(0, '#fffff8');
-      g.addColorStop(0.58, isCreamy ? '#fff0be' : '#f4e09d');
-      g.addColorStop(1, '#cfa95c');
+      const g = ctx.createLinearGradient(cx - r * .3, cy - r, cx + r * .5, cy + r);
+      g.addColorStop(0, '#f9efd8');
+      g.addColorStop(.58, isCreamy ? '#f1e2bd' : '#e8d7ad');
+      g.addColorStop(1, '#c8ae82');
       ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.ellipse(cx, cy, r * 1.08, r * 0.94, 0.2, 0, Math.PI * 2);
-      ctx.fill();
+      beginOrganicPath(ctx, cx, cy, r * 1.08, r * .76, shape, 1.8); ctx.fill();
 
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
-      ctx.beginPath();
-      ctx.ellipse(cx - r * 0.28, cy - r * 0.32, r * 0.34, r * 0.20, -0.45, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,250,232,.65)'; ctx.lineWidth = Math.max(.55, r * .16); ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(cx - r * .44, cy - r * .21);
+      ctx.quadraticCurveTo(cx - r * .17, cy - r * .43, cx + r * .18, cy - r * .31); ctx.stroke();
       ctx.restore();
     }
 
     function renderEmptiedPoreState(p, isCreamy, healFade) {
       const r = p.radius;
-      const shrink = p.state === P_STATE.HEALING ? (1 - p.healProgress * 0.68) : 1;
-      const holeR = Math.max(2.0, r * (p.type === 'blackhead' ? 0.33 : 0.22) * shrink);
+      const cleaned = p.state === P_STATE.HEALING ? 1 : p.wipeProgress;
+      const shrink = (1 - cleaned * .24) * (p.state === P_STATE.HEALING ? (1 - p.healProgress * .68) : 1);
+      const holeR = Math.max(.9, r * (p.type === 'blackhead' ? .33 : .22) * shrink);
+      const aspect = .69 - cleaned * .18;
       const hx = p.headOffsetX;
       const hy = p.headOffsetY;
 
       const wallG = ctx.createLinearGradient(hx - holeR, hy - holeR, hx + holeR, hy + holeR);
-      wallG.addColorStop(0, `rgba(42, 14, 12, ${0.88 * healFade})`);
-      wallG.addColorStop(1, `rgba(232, 174, 148, ${0.72 * healFade})`);
+      wallG.addColorStop(0, `rgba(119, 76, 56, ${.68 * healFade})`);
+      wallG.addColorStop(1, `rgba(235, 190, 157, ${.66 * healFade})`);
       ctx.fillStyle = wallG;
-      beginOrganicPath(ctx, hx, hy, holeR * 1.25, holeR * 1.15, p.shape, 1.1);
+      beginOrganicPath(ctx, hx, hy, holeR * 1.22, holeR * aspect * 1.24, p.shape, 1.5);
       ctx.fill();
 
-      ctx.fillStyle = `rgba(24, 6, 6, ${0.86 * healFade})`;
-      beginOrganicPath(ctx, hx, hy, holeR * 0.92, holeR * 0.85, p.shape, 1.1);
+      ctx.fillStyle = `rgba(74, 48, 34, ${(isCreamy ? .63 : .74) * (1 - cleaned * .25) * healFade})`;
+      beginOrganicPath(ctx, hx, hy, holeR * .89, holeR * aspect * .78, p.shape, 1.65);
       ctx.fill();
+      renderPoreLip(p, hx, hy, holeR * 1.16, holeR * aspect, .62 * healFade, isCreamy);
 
       if (p.state !== P_STATE.OOZING) return;
 
@@ -6383,6 +6837,7 @@
       const clientListEl = document.getElementById('client-list-container');
       const upgradeListEl = document.getElementById('upgrade-list-container');
       document.getElementById('shop-coin-label').textContent = `余额 ¥${state.coins}`;
+      renderCareJourney();
 
       clientListEl.innerHTML = '';
       CLIENTS.forEach((c, idx) => {
@@ -6392,7 +6847,8 @@
         const total = canContinue ? state.pimples.length : Object.values(c.recipe).reduce((sum, count) => sum + count, 0);
         const action = canContinue ? '护理中 · 继续' : isCurrent ? '再护理一次' : '开始护理';
         const best = getCompletedBest(c.id, canContinue ? state.runDensity : 0, canContinue ? state.runControlMode : 'pointer');
-        const history = best ? `${best.completions} 次完成 · 最高分 ${best.bestScore} · 最佳评级 ${best.bestGrade}${best.goalMet ? ' · 目标已达成' : ''}` : `可选目标 · ${CARE_GOALS[c.id].title}`;
+        const goalMet = hasCompletedCareGoal(c.id);
+        const history = best ? `本档最佳 ${best.bestGrade} · ${best.completions} 次完成` : `可选目标 · ${CARE_GOALS[c.id].title}`;
         const card = document.createElement('button');
         card.type = 'button';
         card.className = 'client-card' + (isCurrent ? ' active-client' : '');
@@ -6402,7 +6858,9 @@
           <div class="client-meta">
             <div class="client-title">${c.name}${isCurrent ? `<span class="client-state">${action}</span>` : ''}</div>
             <div class="client-area">${area} · ${total} 处</div>
+            <div class="client-focus">${c.focus}</div>
             <div class="client-history">${history}</div>
+            <div class="client-stamp-note">${goalMet ? '护理印记已收下 · 欢迎回访' : `首次目标达成 +¥${CARE_GOAL_FIRST_REWARD}`}</div>
           </div>
           <div class="client-reward">酬金 ¥${c.bounty}</div>
           <span class="client-arrow" aria-hidden="true">→</span>
@@ -6449,6 +6907,10 @@
         row.appendChild(btn);
         upgradeListEl.appendChild(row);
       });
+      const allEquipped = UPGRADES.every(upgrade => state.upgrades[upgrade.key]);
+      updateText(document.getElementById('shop-completion-note'), allEquipped
+        ? getCareJourney().complete ? '器械齐备，五枚印记也已集齐。后续收入会继续保留，欢迎按自己的节奏回访。' : '器械已经齐备。接下来为五位顾客完成可选目标，收齐护理手记。'
+        : '三件器械各有用途，按喜欢的护理方式选择即可。');
       renderCareRecordList();
     }
 
@@ -6472,7 +6934,7 @@
         info.textContent = `${client.name} · ${careModeLabel(record.density, record.inputMode)}`;
         const detail = document.createElement('small');
         const date = new Date(record.completedAt).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' });
-        detail.textContent = `${date} · 累计刺激 ${record.stats.totalDamage.toFixed(1)} · 误操作 ${record.stats.mistakes} 次${record.goal.met ? ' · 可选目标达成' : ''}`;
+        detail.textContent = `${date} · 累计刺激 ${record.stats.totalDamage.toFixed(1)} · 误操作 ${record.stats.mistakes} 次${record.goal.met ? ' · 可选目标达成' : ''}${record.goalFirst ? ' · 首次印记' : ''}`;
         info.appendChild(detail);
         const equipment = document.createElement('small');
         const upgraded = UPGRADES.filter(upgrade => record.upgrades && record.upgrades[upgrade.key]).map(upgrade => upgrade.name);
@@ -6501,6 +6963,11 @@
       document.getElementById('res-trophies').textContent =
         `黑头提取物 ${state.trophiesPlucked} 颗 · 固态白芯 ${state.coreSeedsCollected} 颗`;
       document.getElementById('res-coins-earned').textContent = `+¥${record.earnedCoins}`;
+      const income = record.income;
+      const validIncome = income && ['base', 'tip', 'goalBonus'].every(key => Number.isFinite(income[key]) && income[key] >= 0)
+        && income.base + income.tip + income.goalBonus === record.earnedCoins;
+      updateText(document.getElementById('res-income-detail'), validIncome
+        ? `护理酬金 ¥${income.base} + 评级小费 ¥${income.tip}${income.goalBonus ? ` + 首次目标奖励 ¥${income.goalBonus}` : ''}` : `本次护理收入 ¥${record.earnedCoins}`);
       document.getElementById('res-score').textContent = String(record.score);
       const resDmgEl = document.getElementById('res-damage');
       resDmgEl.textContent = `${dmg}%`;
@@ -6509,6 +6976,13 @@
       document.getElementById('res-perfect').textContent = `${record.stats.cleanExtractions} 处`;
       document.getElementById('res-quality').textContent = `${careModeLabel(record.density, record.inputMode)} · 累计刺激 ${record.stats.totalDamage.toFixed(1)} · 误操作 ${record.stats.mistakes} 次 · 最长连贯 ${record.stats.maxStreak} 步`;
       document.getElementById('res-goal').textContent = `可选目标「${record.goal.title}」${record.goal.met ? '已达成' : '本次未达成'} · ${record.goal.description}`;
+      updateText(document.getElementById('res-quality-reason'), describeCareQuality(record.stats, record.grade));
+      const journey = getCareJourney();
+      updateText(document.getElementById('res-journey-title'), journey.complete ? '五枚印记集齐 · 本章完成' : record.goalFirst ? `${client.name}的护理印记 · 已收下` : `护理手记 · ${journey.count} / ${CLIENTS.length}`);
+      updateText(document.getElementById('res-journey-copy'), journey.complete
+        ? '五种护理重点都留下了记录。可以安心休息，也可以继续回访，慢慢改善自己的手法。'
+        : record.goal.met ? `这位顾客的印记已经留下，首次目标奖励只领取一次。下一枚：${journey.nextClient.name} · ${CARE_GOALS[journey.nextClient.id].title}。`
+        : `这次护理已经完成。下次可试着完成「${record.goal.title}」，收下这位顾客的印记。`);
       persistSaveData();
       state.compareSplit = 0.5;
       resultModalEl.classList.add('open');
@@ -6540,20 +7014,20 @@
 
       if (toolName === 'steam') {
         viewportWrap.style.cursor = 'pointer';
-        setHint('按住缓缓移动；黑头充分软化后可直接夹取。', 'good');
+        setHint(toolGuidanceFor('steam'), 'good');
       } else if (toolName === 'needle') {
         viewportWrap.style.cursor = 'crosshair';
-        setHint('对准未破口尖端再松开；黑头可先挑松，露出一半后可针取。', 'normal');
+        setHint(toolGuidanceFor('needle'), 'normal');
       } else if (toolName === 'squeeze') {
         viewportWrap.style.cursor = 'grab';
-        setHint('在瑕疵旁按住，向中心缓缓推；双指也可向内捏合。', 'normal');
+        setHint(toolGuidanceFor('squeeze'), 'normal');
       } else if (toolName === 'tweezers') {
         viewportWrap.style.cursor = 'crosshair';
-        setHint('夹住软化、挑松或已露头的黑头，缓慢外拉；白头和深层破口后也可夹取。', 'good');
+        setHint(toolGuidanceFor('tweezers'), 'good');
       } else if (toolName === 'swab') {
         viewportWrap.style.cursor = 'pointer';
         state.swabStain = { pus: 0, blood: 0, sebum: 0 };
-        setHint('轻轻擦净残留；再点一次棉签，即可换新。', 'good');
+        setHint(toolGuidanceFor('swab'), 'good');
       }
       updateCareGuidance();
       updateKeyboardCareStatus();
@@ -6624,6 +7098,7 @@
     }
 
     function bindUIControls() {
+      document.querySelectorAll('[data-tool-guidance]').forEach(element => { element.textContent = TOOL_GUIDANCE[element.dataset.toolGuidance]; });
       document.getElementById('btn-skip-practice').addEventListener('click', () => {
         finishPracticeGuide(true);
         updateCareGuidance();
@@ -6660,6 +7135,11 @@
         else if (e.key === '3') selectTool('squeeze');
         else if (e.key === '4') selectTool('tweezers');
         else if (e.key === '5') selectTool('swab');
+        else if (e.key === 'Escape' && state.pointer.active && state.pointer.mode === 'needle') {
+          e.preventDefault();
+          releasePointer();
+          setHint('已取消这次针操作。', 'normal');
+        }
       });
 
       // 手刷冰膜与一键厚敷按钮
@@ -6695,12 +7175,22 @@
         closeStudioModal(clinicModalEl);
       });
 
-      // 玩法企划弹窗
-      document.getElementById('btn-plan').addEventListener('click', () => {
+      document.getElementById('btn-journey-next').addEventListener('click', () => {
+        const next = getCareJourney().nextClient;
+        if (!next) return;
+        const index = CLIENTS.indexOf(next);
+        if (index === state.clientIndex && !state.settled) { closeStudioModal(clinicModalEl); return; }
+        requestTreatmentChange('client', index, 0);
+      });
+
+      // The visible quality summary opens the same concise care notes.
+      const openPlan = () => {
         state.paused = true;
         releasePointer();
         planModalEl.classList.add('open');
-      });
+      };
+      document.getElementById('btn-plan').addEventListener('click', openPlan);
+      document.getElementById('btn-quality-details').addEventListener('click', openPlan);
       document.getElementById('btn-close-plan').addEventListener('click', () => {
         closeStudioModal(planModalEl);
       });
@@ -6782,7 +7272,7 @@
     function bindModalAccessibility() {
       let previousFocus = null;
       let activeModal = null;
-      const panels = ['.studio-header', '.studio-layout', '.studio-footer'].map(s => document.querySelector(s));
+      const panels = ['.studio-header', '#save-notice', '.studio-layout', '.studio-footer'].map(s => document.querySelector(s));
       const syncModal = () => {
         const open = document.querySelector('.modal-backdrop.open');
         if (open === activeModal) return;
