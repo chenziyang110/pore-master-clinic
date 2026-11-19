@@ -80,6 +80,24 @@ python3 -m http.server 8080
 
 完成五个目标后，本章完成，工作台留下完成标记，结算主要动作返回接诊台选择回访。想再护理当前顾客时，可使用次要的自由回访按钮，仍支持所选的 8/11 处数量。回访本次未达目标会明确说明原有印记仍保留。三件器械购齐后，后续收入继续保留，可以继续改善护理表现或随时停下。印记使用现有护理记录派生，与余额、器械和进度一起保存，不依赖另一份独立的成长存档。
 
+## 静态构建与 Vercel 发布
+
+本地游玩仍可直接打开 `index.html`。准备公开发布时运行：
+
+```bash
+npm run build
+```
+
+`scripts/build-static.cjs` 仅使用 Node.js 标准库，清理仓库自己的 `dist` 目录，再原样复制 `index.html` 与 `favicon.svg`。构建不需要安装开发依赖；测试、说明文档和 QA 页面不会进入发布产物。
+
+仓库中的 `vercel.json` 配置为静态项目：`framework: null`，不执行依赖安装，构建命令为 `node scripts/build-static.cjs`，输出目录为 `dist`。发布流程使用这份配置，其他静态托管平台也可以直接托管 `dist` 内容。
+
+### 多尺寸检查页
+
+启动本地静态服务后，打开 `http://localhost:8080/qa/responsive-check.html`。默认嵌入本地 `../index.html`；也可在“目标网址”中填写已发布的游戏 URL，点击“应用网址与尺寸”。页面提供常见手机、短横屏和平板预设，也可以输入任意支持范围内的宽高或交换宽高。
+
+`iframe#phone` 按指定 CSS 像素显示实际页面；只改变尺寸时不会重载游戏，便于检查同一局护理在旋转或缩放视口后的表现。检查页不读写内嵌游戏状态，也不进入 `dist`。真实设备的安全区、像素比、系统手势与触控体验仍需单独复查。
+
 ## GitHub Pages
 
 如果需要公开试玩，可在仓库 **Settings → Pages → Build and deployment** 中选择 **Deploy from a branch**，使用 `main` 分支和 `/ (root)` 目录。仅推送源码不会自动启用 Pages。
@@ -88,7 +106,7 @@ python3 -m http.server 8080
 
 无需构建。编辑 `index.html` 并刷新浏览器即可。
 
-开发回归需要 Node.js 22.22.2+、24.15.0+ 或 26+（与当前 jsdom 的版本要求一致）：
+开发回归支持 Node.js 22.x（至少 22.22.2）和 24.x（至少 24.15.0），与本仓库 CI 验证的版本范围一致：
 
 ```bash
 npm ci

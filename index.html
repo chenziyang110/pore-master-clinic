@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#faf9f5" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <meta name="description" content="一间小小的净肤馆。放慢节奏，体验热敷、清理与舒缓护理的微距解压小游戏。" />
   <title>妙手净肤馆 · 慢慢照顾每一寸肌肤</title>
   <style>
@@ -25,6 +26,10 @@
       --accent-ice: #507d7e;
       --accent-danger: #ae554c;
       --serif: 'Noto Serif CJK SC', 'Songti SC', 'STSong', 'SimSun', serif;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-right: env(safe-area-inset-right, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-left: env(safe-area-inset-left, 0px);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     html { min-height: 100%; background: #eaece3; }
@@ -274,260 +279,207 @@
     .client-stamp-note { color: #49684d; font-size: 10px; }
     #app-shell.chapter-complete .brand-mark { color: #927443; }
     #app-shell.chapter-complete #chapter-caption { color: #7b653d; letter-spacing: 1px; }
-    @media (max-width: 760px) { .care-quality-status { margin-top: 6px; min-height: 32px; padding: 4px 0; } .care-stamps { gap: 4px; } .care-stamp-seal { width: 35px; height: 35px; } }
     .session-settings { padding: 13px 0; margin: 8px 0 16px; border-block: 1px solid var(--line); color: var(--muted); font-size: 11px; }
     .session-settings summary { cursor: pointer; padding: 4px 0; }
     .session-settings .level-presets { margin: 12px 0 2px; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    @media (max-width: 1000px) and (min-width: 761px) {
-      body { padding: 20px; }
-      #app-shell { height: calc(100dvh - 40px); }
-      .studio-layout { grid-template-columns: 230px minmax(0, 1fr); }
-      .case-panel { padding: 24px 20px 18px; }
-      .case-intro h1 { font-size: 26px; }
-      .studio-header { padding: 0 22px; }
-      .header-wallet > span:first-child, #sound-icon { display: none; }
-      .header-wallet { padding-right: 12px; margin-right: 0; }
-      .treatment-heading { padding-inline: 18px; }
-      #viewport-wrap { margin-inline: 18px; }
-      .tool-section { padding-inline: 18px; }
-      .toolbar-dock { gap: 5px; }
-      .tool-desc { display: none; }
-    }
-    @media (max-width: 760px) {
-      html { background: var(--paper); }
-      body { padding: 0; min-height: 100dvh; align-items: flex-start; }
-      #app-shell { width: 100%; height: 100vh; height: 100dvh; min-height: 580px; border: 0; border-radius: 0; box-shadow: none; }
-      .studio-header { height: calc(62px + env(safe-area-inset-top, 0px)); padding: env(safe-area-inset-top, 0px) 16px 0; gap: 8px; }
-      .brand { gap: 8px; }
-      .brand-mark { width: 28px; height: 31px; }
-      .brand-title { font-size: 17px; letter-spacing: 1.5px; }
-      .brand-caption { margin-top: 3px; font-size: 7px; letter-spacing: 1px; }
-      .top-actions { gap: 2px; }
-      .icon-btn { min-width: 38px; min-height: 40px; padding: 0 7px; font-size: 10px; }
-      .header-wallet { display: none; }
-      .clinic-button { border-color: transparent; }
-      .action-label { display: none; }
-      .studio-layout { display: flex; flex-direction: column; }
-      .case-panel { display: block; padding: 10px 16px 12px; border-right: 0; border-bottom: 1px solid var(--line); background: #f7f7f0; }
-      .case-intro, .case-foot, .condition-list { display: none; }
-      .patient-bar { margin: 0; padding: 0; border: 0; }
-      .patient-info { gap: 9px; padding-right: 104px; }
-      .patient-avatar { width: 31px; height: 34px; font-size: 17px; border-radius: 12px 12px 6px 6px; }
-      .patient-name-line { font-size: 13px; gap: 6px; }
-      .patient-role { font-size: 9px; margin-top: 3px; }
-      .patient-quote { display: none; }
-      .reset-button { top: 0; right: -4px; min-height: 34px; }
-      #patient-steam-tag { display: none !important; }
-      .case-stats { display: grid; grid-template-columns: .85fr 1fr 1.1fr; gap: 16px; margin-top: 12px; }
-      .stat-card { min-width: 0; }
-      .stat-label { font-size: 9px; }
-      .stat-value { font-size: 22px; line-height: 1; margin-top: 5px; }
-      #best-score-label { display: none; }
-      .progress-track { margin-top: 5px; height: 2px; }
-      .damage-stat { grid-column: auto; }
-      #damage-val { font-size: 9px; }
-      .damage-bar-track { margin-top: 12px; height: 4px; }
-      .tray-trigger-box { position: absolute; top: 10px; right: 52px; width: auto; padding: 0; margin: 0; border: 0; gap: 6px; min-height: 34px; }
-      .tray-trigger-box > .icon { width: 20px; height: 20px; }
-      .tray-text { font-size: 9px; gap: 3px; }
-      #trophy-count { font-size: 8px; }
-      .tray-arrow { display: none; }
-      .treatment-panel { flex: 1; }
-      .treatment-heading { padding: 10px 16px 9px; min-height: 48px; }
-      .treatment-heading h2 { font-size: 15px; }
-      .treatment-heading .section-meta { display: none; }
-      #btn-style-mode { min-height: 28px; font-size: 9px; padding: 0 7px; }
-      #viewport-wrap { margin: 0 12px; min-height: 270px; border-radius: 9px; }
-      .view-label { left: 12px; top: 13px; font-size: 8px; }
-      .view-label span { display: none; }
-      .macro-reticle { left: 12px; bottom: 11px; font-size: 8px; max-width: calc(100% - 70px); line-height: 1.4; }
-      .scale-marker { bottom: 10px; right: 13px; font-size: 7px; }
-      .scale-marker::before { width: 30px; }
-      .tool-section { padding: 11px 12px calc(12px + env(safe-area-inset-bottom, 0px)); }
-      .tool-section-head { min-height: 25px; margin-bottom: 3px; }
-      .active-tool-title { font-size: 11px; }
-      .shortcut-note { display: none; }
-      .hint-banner { min-height: 35px; margin-bottom: 7px; font-size: 11px; line-height: 1.55; }
-      .toolbar-dock { gap: 5px; }
-      .tool-btn { min-height: 64px; padding: 6px 2px; gap: 3px; border-radius: 6px; }
-      .tool-step { top: 5px; left: 5px; font-size: 7px; }
-      .tool-icon, .tool-icon .icon { width: 25px; height: 25px; }
-      .tool-name { font-size: 10.5px; }
-      .tool-desc { display: none; }
-      .tool-badge { top: 4px; right: 4px; font-size: 7px; height: 12px; min-width: 12px; padding: 0 3px; }
-      .studio-footer { display: none; }
-      .modal-backdrop { position: fixed; padding: 14px; }
-      .modal-card { max-height: calc(100dvh - 28px); padding: 23px 20px; border-radius: 11px; }
-      .modal-title { font-size: 21px; }
-      .canvas-topline { inset: 10px 10px auto; gap: 6px; }
-      .care-stages { padding: 7px 8px; gap: 9px; font-size: 10px; }
-      .care-stages li { gap: 3px; }
-      .care-stages li > span { font-size: 8px; }
-      .canvas-status { font-size: 9px; padding: 7px; }
-      .next-tool-btn { min-height: 25px; font-size: 10px; }
-      .tool-assist { gap: 0; }
-      .ba-compare-wrap { height: 158px; }
-      .client-reward { font-size: 9px; }
-      .result-heading { gap: 12px; }
-      .result-heading .modal-title { font-size: 20px; }
-      .ice-cta-group { left: 9px; right: 9px; bottom: 18px; }
-      .modal-header { margin-bottom: 14px; }
-    }
-    @media (max-width: 760px) and (max-height: 700px) {
-      #app-shell { min-height: 568px; }
-      .studio-header { height: 54px; }
-      .case-panel { padding-top: 7px; padding-bottom: 9px; }
-      .case-stats { margin-top: 9px; }
-      .tray-trigger-box { top: 7px; }
-      .treatment-heading { min-height: 40px; padding-top: 7px; padding-bottom: 7px; }
-      #viewport-wrap { min-height: 224px; }
-      .tool-section { padding-top: 9px; padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)); }
-      .hint-banner { min-height: 33px; font-size: 10.5px; }
-      .tool-btn { min-height: 58px; }
-      .tool-icon, .tool-icon .icon { width: 22px; height: 22px; }
-    }
-    @media (max-width: 355px) { .case-stats { gap: 11px; } .client-card { gap: 8px; } .canvas-status { font-size: 8.5px; } .care-stages { gap: 7px; } }
-    @media (max-width: 1000px) and (orientation: landscape) and (max-height: 520px) {
-      body { padding: 0; align-items: flex-start; }
-      #app-shell { min-height: 0; height: 100dvh; border: 0; border-radius: 0; box-shadow: none; }
-      .studio-header { height: 48px; padding: 0 16px; }
-      .brand-title { font-size: 17px; }
-      .brand-mark { width: 27px; height: 29px; }
-      .brand-caption { font-size: 7px; }
-      .header-wallet, .case-intro, .case-foot, .condition-list, .studio-footer, .patient-quote, #best-score-label, .treatment-heading .section-meta, .tool-desc, .shortcut-note { display: none; }
-      .studio-layout { display: grid; grid-template-columns: 160px minmax(0,1fr); }
-      .case-panel { border-right: 1px solid var(--line); border-bottom: 0; padding: 12px; }
-      .patient-bar { padding: 0; margin: 0; border: 0; }
-      .patient-info { padding-right: 0; gap: 8px; }
-      .patient-avatar { width: 30px; height: 34px; font-size: 17px; }
-      .patient-name-line { font-size: 12px; gap: 5px; }
-      .patient-role { font-size: 9px; }
-      .patient-role { max-width: 96px; line-height: 1.5; }
-      .reset-button { position: static; min-height: 28px; min-width: 0; gap: 5px; width: 100%; margin-top: 8px; padding: 0 7px; border: 1px solid var(--line); }
-      .reset-button::after { content: '重新开始'; font-size: 9px; }
-      .reset-button .icon { width: 14px; height: 14px; }
-      .case-stats { grid-template-columns: 1fr 1fr; gap: 14px 9px; margin-top: 14px; }
-      .stat-label { font-size: 9px; }
-      .stat-value { font-size: 22px; }
-      .damage-stat { grid-column: 1 / -1; }
-      #patient-steam-tag { display: none !important; }
-      .tray-trigger-box { position: static; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); width: 100%; }
-      .treatment-heading { min-height: 35px; padding: 5px 12px; }
-      .treatment-heading h2 { font-size: 13px; }
-      #viewport-wrap { min-height: 105px; margin-inline: 9px; }
-      .tool-section { padding: 5px 9px 7px; }
-      .hint-banner { min-height: 17px; margin: 1px 0 4px; font-size: 10px; }
-      .tool-btn { min-height: 47px; }
-      .tool-icon, .tool-icon .icon { width: 19px; height: 19px; }
-      .tool-name { font-size: 9px; }
-      .tool-step { display: none; }
-      .tool-section-head { margin: 0; }
-      .active-tool-title { font-size: 10px; }
-      .canvas-topline { inset: 7px 8px auto; }
-      .care-stages { padding: 4px 7px; }
-      .canvas-status { padding: 4px 6px; }
-    }
-    @media (min-width: 761px), (orientation: landscape) and (max-height: 520px) {
-      .case-panel { min-height: 0; overflow-y: auto; }
-    }
-    #practice-guide { display: flex; align-items: center; gap: 9px; min-height: 34px; margin: 0 22px; color: var(--green); border-bottom: 1px solid var(--line); font-size: 11px; }
+    /* One instruction region and a stable tool dock keep the work surface still. */
+    #practice-guide { display: flex; align-items: center; gap: 9px; flex-shrink: 0; min-width: 0; min-height: 34px; margin: 0 22px; color: var(--green); border-bottom: 1px solid var(--line); font-size: 11px; }
     #practice-guide[hidden] { display: none; }
     #practice-step { white-space: nowrap; opacity: .8; font-variant-numeric: tabular-nums; }
     #practice-label { flex: 1; font-weight: 500; }
     #btn-skip-practice { min-height: 30px; padding: 4px 7px; border: 0; background: transparent; color: var(--muted); font-size: 11px; cursor: pointer; }
-    @media (max-width: 760px) { #practice-guide { margin-inline: 12px; min-height: 28px; gap: 7px; font-size: 10.5px; } #btn-skip-practice { min-height: 28px; font-size: 10px; } }
-    /* On short phones, the work surface takes priority over secondary statistics. */
-    #practice-guide { flex-shrink: 0; min-width: 0; }
-    @media (max-width: 760px) and (max-height: 700px) and (orientation: portrait) {
-      .studio-header { height: calc(48px + env(safe-area-inset-top, 0px)); padding-inline: 12px; }
-      .brand-title { font-size: 16px; }
-      .brand-mark { width: 25px; height: 28px; }
-      .brand-caption { font-size: 6.5px; margin-top: 2px; }
-      .top-actions { gap: 0; }
-      .icon-btn { min-width: 36px; }
-      .case-panel { padding: 6px 12px 5px; }
-      .patient-info { gap: 7px; min-height: 30px; }
-      .patient-avatar { width: 27px; height: 30px; border-radius: 8px; }
-      .patient-name-line { line-height: 16px; font-size: 12px; }
-      .patient-role { line-height: 11px; font-size: 9px; margin-top: 2px; }
-      .tray-trigger-box { top: 5px; right: 48px; min-height: 30px; }
-      .reset-button { top: -2px; right: -3px; min-height: 34px; }
-      .case-stats { grid-template-columns: .85fr 1fr 1.1fr; gap: 7px; margin-top: 5px; }
-      .stat-card { display: flex; align-items: baseline; gap: 5px; min-height: 18px; }
-      .stat-label { font-size: 9px; white-space: nowrap; }
-      .stat-value { font-size: 16px; margin: 0; letter-spacing: -.2px; }
-      .progress-track, .combo-pill { display: none; }
-      .damage-stat { display: block; padding-top: 1px; }
-      .damage-bar-track { height: 2px; margin-top: 4px; }
-      .treatment-heading { min-height: 32px; padding: 4px 12px; }
-      .treatment-heading h2 { font-size: 14px; }
-      #btn-style-mode { min-height: 25px; }
-      #viewport-wrap { min-height: 270px; }
-      .tool-section { padding-top: 3px; padding-bottom: calc(3px + env(safe-area-inset-bottom, 0px)); }
-      .tool-section-head { min-height: 22px; margin-bottom: 1px; }
-      .next-tool-btn { min-height: 22px; }
-      .hint-banner { min-height: 32px; margin-bottom: 4px; font-size: 10.5px; line-height: 1.5; }
-      .tool-btn { min-height: 54px; gap: 2px; padding-block: 5px; }
-      .tool-icon, .tool-icon .icon { width: 22px; height: 22px; }
-      .tool-name { font-size: 10.5px; }
-      #practice-guide { margin-block: 1px 0; font-size: 10px; line-height: 18px; }
-    }
-    /* Keep the instruction and its action readable before secondary details. */
     .hint-banner { font-size: 13px; color: #53624f; }
     .next-tool-btn { min-height: 36px; padding: 6px 10px; border: 1px solid #c2ceba; border-radius: 6px; background: #edf2e8; font-size: 12px; }
     .tool-name, .guide-row, .modal-subtitle { font-size: 13px; }
     .client-desc { font-size: 12px; }
-    @media (max-width: 760px) {
-      .patient-role, .stat-label, #damage-val, .tray-text, #trophy-count { font-size: 11px; }
-      .tool-section { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 7px 8px; padding: 8px 12px calc(8px + env(safe-area-inset-bottom,0px)); }
-      .tool-section-head, .tool-assist { display: contents; }
-      .active-tool-title, .shortcut-note { display: none; }
-      .hint-banner { grid-column: 1; grid-row: 1; align-self: center; min-height: 0; margin: 0; font-size: 12px; line-height: 1.5; }
-      .next-tool-btn { grid-column: 2; grid-row: 1; align-self: center; max-width: 116px; min-height: 40px; font-size: 12px; white-space: normal; }
-      .toolbar-dock { grid-column: 1 / -1; grid-row: 2; }
-      .tool-btn { min-height: 60px; }
-      .tool-name { font-size: 12px; }
-      .care-stages, .canvas-status { font-size: 11px; }
-      .care-stages { gap: 7px; }
+    @media (min-width: 761px) {
+      .case-panel { min-height: 0; overflow-y: auto; }
+    }
+    @media (min-width: 761px) and (max-width: 1100px) {
+      body { padding: 16px; }
+      #app-shell { height: calc(100dvh - 32px); min-height: 0; }
+      .studio-header { height: 72px; padding-inline: 22px; }
+      .studio-layout { grid-template-columns: 230px minmax(0, 1fr); }
+      .case-panel { padding: 22px 20px 18px; }
+      .case-intro h1 { font-size: 26px; }
+      .header-wallet > span:first-child, #sound-icon { display: none; }
+      .header-wallet { padding-right: 12px; margin-right: 0; }
+      .treatment-heading { padding: 12px 18px; }
+      #viewport-wrap { min-height: 180px; margin-inline: 18px; }
+      .tool-section { padding: 10px 18px 12px; }
+      .toolbar-dock { gap: 5px; }
+      .tool-btn { min-height: 68px; }
+      .tool-desc { display: none; }
+    }
+    @media (max-width: 1100px) {
+      .modal-backdrop { position: fixed; padding: max(12px, var(--safe-top)) max(12px, var(--safe-right)) max(12px, var(--safe-bottom)) max(12px, var(--safe-left)); }
+      .modal-card { max-height: 100%; padding: 23px 20px; border-radius: 11px; scrollbar-gutter: stable; }
+      .modal-close { width: 44px; height: 44px; }
+      .primary-btn, .secondary-btn, .preset-btn, .buy-btn, .save-retry { min-height: 44px; }
+      .session-settings summary { min-height: 44px; padding-block: 12px; }
+      .modal-title { font-size: 21px; }
+      .modal-header { margin-bottom: 14px; }
+      .client-reward { font-size: 10px; }
+      .result-heading { gap: 12px; }
+      .result-heading .modal-title { font-size: 20px; }
+    }
+    /* Phones and short landscape screens share the same fixed-height controls. */
+    @media (max-width: 760px), (max-width: 1100px) and (orientation: landscape) and (max-height: 600px) {
+      html { background: var(--paper); }
+      body { padding: 0; min-height: 100dvh; align-items: flex-start; }
+      #app-shell { --edge: 12px; --dock-controls: 56px; --dock-guidance: 72px; --dock-gap: 6px; --dock-padding: 8px; --dock-action: 104px; width: 100%; height: 100vh; height: 100dvh; min-height: 0; padding-inline: var(--safe-left) var(--safe-right); border: 0; border-radius: 0; box-shadow: none; }
+      .studio-header { height: calc(52px + var(--safe-top)); padding: var(--safe-top) var(--edge) 0; gap: 8px; }
+      .brand { gap: 8px; min-width: 0; }
+      .brand-mark { width: 28px; height: 31px; }
+      .brand-title { font-size: 17px; letter-spacing: 1.5px; white-space: nowrap; }
+      .brand-caption { margin-top: 3px; font-size: 7px; letter-spacing: 1px; }
+      .top-actions { gap: 0; }
+      .icon-btn { min-width: 40px; min-height: 44px; padding: 0 6px; font-size: 11px; }
+      .header-wallet, .action-label, .case-intro, .case-foot, .condition-list, .patient-quote, #best-score-label, .studio-footer, .treatment-heading .section-meta, .tool-desc, .shortcut-note { display: none; }
+      .clinic-button { border-color: transparent; }
+      .studio-layout { display: flex; flex-direction: column; }
+      .case-panel { display: block; flex-shrink: 0; padding: 6px var(--edge); border-right: 0; border-bottom: 1px solid var(--line); background: #f7f7f0; }
+      .patient-bar { margin: 0; padding: 0; border: 0; }
+      .patient-info { gap: 8px; min-height: 40px; padding-right: 116px; }
+      .patient-avatar { width: 31px; height: 34px; font-size: 17px; border-radius: 12px 12px 6px 6px; }
+      .patient-name-line { font-size: 14px; gap: 6px; }
+      .patient-role { font-size: 11px; margin-top: 3px; }
+      .reset-button { top: 0; right: 0; min-height: 40px; width: 40px; padding: 0; }
+      #patient-steam-tag { display: none !important; }
+      .case-stats { grid-template-columns: .85fr 1fr 1.1fr; gap: 10px; margin-top: 8px; }
+      .stat-card { min-width: 0; }
+      .stat-label { font-size: 11px; }
+      .stat-value { font-size: 22px; line-height: 1; margin-top: 5px; }
+      .progress-track { margin-top: 5px; height: 2px; }
+      .damage-stat { grid-column: auto; }
+      #damage-val { font-size: 11px; }
+      .damage-bar-track { margin-top: 12px; height: 4px; }
+      .care-quality-status { min-height: 40px; height: 40px; margin-top: 6px; padding-block: 4px; flex-wrap: nowrap; font-size: 12px; }
+      .care-quality-status span { white-space: nowrap; }
+      .care-quality-status span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+      .care-goal-entry { min-height: 40px; height: 40px; padding-block: 4px; font-size: 12px; }
+      .tray-trigger-box { position: absolute; top: 6px; right: calc(var(--edge) + 44px); width: 72px; min-height: 40px; margin: 0; padding: 0; border: 0; gap: 5px; }
+      .tray-trigger-box > .icon { width: 20px; height: 20px; }
+      .tray-text { font-size: 11px; gap: 3px; }
+      #trophy-count { font-size: 10px; }
+      .tray-arrow { display: none; }
+      .treatment-panel { position: relative; flex: 1; }
+      .treatment-heading { min-height: 44px; padding: 2px var(--edge); }
+      .treatment-heading h2 { font-size: 15px; }
+      #btn-style-mode { min-height: 40px; font-size: 11px; padding-inline: 8px; }
+      #viewport-wrap { margin-inline: var(--edge); min-height: 140px; border-radius: 9px; }
+      .view-label { left: 12px; top: 13px; font-size: 9px; }
+      .view-label span { display: none; }
+      .macro-reticle { left: 12px; bottom: 11px; max-width: calc(100% - 70px); line-height: 1.4; }
+      .scale-marker { bottom: 10px; right: 13px; }
+      .canvas-topline { inset: 8px 8px auto; gap: 5px; }
+      .care-stages { padding: 6px 7px; gap: 7px; font-size: 11px; }
+      .care-stages li { gap: 3px; }
+      .care-stages li > span { font-size: 9px; }
+      .canvas-status { font-size: 11px; padding: 6px; }
       .keyboard-care-status { font-size: 12px; }
-      #practice-guide { min-height: 36px; font-size: 12px; line-height: 1.4; }
-      #btn-skip-practice { min-height: 36px; font-size: 12px; }
-      .save-notice { padding: 7px 12px; }
-      .care-quality-status { min-height: 32px; font-size: 12px; }
-      .care-goal-entry { min-height: 36px; padding-block: 4px; font-size: 12px; }
+      .tool-section { display: grid; grid-template-columns: minmax(0, 1fr) var(--dock-action); grid-template-rows: var(--dock-guidance) var(--dock-controls); gap: var(--dock-gap) 8px; padding: var(--dock-padding) var(--edge) calc(var(--dock-padding) + var(--safe-bottom)); }
+      .tool-section-head, .tool-assist { display: contents; }
+      .active-tool-title { display: none; }
+      .hint-banner { grid-column: 1; grid-row: 1; align-self: center; position: relative; min-height: 0; max-height: var(--dock-guidance); overflow-y: auto; margin: 0; font-size: 12px; line-height: 1.5; overscroll-behavior: contain; }
+      .hint-banner.warn { z-index: 4; background: var(--paper); }
+      .next-tool-btn { grid-column: 2; grid-row: 1; align-self: center; width: 100%; min-height: 44px; max-height: var(--dock-guidance); padding: 5px 7px; white-space: normal; font-size: 12px; line-height: 1.4; }
+      .toolbar-dock { grid-column: 1 / -1; grid-row: 2; min-height: 0; gap: 4px; }
+      .tool-btn { height: 100%; min-height: 0; padding: 3px 2px; gap: 2px; border-radius: 6px; }
+      .tool-step { top: 4px; left: 4px; font-size: 7px; }
+      .tool-icon, .tool-icon .icon { width: 23px; height: 23px; }
+      .tool-name { font-size: 12px; }
+      .tool-badge { top: 3px; right: 3px; font-size: 7px; height: 12px; min-width: 12px; padding: 0 3px; }
+      #practice-guide { position: absolute; z-index: 3; left: var(--edge); right: calc(var(--edge) + var(--dock-action) + 8px); bottom: calc(var(--dock-controls) + var(--dock-padding) + var(--safe-bottom) + var(--dock-gap)); display: grid; grid-template-columns: minmax(0, 1fr) 40px; grid-template-rows: 15px minmax(0, 1fr); gap: 0 5px; height: var(--dock-guidance); min-height: 0; margin: 0; border: 0; background: var(--paper); font-size: 12px; line-height: 1.4; }
+      #practice-step { grid-column: 1; grid-row: 1; font-size: 11px; }
+      #practice-label { grid-column: 1; grid-row: 2; overflow-y: auto; align-self: center; max-height: 100%; }
+      #btn-skip-practice { grid-column: 2; grid-row: 1 / -1; align-self: center; min-height: 40px; padding: 0; font-size: 12px; }
+      .treatment-panel:not(:has(#keyboard-care-status:not([hidden]))) #practice-guide:not([hidden]):not([data-context='other']) ~ .tool-section .hint-banner:not(.warn) { visibility: hidden; }
+      #practice-guide[data-context='other'], .treatment-panel:has(.hint-banner.warn) #practice-guide, .treatment-panel:has(#keyboard-care-status:not([hidden])) #practice-guide { visibility: hidden; }
+      .save-notice { padding: 6px var(--edge); gap: 8px; }
+      #app-shell.has-save-warning #viewport-wrap { min-height: 88px; }
+      .care-stamps { gap: 4px; }
+      .care-stamp-seal { width: 35px; height: 35px; }
+      .ba-compare-wrap { height: 158px; }
+      .ice-cta-group { left: 8px; right: 8px; bottom: 12px; }
+      .ice-finish-cta, .ice-quick-btn { min-height: 44px; padding: 8px 11px; }
     }
     @media (max-width: 760px) and (max-height: 700px) and (orientation: portrait) {
+      #app-shell { --dock-controls: 48px; --dock-guidance: 54px; --dock-gap: 4px; --dock-padding: 4px; }
+      .studio-header { height: calc(44px + var(--safe-top)); }
+      .brand-title { font-size: 16px; }
+      .brand-mark { width: 25px; height: 28px; }
+      .brand-caption { font-size: 6.5px; margin-top: 2px; }
+      .case-panel { padding-block: 2px; }
+      .patient-info { gap: 7px; }
+      .patient-avatar { width: 27px; height: 30px; border-radius: 8px; }
+      .patient-name-line { line-height: 16px; }
       .patient-role { display: none; }
-      .patient-name-line { font-size: 14px; }
-      .patient-info { min-height: 30px; }
-      .case-stats { gap: 6px; }
-      .stat-label, #damage-val { font-size: 10px; }
-      .stat-value { font-size: 18px; }
-      .tray-text, #trophy-count { font-size: 10px; }
-      #viewport-wrap { min-height: 200px; }
-      #app-shell.has-save-warning #viewport-wrap { min-height: 150px; }
-      .treatment-heading { min-height: 36px; }
-      #btn-style-mode { min-height: 32px; font-size: 11px; }
-      .tool-section { gap: 5px 8px; padding-top: 6px; padding-bottom: calc(6px + env(safe-area-inset-bottom,0px)); }
-      .care-quality-status { margin-top: 4px; padding-block: 3px; }
-      .care-goal-entry { min-height: 36px; padding-block: 3px; }
+      .tray-trigger-box { top: 2px; }
+      .case-stats { gap: 6px; margin-top: 4px; }
+      .stat-card { display: flex; align-items: baseline; gap: 5px; min-height: 18px; }
+      .stat-label { font-size: 10px; white-space: nowrap; }
+      .stat-value { font-size: 18px; margin: 0; letter-spacing: -.2px; }
+      .progress-track, .combo-pill { display: none; }
+      .damage-stat { display: block; padding-top: 1px; }
+      #damage-val { font-size: 10px; }
+      .damage-bar-track { height: 2px; margin-top: 4px; }
+      .care-quality-status { margin-top: 2px; }
+      .treatment-heading { min-height: 40px; padding-block: 0; }
+      .treatment-heading h2 { font-size: 14px; }
+      .tool-icon, .tool-icon .icon { width: 21px; height: 21px; }
     }
-    @media (max-width: 1000px) and (orientation: landscape) and (max-height: 520px) {
-      .tool-section { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 5px 8px; padding: 5px 9px 7px; }
-      .tool-section-head, .tool-assist { display: contents; }
-      .active-tool-title, .shortcut-note { display: none; }
-      .hint-banner { grid-column: 1; grid-row: 1; min-height: 0; margin: 0; font-size: 12px; line-height: 1.4; align-self: center; }
-      .next-tool-btn { grid-column: 2; grid-row: 1; min-height: 36px; font-size: 12px; align-self: center; }
-      .toolbar-dock { grid-column: 1 / -1; grid-row: 2; }
-      .tool-btn { min-height: 52px; }
-      .tool-name { font-size: 12px; }
-      #practice-guide { min-height: 32px; font-size: 12px; }
-      #btn-skip-practice { min-height: 32px; font-size: 12px; }
-      .care-quality-status { font-size: 12px; line-height: 1.4; }
-      .care-goal-entry { flex-wrap: wrap; gap: 2px 5px; padding-block: 5px; }
+    @media (max-width: 760px) and (max-height: 540px) and (orientation: portrait) {
+      .case-stats { display: none; }
+      .patient-info { padding-right: 176px; }
+      .care-quality-status { position: absolute; top: 2px; right: calc(var(--edge) + 116px); width: 60px; margin: 0; padding: 0; border: 0; text-align: center; justify-content: center; }
+      .care-quality-status span:first-child { white-space: normal; }
+      .care-quality-status span:last-child { display: none; }
+      #viewport-wrap { min-height: 100px; }
+    }
+    @media (max-width: 355px) {
+      .client-card { gap: 8px; }
+      .canvas-topline { inset-inline: 6px; gap: 4px; }
+      .care-stages { padding-inline: 5px; gap: 5px; }
+      .care-stages li > span { display: none; }
+      .canvas-status { padding-inline: 5px; }
+    }
+    @media (max-width: 1100px) and (orientation: landscape) and (max-height: 600px) {
+      #app-shell { --edge: 9px; --dock-controls: 44px; --dock-guidance: 54px; --dock-gap: 4px; --dock-padding: 4px; --dock-action: 108px; }
+      .studio-header { height: calc(44px + var(--safe-top)); padding-inline: 12px; }
+      .brand-title { font-size: 17px; }
+      .brand-mark { width: 25px; height: 28px; }
+      .studio-layout { display: grid; grid-template-columns: clamp(136px, 20vw, 180px) minmax(0, 1fr); }
+      .case-panel { display: flex; min-height: 0; overflow-y: auto; border-right: 1px solid var(--line); border-bottom: 0; padding: 7px 10px calc(7px + var(--safe-bottom)); }
+      .patient-bar { flex-shrink: 0; }
+      .patient-info { padding-right: 0; gap: 7px; }
+      .patient-avatar { width: 28px; height: 32px; }
+      .patient-name-line { font-size: 12px; gap: 5px; }
+      .patient-role { font-size: 10px; line-height: 1.4; }
+      .reset-button { position: static; width: 100%; min-height: 40px; margin-top: 5px; gap: 5px; border: 1px solid var(--line); }
+      .reset-button::after { content: '重新开始'; font-size: 11px; }
+      .reset-button .icon { width: 14px; height: 14px; }
+      .case-stats { order: 3; flex-shrink: 0; grid-template-columns: 1fr 1fr; gap: 9px 7px; margin-top: 9px; }
+      .stat-label { font-size: 10px; }
+      .stat-value { font-size: 20px; }
+      .damage-stat { grid-column: 1 / -1; }
+      .damage-bar-track { margin-top: 5px; }
+      .care-quality-status { order: 1; height: auto; min-height: 44px; flex-wrap: wrap; gap: 1px; margin-top: 6px; line-height: 1.4; }
+      .care-quality-status span:last-child { font-size: 10px; white-space: normal; }
+      .care-goal-entry { order: 2; height: auto; min-height: 44px; flex-wrap: wrap; gap: 2px 5px; padding-block: 5px; }
       .care-goal-entry-copy { flex-basis: 100%; }
       #care-goal-entry-progress { flex: 1; }
+      .tray-trigger-box { position: static; order: 4; flex-shrink: 0; width: 100%; min-height: 40px; margin-top: 7px; padding-top: 6px; border-top: 1px solid var(--line); }
+      .tray-text { flex-direction: row; align-items: center; gap: 6px; }
+      .treatment-heading { min-height: 40px; padding-block: 0; }
+      .treatment-heading h2 { font-size: 14px; }
+      #viewport-wrap { min-height: 80px; }
+      .tool-step { display: none; }
+      .tool-icon, .tool-icon .icon { width: 19px; height: 19px; }
+      .canvas-topline { inset: 7px 8px auto; }
+      .care-stages { padding: 4px 7px; }
+      .canvas-status { padding: 4px 6px; }
     }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
   </style>
@@ -3467,6 +3419,8 @@
       }
       if (!p || guide.step >= guide.ids.length) { finishPracticeGuide(); return; }
       box.hidden = false;
+      // A selected target outside the lesson keeps its own instructions visible.
+      box.dataset.context = currentPointerCareTarget()?.item && currentPointerCareTarget().item !== p ? 'other' : 'practice';
       const tool = getPracticeAction(p);
       const names = { blackhead: '黑头', whitehead: '白头', cyst: '深层' };
       const instructions = { steam: '按住圈内热敷', needle: '对准浅色尖端松手', squeeze: '从圈外向内轻推', tweezers: '夹住中心，慢慢拉出', swab: '擦净圈内残留', ice_brush: '涂抹冰膜收尾' };
@@ -7484,6 +7438,8 @@
       });
     }
 
+    let lastCanvasClientOrigin = null;
+
     function resizeCanvas() {
       const previous = captureSceneGeometry();
       const rect = viewportWrap.getBoundingClientRect();
@@ -7507,7 +7463,23 @@
       // Also run at equal dimensions after session hydration.
       refreshComparisonSnapshots();
       if (state.pimples.length) updateHUD();
+      const clientRect = canvas.getBoundingClientRect();
+      lastCanvasClientOrigin = { left: clientRect.left, top: clientRect.top };
       requestSceneFrame();
+    }
+
+    function resizeCanvasIfChanged() {
+      const rect = viewportWrap.getBoundingClientRect();
+      const width = Math.max(1, Math.floor(rect.width));
+      const height = Math.max(1, Math.floor(rect.height));
+      const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+      const clientRect = canvas.getBoundingClientRect();
+      const sameOrigin = lastCanvasClientOrigin?.left === clientRect.left && lastCanvasClientOrigin?.top === clientRect.top;
+      if (width === state.width && height === state.height && dpr === state.dpr && sameOrigin) return false;
+      // Event notifications can repeat without moving the board. Keep held
+      // input in that case; direct resizeCanvas calls still force a refresh.
+      resizeCanvas();
+      return true;
     }
 
     let rafId = null;
@@ -7590,18 +7562,14 @@
           boardResizePending = true;
           requestAnimationFrame(() => {
             boardResizePending = false;
-            const rect = viewportWrap.getBoundingClientRect();
-            if (Math.floor(rect.width) !== state.width || Math.floor(rect.height) !== state.height) {
-              resizeCanvas();
-              saveCurrentSession();
-            }
+            if (resizeCanvasIfChanged()) saveCurrentSession();
           });
         });
         boardObserver.observe(viewportWrap);
       }
 
       window.addEventListener('resize', () => {
-        resizeCanvas();
+        resizeCanvasIfChanged();
         if (resultModalEl.classList.contains('open')) {
           renderBeforeAfterComparison();
         }
