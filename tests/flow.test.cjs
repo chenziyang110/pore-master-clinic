@@ -123,7 +123,8 @@ test('difficulty selection and accessible state survive reload, next care and cu
   const r = await createGame({seed:77,storage:saved});t.after(r.close);r.frame();
   assertDensity(r, 11);assert.equal(r.state('state.pimples.length'), 11);
   finish(r);r.click('btn-next-face');assertDensity(r, 11);assert.equal(r.state('state.pimples.length'), 11);
-  chooseClient(r, 0);assertDensity(r, 0);assert.equal(r.state('state.pimples.length'), 8);
+  const otherClient = r.state('state.clientIndex') === 0 ? 1 : 0;
+  chooseClient(r, otherClient);assertDensity(r, 0);assert.equal(r.state('state.pimples.length'), 8);
   assert.deepEqual(r.runtimeErrors, []);
 });
 

@@ -184,6 +184,11 @@ test('each customer retains its authored mix at eight and eleven targets across 
 
 test('the actual next-customer controls carry eleven targets into a pure blackhead session', async t => {
   const g = await gameFor(t);
+  // The first three stamps are already collected. With this goal history,
+  // the next new customer after this care is the blackhead specialist.
+  g.evaluate(`for(const client of CLIENTS.slice(0,3))
+    careRecords.bests[careModeKey(client.id,0,'pointer')]={clientId:client.id,density:0,inputMode:'pointer',
+      bestScore:1000,bestGrade:'S',completions:1,goalMet:true};`);
   g.click('btn-clinic');
   g.d.querySelectorAll('#client-list-container .client-card')[3].click();
   // Only completed cleaning is a fixture; ice, settlement, density and next

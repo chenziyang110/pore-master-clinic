@@ -104,14 +104,15 @@ test('cotton upgrade heals six points once per completed site, matching its desc
   assert.match(g.state("UPGRADES.find(u=>u.key==='iceprobe').desc"),/6 个百分点/);
 });
 
-test('recommendations, badges and actual grabbing accept the same legal targets', async t => {
+test('recommendations favor this goal without removing legal grabbing routes or badges', async t => {
   const g=await gameFor(t);
   for(const variant of ['warm_black','pierced_black','exposed_black','white','cyst']) {
     newRun(g);const type=variant==='white'?'whitehead':variant==='cyst'?'cyst':'blackhead';const p=point(g,type);
     g.evaluate(`(()=>{const p=state.pimples.find(p=>p.id===${p.id});
       ${variant==='warm_black'?'p.steamed=1;':variant==='pierced_black'?'p.pierced=true;':variant==='exposed_black'?'p.state=P_STATE.EXTRUDING;p.extrudeProgress=.16;':'p.state=P_STATE.EXTRUDING;'}
       updateHUD();})()`);
-    assert.equal(g.state(`getRecommendedTool(state.pimples.find(p=>p.id===${p.id}))`),'tweezers');
+    const advice = ['pierced_black','exposed_black'].includes(variant) ? 'steam' : 'tweezers';
+    assert.equal(g.state(`getRecommendedTool(state.pimples.find(p=>p.id===${p.id}))`),advice);
     assert.ok(Number(g.d.getElementById('badge-tweezers').textContent)>=1);
     g.click('tool-tweezers');g.mouse('skin-canvas','mousedown',p.x,p.y);
     assert.equal(g.state('state.tweezers.clampedPimple.id'),p.id);

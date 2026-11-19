@@ -207,6 +207,15 @@ async function createGame(options = {}) {
         if (this.id==='tray-zoom-canvas') return rect(360,190);
         return rect(dimensions.width,40);
       };
+      // jsdom has no layout. Model the existing dialogs' visibility so focus
+      // checks use the same controls as the browser; CSS geometry is checked
+      // separately in browser acceptance.
+      w.HTMLElement.prototype.getClientRects = function() {
+        if (!this.isConnected || this.closest('[hidden], [inert], .modal-backdrop:not(.open)')) return [];
+        const closedDetails = this.closest('details:not([open])');
+        if (closedDetails && !closedDetails.querySelector(':scope > summary')?.contains(this)) return [];
+        return [this.getBoundingClientRect()];
+      };
       const prototype = w.HTMLCanvasElement.prototype;
       const nativeFor = element => {
         if (!pixels.has(element)) {

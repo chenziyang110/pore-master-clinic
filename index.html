@@ -247,6 +247,13 @@
     .care-quality-status { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 9px; width: 100%; margin-top: 13px; min-height: 36px; padding: 7px 0; color: var(--green); background: none; border: 0; border-bottom: 1px solid var(--line); text-align: left; font-size: 12px; line-height: 1.5; }
     .care-quality-status span:last-child { color: #626c5f; font-size: 11px; }
     .care-quality-status[data-grade='B'], .care-quality-status[data-grade='C'] { color: #8b594e; }
+    .care-goal-entry { display: flex; align-items: center; gap: 6px; flex-shrink: 0; width: 100%; min-height: 36px; padding: 5px 0; border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--green); text-align: left; font-size: 12px; line-height: 1.4; }
+    .care-goal-entry:hover { color: #304d38; }
+    .care-goal-entry-copy { display: flex; align-items: baseline; gap: 5px; min-width: 0; flex: 1; }
+    .care-goal-entry-label { flex-shrink: 0; color: #626c5f; }
+    #care-goal-entry-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #care-goal-entry-progress { flex-shrink: 0; color: #52634c; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .care-journal-total { display: inline-block; margin-left: 8px; color: #626c5f; font: 12px/1.5 -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; vertical-align: middle; letter-spacing: 0; }
     #care-journal-count { font-variant-numeric: tabular-nums; }
     .care-journey { margin: 16px 0 22px; padding: 16px 0; border-block: 1px solid var(--line); }
     .care-journey-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
@@ -488,6 +495,7 @@
       #btn-skip-practice { min-height: 36px; font-size: 12px; }
       .save-notice { padding: 7px 12px; }
       .care-quality-status { min-height: 32px; font-size: 12px; }
+      .care-goal-entry { min-height: 36px; padding-block: 4px; font-size: 12px; }
     }
     @media (max-width: 760px) and (max-height: 700px) and (orientation: portrait) {
       .patient-role { display: none; }
@@ -503,6 +511,7 @@
       #btn-style-mode { min-height: 32px; font-size: 11px; }
       .tool-section { gap: 5px 8px; padding-top: 6px; padding-bottom: calc(6px + env(safe-area-inset-bottom,0px)); }
       .care-quality-status { margin-top: 4px; padding-block: 3px; }
+      .care-goal-entry { min-height: 36px; padding-block: 3px; }
     }
     @media (max-width: 1000px) and (orientation: landscape) and (max-height: 520px) {
       .tool-section { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 5px 8px; padding: 5px 9px 7px; }
@@ -516,6 +525,9 @@
       #practice-guide { min-height: 32px; font-size: 12px; }
       #btn-skip-practice { min-height: 32px; font-size: 12px; }
       .care-quality-status { font-size: 12px; line-height: 1.4; }
+      .care-goal-entry { flex-wrap: wrap; gap: 2px 5px; padding-block: 5px; }
+      .care-goal-entry-copy { flex-basis: 100%; }
+      #care-goal-entry-progress { flex: 1; }
     }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
   </style>
@@ -562,9 +574,10 @@
           <div class="stat-card damage-stat"><div class="stat-label"><span>即时刺激度</span><span id="damage-val">0%</span></div><div class="damage-bar-track"><div id="damage-fill" class="damage-bar-fill"></div></div></div>
         </div>
         <button id="btn-quality-details" class="care-quality-status" type="button" aria-label="查看本局表现和评级说明"><span id="care-quality-label">本局表现 S</span><span id="care-quality-history">误操作 0 次 · 累计刺激 0.0</span></button>
+        <button id="btn-plan" class="care-goal-entry" type="button" aria-haspopup="dialog" aria-controls="plan-modal" aria-label="本次目标，查看护理手记"><span class="care-goal-entry-copy"><span class="care-goal-entry-label">本次目标</span><span id="care-goal-entry-title">先软化再取出</span></span><span id="care-goal-entry-progress">0/5</span><span aria-hidden="true">↗</span></button>
         <div class="condition-list" aria-label="本次清理内容"><span>黑头 <b id="count-blackhead">5</b></span><span>白头 <b id="count-whitehead">2</b></span><span>深层 <b id="count-cyst">1</b></span></div>
         <button id="btn-tray-inspect" class="tray-trigger-box" type="button" title="查看本次收集盘"><svg class="icon " aria-hidden="true"><use href="#i-tray"/></svg><span class="tray-text"><span>收集盘</span><span id="trophy-count">已收集 0 颗</span></span><span class="tray-arrow" aria-hidden="true">↗</span></button>
-        <div class="case-foot"><svg class="face-study" viewBox="0 0 90 120" fill="none" stroke="currentColor" stroke-width=".85" aria-hidden="true"><path d="M20 31c0-17 13-26 27-25s25 11 24 29l-4 31c-2 13-11 26-23 28-12-2-22-15-24-28Z"/><path d="M20 39c-8-7-11 4-6 12l7 7m50-19c8-7 10 4 5 12l-8 7M29 41l9-2m16 0 9 2M46 43l-4 16 6 2M34 72c7 5 14 5 21-1M31 88l-3 18m30-19 4 19M12 118l16-12m34 0 16 12"/><ellipse cx="31" cy="57" rx="8" ry="10" fill="#c6d1b8" fill-opacity=".35" stroke-dasharray="2 2"/><path d="M44 23c9-1 15-5 19-10M25 24c10 0 17-7 21-18"/></svg><div class="case-note"><span class="case-note-label">本次护理部位</span><br><span id="case-zone-label">鼻翼与脸颊</span><br><button id="btn-plan" class="text-button" type="button">护理手记 <span id="care-journal-count">0/5</span> <span aria-hidden="true">↗</span></button></div></div>
+        <div class="case-foot"><svg class="face-study" viewBox="0 0 90 120" fill="none" stroke="currentColor" stroke-width=".85" aria-hidden="true"><path d="M20 31c0-17 13-26 27-25s25 11 24 29l-4 31c-2 13-11 26-23 28-12-2-22-15-24-28Z"/><path d="M20 39c-8-7-11 4-6 12l7 7m50-19c8-7 10 4 5 12l-8 7M29 41l9-2m16 0 9 2M46 43l-4 16 6 2M34 72c7 5 14 5 21-1M31 88l-3 18m30-19 4 19M12 118l16-12m34 0 16 12"/><ellipse cx="31" cy="57" rx="8" ry="10" fill="#c6d1b8" fill-opacity=".35" stroke-dasharray="2 2"/><path d="M44 23c9-1 15-5 19-10M25 24c10 0 17-7 21-18"/></svg><div class="case-note"><span class="case-note-label">本次护理部位</span><br><span id="case-zone-label">鼻翼与脸颊</span></div></div>
       </aside>
       <section class="treatment-panel" aria-label="护理工作台">
         <div class="treatment-heading"><div><h2 id="care-zone">鼻翼与脸颊</h2><div id="care-focus" class="section-meta">先软化，再匀速取出</div></div><button id="btn-style-mode" class="icon-btn" type="button" aria-pressed="false" title="切换自然肌理与柔和肌理"><svg class="icon " aria-hidden="true"><use href="#i-style"/></svg><span id="style-mode-label">自然肌理</span></button></div>
@@ -652,8 +665,9 @@
           <button class="preset-btn" type="button" data-density="11" aria-pressed="false">11 处</button>
         </div></details>
 
-        <button id="btn-next-face" class="primary-btn" type="button">接待下一位顾客</button>
-        <button id="btn-open-clinic-from-res" class="secondary-btn" type="button">返回接诊台 · 器械升级</button>
+        <button id="btn-next-face" class="primary-btn" type="button">继续收集护理印记</button>
+        <button id="btn-retry-care-goal" class="secondary-btn" type="button" hidden>再试本次目标</button>
+        <button id="btn-open-clinic-from-res" class="secondary-btn" type="button">自由接待 · 返回接诊台</button>
       </div>
     </div>
 
@@ -697,7 +711,7 @@
         <div class="client-list" id="upgrade-list-container"></div>
         <p id="shop-completion-note" class="care-journey-copy"></p>
 
-        <details class="session-settings"><summary>已完成的护理 <span id="care-record-count">0</span></summary><div id="care-record-list"></div></details>
+        <details id="care-records-details" class="session-settings"><summary>已完成的护理 <span id="care-record-count">0</span></summary><section id="care-best-records" aria-labelledby="care-best-title" hidden><h3 id="care-best-title" class="modal-section-label">分组最佳</h3><p class="care-journey-copy">顾客、护理数量和输入方式分别记录。原始分包含连贯与器械奖励。</p><div id="care-best-list"></div></section><h3 class="modal-section-label">最近完成</h3><div id="care-record-list"></div></details>
 
         <button id="btn-close-clinic" class="secondary-btn" type="button">返回当前护理台</button>
       </div>
@@ -705,7 +719,7 @@
 
     <!-- Care notes remain available without occupying the main toolbar. -->
     <div id="plan-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="plan-title">
-      <div class="modal-card"><button class="modal-close" type="button" data-close-modal="plan-modal" aria-label="关闭弹窗"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button><div class="modal-header"><h2 id="plan-title" class="modal-title">护理手记</h2><p class="modal-subtitle">不用赶进度。清理、收集，再看看前后的变化。</p></div>
+      <div class="modal-card"><button class="modal-close" type="button" data-close-modal="plan-modal" aria-label="关闭弹窗"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button><div class="modal-header"><h2 id="plan-title" class="modal-title">护理手记 <span class="care-journal-total">印记 <span id="care-journal-count">0/5</span></span></h2><p class="modal-subtitle">不用赶进度。清理、收集，再看看前后的变化。</p></div>
         <div class="guide-list"><div class="guide-row"><strong>这位顾客的护理重点</strong><br><span id="plan-care-focus"></span></div><div class="guide-row"><strong>本次可选目标</strong><br><span id="care-goal-current"></span><br>首次达成会留下这位顾客的印记，并获得 ¥60 目标奖励。每位顾客只领一次，不限护理数量和输入方式。</div><div class="guide-row"><strong>按自己的节奏</strong><br>轻松模式没有倒计时，也不会强制失败。力度超过 90% 会增加刺激，出现“松一点”时往外放松；低力度也可以完成清理。</div><div class="guide-row"><strong>连贯操作与评级</strong><br>每次有效处理记一步，损伤或夹断会中断，停下来休息不会清零。第 3 步起得分 ×1.25，第 6 步起 ×1.5。S：累计刺激不超过 14 且零失误；A：不超过 32、至多 2 次；B：不超过 58、至多 5 次；其余为 C。</div><div class="guide-row"><strong>给这次护理留个记录</strong><br>敷膜后才会计入最高分。最佳评级按顾客、护理数量和输入方式保存。原始得分包含连贯与器械奖励；比较手法时先看评级和误操作。在接诊台查看五枚护理印记与完成记录。</div></div>
         <button id="btn-close-plan" class="primary-btn" type="button">回到护理台</button>
       </div>
@@ -1575,6 +1589,7 @@
 
     async function retryPendingCareSave() {
       if (saveRetryBusy || !careControl.owned || careControl.conflict) return false;
+      const retryFocus = document.activeElement?.classList.contains('save-retry') ? document.activeElement : null;
       saveRetryBusy = true;
       syncSaveNotice();
       let saved = false;
@@ -1599,9 +1614,9 @@
       } finally {
         saveRetryBusy = false;
         syncSaveNotice();
-        if (saved && document.activeElement?.classList.contains('save-retry')) {
+        if (saved && retryFocus && (document.activeElement === retryFocus || document.activeElement === document.body)) {
           const modal = document.querySelector('.modal-backdrop.open');
-          const target = modal ? modal.querySelector('button:not([disabled]):not(.save-retry), [tabindex="0"], summary') : canvas;
+          const target = modal ? modalFocusTargets(modal)[0] : canvas;
           target?.focus({ preventScroll: true });
         }
       }
@@ -1724,9 +1739,19 @@
     }
 
     function updateHandoffButtons(waiting) {
-      document.getElementById('btn-continue-here').disabled = waiting;
-      document.getElementById('btn-continue-here').textContent = waiting ? '正在接续护理…' : careControl.conflict ? '使用已保存进度' : '在这里继续';
-      document.getElementById('btn-cancel-handoff').hidden = !waiting;
+      const gate = document.getElementById('storage-gate-modal');
+      const resume = document.getElementById('btn-continue-here');
+      const cancel = document.getElementById('btn-cancel-handoff');
+      const focused = document.activeElement;
+      resume.disabled = waiting;
+      resume.textContent = waiting ? '正在接续护理…' : careControl.conflict ? '使用已保存进度' : '在这里继续';
+      cancel.hidden = !waiting;
+      // Move focus before the newly disabled/hidden control can strand keyboard
+      // navigation. Do not steal focus once the handoff dialog has closed.
+      if (gate.classList.contains('open')
+        && ((waiting && focused === resume) || (!waiting && focused === cancel))) {
+        (waiting ? cancel : resume).focus({ preventScroll: true });
+      }
     }
 
     function showCareGate(message = '这页已暂停。你可以回到原页面，也可以在这里接着最新进度继续。') {
@@ -1914,6 +1939,10 @@
       for (const type of ['click', 'mousedown', 'touchstart', 'keydown']) {
         document.addEventListener(type, event => {
           if (event.target.closest?.('#storage-gate-modal')) return;
+          // A browser may move focus to body when a waiting control disappears.
+          // Let the dialog's Tab trap recover it; game input remains blocked.
+          if (type === 'keydown' && event.key === 'Tab'
+            && document.getElementById('storage-gate-modal').classList.contains('open')) return;
           if (!ensureCareControl()) { event.preventDefault(); event.stopImmediatePropagation(); }
         }, { capture: true, passive: false });
       }
@@ -2148,6 +2177,12 @@
       return careRecords.bests[careModeKey(clientId, density, inputMode)] || null;
     }
 
+    function getCompletedCareGroups(clientId) {
+      return Object.values(careRecords.bests).filter(best => !clientId || best.clientId === clientId)
+        .sort((a, b) => CLIENTS.findIndex(client => client.id === a.clientId) - CLIENTS.findIndex(client => client.id === b.clientId)
+          || a.density - b.density || Number(a.inputMode === 'keyboard') - Number(b.inputMode === 'keyboard'));
+    }
+
     // Journey stamps are derived from the existing canonical records. A stamp
     // earned in any quantity/input group also consumes its one-time reward.
     function hasCompletedCareGoal(clientId) {
@@ -2161,11 +2196,18 @@
         nextClient: CLIENTS.find(client => !hasCompletedCareGoal(client.id)) || null };
     }
 
+    function getSettlementJourney() {
+      const journey = getCareJourney();
+      const client = currentClient();
+      // A missed optional goal can wait: offer another missing stamp first,
+      // and keep an explicit retry beside the free customer choice.
+      const nextClient = CLIENTS.find(candidate => candidate.id !== client.id && !hasCompletedCareGoal(candidate.id)) || journey.nextClient;
+      return { ...journey, nextClient, currentStamped: hasCompletedCareGoal(client.id) };
+    }
+
     function updateCareJourneySummary() {
       const journey = getCareJourney();
       updateText(document.getElementById('care-journal-count'), `${journey.count}/${CLIENTS.length}`);
-      const planButton = document.getElementById('btn-plan');
-      planButton.setAttribute('aria-label', `护理手记，已收集 ${journey.count} / ${CLIENTS.length} 枚印记${journey.complete ? '，本章完成' : ''}`);
       document.getElementById('app-shell').classList.toggle('chapter-complete', journey.complete);
       updateText(document.getElementById('chapter-caption'), journey.complete ? '五枚印记 · 本章完成' : 'PORE MASTER CLINIC');
     }
@@ -3151,7 +3193,7 @@
       const id = collectionId || `loose:${++state.collectionSerial}`;
       const item = state.collectionLedger[id];
       if (item && item.location !== 'skin') return false;
-      state.collectionLedger[id] = { kind, location: 'flight', rewards: item ? item.rewards : {} };
+      state.collectionLedger[id] = { ...item, kind, location: 'flight', rewards: item ? item.rewards : {} };
       if (motionPreference?.matches) {
         finalizeTrophyInTray(kind, wormLen, id);
         return true;
@@ -3225,6 +3267,7 @@
       if (selected?.kind === 'pimple') {
         const p = selected.item;
         if (tool === 'tweezers' && !canTweezePimple(p)) return tweezerPreparationHint(p);
+        if (tool === 'tweezers' && needsGoalWarmth(p)) return '这处黑头可以夹取；想完成本次目标，先充分热敷，再缓缓取出。';
         if (tool === 'tweezers') return `${p.type === 'blackhead' ? '这处黑头可以夹取' : '这处已露头'}，夹住后缓慢向外拉。`;
         if (tool === 'squeeze' && p.type === 'cyst' && !p.pierced) return '这处深层先用粉刺针破口，再沿外围轻轻向内推。';
         if (tool === 'needle' && !needleActionFor(p)) return p.state === P_STATE.OOZING
@@ -3274,14 +3317,50 @@
       return p.state === P_STATE.EXTRUDING && (p.type !== 'blackhead' || p.extrudeProgress >= 0.16);
     }
 
+    function needsGoalWarmth(p) {
+      return currentClient().id === 'coder' && p.type === 'blackhead'
+        && p.state < P_STATE.OOZING && p.steamed < 0.75;
+    }
+
+    function nextCareTarget() {
+      const wrap = (kind, item) => item ? { kind, item, x: item.x, y: item.y } : null;
+      const active = state.pimples.filter(p => p.state < P_STATE.HEALING);
+      const practice = getPracticeTarget();
+      if (practice && active.includes(practice)) return wrap('pimple', practice);
+      const waitingForWipe = active.find(p => p.state === P_STATE.OOZING);
+      if (waitingForWipe) return wrap('pimple', waitingForWipe);
+      const splatter = state.lensSplatters.find(sp => isLensSplatterVisible(sp));
+      if (splatter) return wrap('splatter', splatter);
+      const loose = state.surfaceResidues.find(r => r.kind === 'worm' || r.kind === 'core_seed');
+      if (loose) return wrap('residue', loose);
+      // Finish a started site before moving to an untouched one. On a fresh
+      // board the first site starts with heat, regardless of deeper sites nearby.
+      const started = active.find(p => p.state !== P_STATE.INTACT || p.pierced || p.steamed >= 0.75);
+      return wrap('pimple', started || active[0]);
+    }
+
+    function toolForCareTarget(target) {
+      if (!target) return '';
+      if (target.kind === 'pimple') return target.item.state < P_STATE.HEALING ? getRecommendedTool(target.item) : '';
+      return target.kind === 'residue' && ['worm', 'core_seed'].includes(target.item.kind) ? 'tweezers' : 'swab';
+    }
+
+    function careTargetLocation(target) {
+      const vertical = target.y < state.height / 3 ? '上方' : target.y > state.height * 2 / 3 ? '下方' : '中部';
+      const horizontal = target.x < state.width / 3 ? '左侧' : target.x > state.width * 2 / 3 ? '右侧' : '';
+      const name = target.kind === 'pimple' ? { blackhead: '黑头', whitehead: '白头', cyst: '深层目标' }[target.item.type]
+        : target.kind === 'splatter' ? '镜片飞溅' : '皮肤上的提取物';
+      return `${vertical}${horizontal}的${name}`;
+    }
+
     function getRecommendedTool(target = null) {
-      const targets = target ? [target] : state.pimples;
-      const active = targets.filter(p => p.state < P_STATE.HEALING);
-      if (!active.length) return 'ice_brush';
-      if (active.some(p => p.state === P_STATE.OOZING) || (!target && state.lensSplatters.length)) return 'swab';
-      if (active.some(canTweezePimple) || state.surfaceResidues.some(r => (r.kind === 'worm' || r.kind === 'core_seed') && (!target || r.pimpleId === target.id))) return 'tweezers';
-      if (active.some(p => p.type === 'cyst' && needleActionFor(p) === 'pierce')) return 'needle';
-      if (active.some(p => p.state === P_STATE.EXTRUDING || p.state === P_STATE.RUPTURED || (p.state === P_STATE.INTACT && (p.steamed >= 0.75 || p.pierced)))) return 'squeeze';
+      if (!target) return toolForCareTarget(nextCareTarget()) || 'ice_brush';
+      if (target.state >= P_STATE.HEALING) return 'ice_brush';
+      if (target.state === P_STATE.OOZING) return 'swab';
+      if (needsGoalWarmth(target)) return 'steam';
+      if (canTweezePimple(target)) return 'tweezers';
+      if (target.type === 'cyst' && needleActionFor(target) === 'pierce') return 'needle';
+      if (target.state === P_STATE.EXTRUDING || target.state === P_STATE.RUPTURED || target.steamed >= 0.75 || target.pierced) return 'squeeze';
       return 'steam';
     }
 
@@ -3295,6 +3374,18 @@
       status.classList.toggle('warn', tooStrong);
       if (active) updateText(status, `${tooStrong ? '松一点' : '轻推'} ${Math.round(pointer.squeezeForce * 100)}%`);
       else if (wasActive) updateCareGuidance();
+    }
+
+    function updateCareGoalEntry(goal) {
+      const progress = goal.progress.replace(/\s*\/\s*/g, '/')
+        .replace(/ 处(?:先软化|轻柔取出)/g, ' 处')
+        .replace('误操作 ', '失误 ').replace('累计刺激 ', '刺激 ')
+        .replace('已收集 ', '收集 ').replace(/ 次/g, '');
+      updateText(document.getElementById('care-goal-entry-title'), goal.title);
+      updateText(document.getElementById('care-goal-entry-progress'), progress);
+      const button = document.getElementById('btn-plan');
+      const label = `本次目标：${goal.title}。${goal.progress}。查看目标详情与护理手记。`;
+      if (button.getAttribute('aria-label') !== label) button.setAttribute('aria-label', label);
     }
 
     function updateCareGuidance() {
@@ -3319,17 +3410,19 @@
       if (state.currentTool === 'ice_brush') updateText(document.getElementById('active-tool-name'), `舒缓冰膜 · 已覆盖 ${iced} / ${total}`);
 
       const selected = isKeyboardCareFocused() ? currentKeyboardTarget() : currentPointerCareTarget();
-      const nextTool = remaining === 0 ? '' : !selected ? getRecommendedTool()
-        : selected.kind === 'pimple' ? (selected.item.state < P_STATE.HEALING ? getRecommendedTool(selected.item) : '')
-        : selected.kind === 'splatter' || !['worm', 'core_seed'].includes(selected.item.kind) ? 'swab' : 'tweezers';
+      const suggested = selected || nextCareTarget();
+      const nextTool = remaining === 0 ? '' : toolForCareTarget(suggested);
       const nextButton = document.getElementById('btn-care-next');
-      nextButton.hidden = !nextTool || nextTool === state.currentTool || state.iceFinishing || state.settled;
+      nextButton.hidden = !nextTool || (selected && nextTool === state.currentTool) || state.iceFinishing || state.settled;
       nextButton.dataset.tool = nextTool;
+      nextButton.careTarget = suggested;
       const labels = { steam: '先热敷', needle: '用粉刺针', squeeze: '轻柔挤压', tweezers: '换细胞夹', swab: '换棉签' };
       if (nextTool) updateText(nextButton, `${selected ? '这处' : '下一处'}：${labels[nextTool]} →`);
+      nextButton.title = nextTool ? `${careTargetLocation(suggested)}：${labels[nextTool]}` : '';
       const goal = evaluateCareGoal();
       updateText(document.getElementById('care-goal-current'), `${goal.title}：${goal.description} ${goal.progress}`);
       updateText(document.getElementById('help-care-goal'), `${goal.title}：${goal.description} ${goal.progress}`);
+      updateCareGoalEntry(goal);
       updatePressureFeedback();
       updatePracticeGuide();
       updateKeyboardCareStatus();
@@ -3387,8 +3480,10 @@
       const next = document.getElementById('btn-care-next');
       const labels = { steam: '先热敷', needle: '用粉刺针', squeeze: '轻柔挤压', tweezers: '换细胞夹', swab: '换棉签' };
       next.dataset.tool = tool;
+      next.careTarget = { kind: 'pimple', item: p, x: p.x, y: p.y };
       next.hidden = !tool || tool === state.currentTool || state.settled || state.iceFinishing;
       if (labels[tool]) updateText(next, `${labels[tool]} →`);
+      next.title = labels[tool] ? `${careTargetLocation(next.careTarget)}：${labels[tool]}` : '';
     }
 
     function drawPracticeCue() {
@@ -3828,7 +3923,9 @@
         setHint('破口完成。沿红肿区域外围，缓缓向内推。', 'good');
       } else if (hit.type === 'blackhead') {
         addScore(30, hit.x, hit.y, '挑松黑头');
-        setHint('黑头已松动，可直接用细胞夹缓缓取出，也可轻挤到露头。', 'good');
+        setHint(needsGoalWarmth(hit)
+          ? '黑头已松动。想完成本次目标，先充分热敷，再缓缓夹取。'
+          : '黑头已松动，可直接用细胞夹缓缓取出，也可轻挤到露头。', 'good');
       } else {
         hit.surfacePusMound = 1.9;
         spawnFloatingText(hit.x, hit.y - 16, '挑开薄皮', '#a8f0d4');
@@ -4168,6 +4265,16 @@
       return state.keyboardCare.visible && document.activeElement === canvas && !state.paused && !state.settled;
     }
 
+    function keyboardTargetPosition(target, targets) {
+      if (!target) return '没有可选的护理点';
+      const names = { pimple: '护理点', residue: '表面残留', splatter: '镜面飞溅' };
+      // Navigation still visits every available item; its spoken position is
+      // counted within its own category so treatment counts stay at 8/11/etc.
+      const category = target.kind === 'pimple' ? state.pimples
+        : targets.filter(item => item.kind === target.kind).map(item => item.item);
+      return `${names[target.kind]} ${category.indexOf(target.item) + 1}/${category.length}`;
+    }
+
     function updateKeyboardCareStatus() {
       const status = document.getElementById('keyboard-care-status');
       const target = currentKeyboardTarget();
@@ -4180,7 +4287,8 @@
         if (canvas.getAttribute('aria-label') !== defaultCanvasLabel) canvas.setAttribute('aria-label', defaultCanvasLabel);
         return;
       }
-      const text = `键盘辅助 · ${state.keyboardCare.index + 1}/${targets.length} · ${keyboardTargetDescription(target)}`;
+      const detail = target?.kind === 'pimple' ? ` · ${keyboardTargetDescription(target)}` : '';
+      const text = `键盘辅助 · ${keyboardTargetPosition(target, targets)}${detail}`;
       updateText(status, text);
       canvas.setAttribute('aria-label', `护理画布。${text}`);
       const hintKey = `${text}|${state.currentTool}`;
@@ -6849,9 +6957,11 @@
         const area = c.zoneId === 'nose_tip' ? '鼻部集中护理' : c.zoneId === 'chin_jaw' ? '下巴与唇周' : '鼻翼与脸颊';
         const total = canContinue ? state.pimples.length : Object.values(c.recipe).reduce((sum, count) => sum + count, 0);
         const action = canContinue ? '护理中 · 继续' : isCurrent ? '再护理一次' : '开始护理';
-        const best = getCompletedBest(c.id, canContinue ? state.runDensity : 0, canContinue ? state.runControlMode : 'pointer');
+        const best = getCompletedBest(c.id, isCurrent ? state.runDensity : 0, isCurrent ? state.runControlMode : 'pointer');
+        const completedGroups = getCompletedCareGroups(c.id);
         const goalMet = hasCompletedCareGoal(c.id);
-        const history = best ? `本档最佳 ${best.bestGrade} · ${best.completions} 次完成` : `可选目标 · ${CARE_GOALS[c.id].title}`;
+        const history = best ? `本档最佳 ${best.bestGrade} · ${careModeLabel(best.density, best.inputMode)} · ${best.completions} 次完成`
+          : completedGroups.length ? `已完成 ${completedGroups.length} 个分组 · 见下方分组最佳` : `可选目标 · ${CARE_GOALS[c.id].title}`;
         const card = document.createElement('button');
         card.type = 'button';
         card.className = 'client-card' + (isCurrent ? ' active-client' : '');
@@ -6919,13 +7029,36 @@
 
     function renderCareRecordList() {
       const list = document.getElementById('care-record-list');
-      const total = Object.values(careRecords.bests).reduce((sum, best) => sum + best.completions, 0);
+      const groups = getCompletedCareGroups();
+      const total = groups.reduce((sum, best) => sum + best.completions, 0);
       updateText(document.getElementById('care-record-count'), total);
+      const bestList = document.getElementById('care-best-list');
+      bestList.replaceChildren();
+      document.getElementById('care-best-records').hidden = groups.length === 0;
+      for (const best of groups) {
+        const client = CLIENTS.find(candidate => candidate.id === best.clientId);
+        const row = document.createElement('div');
+        row.className = 'care-record care-best-record';
+        row.dataset.modeKey = careModeKey(best.clientId, best.density, best.inputMode);
+        const info = document.createElement('div');
+        info.textContent = `${client.name} · ${careModeLabel(best.density, best.inputMode)}`;
+        const detail = document.createElement('small');
+        detail.textContent = `${best.completions} 次完成${best.goalMet ? ' · 本组目标已达成' : ''}`;
+        info.appendChild(detail);
+        const score = document.createElement('div');
+        score.className = 'care-record-score';
+        score.textContent = `最佳 ${best.bestGrade}`;
+        const rawScore = document.createElement('small');
+        rawScore.textContent = `原始最高 ${best.bestScore} 分`;
+        score.appendChild(rawScore);
+        row.append(info, score);
+        bestList.appendChild(row);
+      }
       list.replaceChildren();
       if (!careRecords.history.length) {
         const empty = document.createElement('p');
         empty.className = 'client-history';
-        empty.textContent = '完成清理并敷膜后，护理记录会保存在这里。';
+        empty.textContent = groups.length ? '近期完成明细暂缺，分组最佳仍保留在上方。' : '完成清理并敷膜后，护理记录会保存在这里。';
         list.appendChild(empty);
         return;
       }
@@ -6980,12 +7113,23 @@
       document.getElementById('res-quality').textContent = `${careModeLabel(record.density, record.inputMode)} · 累计刺激 ${record.stats.totalDamage.toFixed(1)} · 误操作 ${record.stats.mistakes} 次 · 最长连贯 ${record.stats.maxStreak} 步`;
       document.getElementById('res-goal').textContent = `可选目标「${record.goal.title}」${record.goal.met ? '已达成' : '本次未达成'} · ${record.goal.description}`;
       updateText(document.getElementById('res-quality-reason'), describeCareQuality(record.stats, record.grade));
-      const journey = getCareJourney();
+      const journey = getSettlementJourney();
+      const next = journey.nextClient;
+      const retryCurrent = next?.id === client.id;
+      const nextCopy = next ? `${retryCurrent ? '最后一枚' : '下一枚'}：${next.name} · ${CARE_GOALS[next.id].title}。` : '';
+      const retainedCopy = !record.goal.met && journey.currentStamped ? `${client.name}的护理印记仍保留，本次未达目标不会撤回已完成的手记。` : '';
       updateText(document.getElementById('res-journey-title'), journey.complete ? '五枚印记集齐 · 本章完成' : record.goalFirst ? `${client.name}的护理印记 · 已收下` : `护理手记 · ${journey.count} / ${CLIENTS.length}`);
       updateText(document.getElementById('res-journey-copy'), journey.complete
-        ? '五种护理重点都留下了记录。可以安心休息，也可以继续回访，慢慢改善自己的手法。'
-        : record.goal.met ? `这位顾客的印记已经留下，首次目标奖励只领取一次。下一枚：${journey.nextClient.name} · ${CARE_GOALS[journey.nextClient.id].title}。`
-        : `这次护理已经完成。下次可试着完成「${record.goal.title}」，收下这位顾客的印记。`);
+        ? `${retainedCopy}五种护理重点都留下了记录。可以安心休息，也可以回接诊台选择回访。`
+        : record.goal.met ? `这位顾客的印记已经留下，首次目标奖励只领取一次。${nextCopy}`
+        : journey.currentStamped ? `${retainedCopy}${nextCopy}`
+        : `这次护理已经完成，可选目标可以下次再试。${nextCopy}${retryCurrent ? '也可以回接诊台，自由选择其他顾客。' : `想继续练习，也可以再试${client.name}的目标。`}`);
+      updateText(document.getElementById('btn-next-face'), journey.complete ? '本章完成 · 选择回访'
+        : retryCurrent ? `再试${client.name} · 最后一枚印记` : `接待${next.name} · 下一枚印记`);
+      const retryButton = document.getElementById('btn-retry-care-goal');
+      retryButton.hidden = !journey.complete && (journey.currentStamped || retryCurrent);
+      updateText(retryButton, journey.complete ? `再护理${client.name} · 自由回访` : `再试${client.name}的目标 · ${record.goal.title}`);
+      document.getElementById('btn-open-clinic-from-res').hidden = journey.complete;
       persistSaveData();
       state.compareSplit = 0.5;
       resultModalEl.classList.add('open');
@@ -7119,8 +7263,16 @@
         button.addEventListener('click', () => closeStudioModal(document.getElementById(button.dataset.closeModal)));
       });
       document.getElementById('btn-care-next').addEventListener('click', event => {
-        const tool = event.currentTarget.dataset.tool;
-        if (tool) selectTool(tool);
+        const target = event.currentTarget.careTarget;
+        const items = target?.kind === 'pimple' ? state.pimples : target?.kind === 'residue' ? state.surfaceResidues : state.lensSplatters;
+        if (!target || !items.includes(target.item)) { updateCareGuidance(); return; }
+        const tool = toolForCareTarget(target);
+        if (!tool) { updateCareGuidance(); return; }
+        pointerCareTarget = { kind: target.kind, item: target.item };
+        state.pointer.hoverX = target.item.x;
+        state.pointer.hoverY = target.item.y;
+        selectTool(tool);
+        setHint(`先照顾${careTargetLocation({ ...target, x: target.item.x, y: target.item.y })}。${toolGuidanceFor(tool, target)}`, 'normal');
       });
       clinicModalEl.addEventListener('click', event => {
         if (event.target === clinicModalEl) closeStudioModal(clinicModalEl);
@@ -7267,8 +7419,22 @@
       });
 
       document.getElementById('btn-next-face').addEventListener('click', () => {
-        requestTreatmentChange('next', (state.clientIndex + 1) % CLIENTS.length, state.targetDensity);
+        if (!state.settled || !resultModalEl.classList.contains('open')) return;
+        const journey = getSettlementJourney();
+        if (journey.complete) { openClinic(); return; }
+        const next = journey.nextClient;
+        requestTreatmentChange(next.id === currentClient().id ? 'restart' : 'next', CLIENTS.indexOf(next), state.targetDensity);
       });
+      document.getElementById('btn-retry-care-goal').addEventListener('click', () => {
+        if (!state.settled || !resultModalEl.classList.contains('open')) return;
+        if (hasCompletedCareGoal(currentClient().id) && !getCareJourney().complete) return;
+        requestTreatmentChange('restart', state.clientIndex, state.targetDensity);
+      });
+    }
+
+    function modalFocusTargets(modal) {
+      return [...modal.querySelectorAll('button:not([disabled]), [tabindex="0"], summary')]
+        .filter(el => !el.closest('[hidden], [inert]') && el.getClientRects().length);
     }
 
     // Observe the existing modal state so every entry point shares focus handling.
@@ -7283,12 +7449,15 @@
           if (!activeModal) previousFocus = document.activeElement;
           activeModal = open;
           panels.forEach(panel => { panel.inert = true; });
-          const first = open.querySelector('button:not([disabled]), [tabindex="0"], summary');
+          const first = modalFocusTargets(open)[0];
           if (first) first.focus({ preventScroll: true });
         } else {
           activeModal = null;
           panels.forEach(panel => { panel.inert = false; });
-          if (previousFocus && previousFocus.isConnected) previousFocus.focus({ preventScroll: true });
+          const restore = previousFocus?.isConnected && previousFocus !== document.body
+            && !previousFocus.disabled && !previousFocus.closest('[hidden], [inert], .modal-backdrop:not(.open)')
+            && previousFocus.getClientRects().length ? previousFocus : canvas;
+          restore.focus({ preventScroll: true });
           previousFocus = null;
         }
       };
@@ -7303,10 +7472,13 @@
           closeStudioModal(open);
         }
         if (e.key === 'Tab') {
-          const items = [...open.querySelectorAll('button:not([disabled]), [tabindex="0"], summary')].filter(el => el.getClientRects().length);
+          const items = modalFocusTargets(open);
           if (!items.length) return;
           const first = items[0], last = items[items.length - 1];
-          if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+          if (!items.includes(document.activeElement)) {
+            e.preventDefault();
+            (e.shiftKey ? last : first).focus({ preventScroll: true });
+          } else if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
           else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
         }
       });
