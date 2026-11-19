@@ -54,6 +54,17 @@ test('home introduces the girl, pauses care and enters a genuinely simple first 
   assert.equal(g.state('state.runLevel'), 1);
   assert.equal(g.state('state.pimples.length'), 3);
   assert.equal(g.state('state.pimples.every(p=>p.type==="blackhead"&&!p.linkedPore&&!p.giftId)'), true);
+  assert.equal(g.d.activeElement.id,'current-level','entering from home announces the level without selecting a keyboard target');
+  assert.equal(g.d.activeElement.getAttribute('tabindex'),'-1');
+  assert.equal(g.state('isKeyboardCareFocused()'),false);
+  assert.equal(g.state('state.keyboardCare.visible'),false);
+  assert.equal(g.state('state.runControlMode'),'pointer');
+  assert.doesNotMatch(g.d.getElementById('hint-banner').textContent,/按住空格或回车/);
+  // An intentional keyboard focus still opts into the normal accessible care
+  // controls; the fix must not disable keyboard navigation altogether.
+  g.d.getElementById('skin-canvas').focus();
+  assert.equal(g.state('isKeyboardCareFocused()'),true);
+  assert.equal(g.d.getElementById('keyboard-care-status').hidden,false);
 });
 
 test('early recipes and third/fifth-level gifts follow the promised progression', async t => {

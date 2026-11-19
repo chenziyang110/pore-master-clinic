@@ -608,7 +608,7 @@
 
   <div id="app-shell">
     <header class="studio-header">
-      <h1 id="current-level" class="level-heading">第 1 关</h1>
+      <h1 id="current-level" class="level-heading" tabindex="-1">第 1 关</h1>
       <div hidden>
       <div class="brand"><svg class="icon brand-mark" aria-hidden="true"><use href="#i-brand"/></svg><div><div class="brand-title">妙手净肤馆</div><div id="chapter-caption" class="brand-caption">PORE MASTER CLINIC</div></div></div>
       <div class="top-actions">
@@ -7910,9 +7910,11 @@ function wardrobeItemIllustration(itemId) {
           const first = modalFocusTargets(open)[0];
           if (first) first.focus({ preventScroll: true });
         } else {
+          const leavingHome = activeModal?.id === 'home-modal';
           activeModal = null;
           panels.forEach(panel => { panel.inert = false; });
-          const restore = previousFocus?.isConnected && previousFocus !== document.body
+          const restore = leavingHome ? document.getElementById('current-level')
+            : previousFocus?.isConnected && previousFocus !== document.body
             && !previousFocus.disabled && !previousFocus.closest('[hidden], [inert], .modal-backdrop:not(.open)')
             && previousFocus.getClientRects().length ? previousFocus : canvas;
           restore.focus({ preventScroll: true });
