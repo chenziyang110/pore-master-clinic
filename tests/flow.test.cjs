@@ -50,7 +50,7 @@ async function deliver(hub) {
 }
 
 test('customer switching preserves an unfinished run through cancel, close, Escape and backdrop; confirmation replaces it once', async t => {
-  const g = await createGame({seed:71});t.after(g.close);g.frame();loosenOne(g);
+  const g = await createGame({legacyRecipe:true,seed:71});t.after(g.close);g.frame();loosenOne(g);
   const run = g.state('state.runId'), score = g.state('state.score');
   const cancel = [
     () => g.click('btn-cancel-reset'),
@@ -80,7 +80,7 @@ test('customer switching preserves an unfinished run through cancel, close, Esca
 });
 
 test('fresh or completed care switches directly, while the current customer resumes without replacing the run', async t => {
-  const g = await createGame({seed:72});t.after(g.close);g.frame();
+  const g = await createGame({legacyRecipe:true,seed:72});t.after(g.close);g.frame();
   chooseClient(g, 1);assert.equal(g.state('state.clientIndex'), 1);assert.equal(open(g, 'reset-modal'), false);
   loosenOne(g);const run = g.state('state.runId');
   chooseClient(g, 1);assert.equal(g.state('state.runId'), run);assert.equal(open(g, 'reset-modal'), false);
@@ -92,7 +92,7 @@ test('fresh or completed care switches directly, while the current customer resu
 });
 
 test('a stale confirmation cannot replace a newer run', async t => {
-  const g = await createGame({seed:73});t.after(g.close);g.frame();loosenOne(g);chooseClient(g, 1);
+  const g = await createGame({legacyRecipe:true,seed:73});t.after(g.close);g.frame();loosenOne(g);chooseClient(g, 1);
   assert.ok(open(g, 'reset-modal'));
   g.evaluate('generateLevel(8);');
   const run = g.state('state.runId');
@@ -104,9 +104,9 @@ test('a stale confirmation cannot replace a newer run', async t => {
 
 test('a page losing care ownership cannot confirm its pending customer switch', async t => {
   const hub = createStorageHub({}, {autoFlush:false});
-  const a = await createGame({seed:74,storageHub:hub});t.after(a.close);a.frame();loosenOne(a);
+  const a = await createGame({legacyRecipe:true,seed:74,storageHub:hub});t.after(a.close);a.frame();loosenOne(a);
   chooseClient(a, 1);const run = a.state('state.runId');
-  const b = await createGame({seed:75,storageHub:hub});t.after(b.close);b.frame();
+  const b = await createGame({legacyRecipe:true,seed:75,storageHub:hub});t.after(b.close);b.frame();
   b.click('btn-continue-here');await deliver(hub);await b.evaluate('careControlReady');
   assert.equal(a.state('careControl.owned'), false);assert.equal(b.state('state.runId'), run);
   a.click('btn-confirm-reset');
@@ -115,25 +115,25 @@ test('a page losing care ownership cannot confirm its pending customer switch', 
   assert.deepEqual(a.runtimeErrors, []);assert.deepEqual(b.runtimeErrors, []);
 });
 
-test('difficulty selection and accessible state survive reload, next care and customer changes', async t => {
-  const g = await createGame({seed:76});g.frame();finish(g);
+test('legacy quantity selections survive reload and explicit treatment changes', async t => {
+  const g = await createGame({legacyRecipe:true,seed:76});g.frame();finish(g);
   g.d.querySelector('.preset-btn[data-density="11"]').click();assertDensity(g, 11);
-  g.click('btn-next-face');assert.equal(g.state('state.pimples.length'), 11);assertDensity(g, 11);
+  g.evaluate("performTreatmentChange({kind:'restart',clientIndex:state.clientIndex,density:11,runId:state.runId});");assert.equal(g.state('state.pimples.length'), 11);assertDensity(g, 11);
   g.w.dispatchEvent(new g.w.Event('pagehide'));const saved = g.storage();g.close();
-  const r = await createGame({seed:77,storage:saved});t.after(r.close);r.frame();
+  const r = await createGame({legacyRecipe:true,seed:77,storage:saved});t.after(r.close);r.frame();
   assertDensity(r, 11);assert.equal(r.state('state.pimples.length'), 11);
-  finish(r);r.click('btn-next-face');assertDensity(r, 11);assert.equal(r.state('state.pimples.length'), 11);
+  finish(r);r.evaluate("performTreatmentChange({kind:'restart',clientIndex:state.clientIndex,density:11,runId:state.runId});");assertDensity(r, 11);assert.equal(r.state('state.pimples.length'), 11);
   const otherClient = r.state('state.clientIndex') === 0 ? 1 : 0;
   chooseClient(r, otherClient);assertDensity(r, 0);assert.equal(r.state('state.pimples.length'), 8);
   assert.deepEqual(r.runtimeErrors, []);
 });
 
 test('view preference survives completed care, reload and a new customer', async t => {
-  const g = await createGame({seed:78});g.frame();g.click('btn-style-mode');
+  const g = await createGame({legacyRecipe:true,seed:78});g.frame();g.click('btn-style-mode');
   assert.equal(g.state('state.styleMode'), 'creamy');finish(g);
   assert.equal(JSON.parse(g.storage()[PROFILE]).session, null);
   const saved = g.storage();g.close();
-  const r = await createGame({seed:79,storage:saved});t.after(r.close);r.frame();
+  const r = await createGame({legacyRecipe:true,seed:79,storage:saved});t.after(r.close);r.frame();
   assert.equal(r.state('state.styleMode'), 'creamy');
   assert.equal(r.d.getElementById('btn-style-mode').getAttribute('aria-pressed'), 'true');
   chooseClient(r, 2);assert.equal(r.state('state.styleMode'), 'creamy');
@@ -142,11 +142,11 @@ test('view preference survives completed care, reload and a new customer', async
 });
 
 test('view preference migrates a legacy session but an explicit newer choice takes priority', async t => {
-  const source = await createGame({seed:80});source.frame();source.click('btn-style-mode');source.evaluate('saveCurrentSession();');
+  const source = await createGame({legacyRecipe:true,seed:80});source.frame();source.click('btn-style-mode');source.evaluate('saveCurrentSession();');
   const oldSession = JSON.stringify(JSON.parse(source.storage()[PROFILE]).session);source.close();
-  const migrated = await createGame({seed:81,storage:{pimple_clinic_session_v2:oldSession}});t.after(migrated.close);migrated.frame();
+  const migrated = await createGame({legacyRecipe:true,seed:81,storage:{pimple_clinic_session_v2:oldSession}});t.after(migrated.close);migrated.frame();
   assert.equal(migrated.state('state.styleMode'), 'creamy');assert.equal(JSON.parse(migrated.storage()[VIEW]).styleMode, 'creamy');
-  const explicit = await createGame({seed:82,storage:{pimple_clinic_session_v2:oldSession,[VIEW]:JSON.stringify({version:1,styleMode:'realistic'})}});t.after(explicit.close);explicit.frame();
+  const explicit = await createGame({legacyRecipe:true,seed:82,storage:{pimple_clinic_session_v2:oldSession,[VIEW]:JSON.stringify({version:1,styleMode:'realistic'})}});t.after(explicit.close);explicit.frame();
   assert.equal(explicit.state('state.styleMode'), 'realistic');
   assert.equal(explicit.d.getElementById('btn-style-mode').getAttribute('aria-pressed'), 'false');
   assert.deepEqual(migrated.runtimeErrors, []);assert.deepEqual(explicit.runtimeErrors, []);
@@ -154,8 +154,8 @@ test('view preference migrates a legacy session but an explicit newer choice tak
 
 test('view preference notifications use the latest value without overwriting care resources', async t => {
   const hub = createStorageHub({}, {autoFlush:false});
-  const a = await createGame({seed:83,storageHub:hub});t.after(a.close);a.frame();loosenOne(a);
-  const b = await createGame({seed:84,storageHub:hub});t.after(b.close);b.frame();await deliver(hub);
+  const a = await createGame({legacyRecipe:true,seed:83,storageHub:hub});t.after(a.close);a.frame();loosenOne(a);
+  const b = await createGame({legacyRecipe:true,seed:84,storageHub:hub});t.after(b.close);b.frame();await deliver(hub);
   const profile = hub.snapshot()[PROFILE];
   a.click('btn-style-mode');a.click('btn-style-mode');a.click('btn-style-mode');
   await deliver(hub);
@@ -168,13 +168,14 @@ test('view preference notifications use the latest value without overwriting car
 
 test('invalid or unavailable view storage keeps a playable and selectable display', async t => {
   for (const raw of ['{broken', JSON.stringify({version:2,styleMode:'creamy'}), JSON.stringify({version:1,styleMode:'unknown'})]) {
-    const g = await createGame({seed:85,storage:{[VIEW]:raw}});t.after(g.close);g.frame();
+    const g = await createGame({legacyRecipe:true,seed:85,storage:{[VIEW]:raw}});t.after(g.close);g.frame();
     assert.equal(g.state('state.styleMode'), 'realistic');g.click('btn-style-mode');
     assert.equal(g.state('state.styleMode'), 'creamy');assert.deepEqual(g.runtimeErrors, []);
   }
-  const blocked = await createGame({seed:86,setupWindow(w) {
+  const blocked = await createGame({legacyRecipe:true,seed:86,setupWindow(w) {
     Object.defineProperty(w, 'localStorage', {configurable:true,get() {throw new w.DOMException('Blocked', 'SecurityError');}});
   }});t.after(blocked.close);blocked.frame();blocked.click('btn-style-mode');
   assert.equal(blocked.state('state.styleMode'), 'creamy');chooseClient(blocked, 1);
   assert.equal(blocked.state('state.styleMode'), 'creamy');assert.deepEqual(blocked.runtimeErrors, []);
 });
+

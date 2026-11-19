@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const {createGame} = require('./harness.cjs');
 
 test('a finger outside the canvas cannot become its primary or second touch', async t => {
-  const g=await createGame({seed:4});t.after(g.close);g.frame();
+  const g=await createGame({legacyRecipe:true,seed:4});t.after(g.close);g.frame();
   const p=g.state('state.pimples.find(p=>p.type==="cyst")');
   const outside={identifier:11,clientX:-120,clientY:-80};
   const inside={identifier:22,clientX:p.x-45,clientY:p.y};
@@ -26,7 +26,7 @@ test('a finger outside the canvas cannot become its primary or second touch', as
 test('heat depends on held time, not the number of mouse or touch reports', async t => {
   const levels=[];
   for(const input of ['mouse','touch']) for(const reports of [0,1,8]) {
-    const g=await createGame({seed:9});t.after(g.close);g.frame();
+    const g=await createGame({legacyRecipe:true,seed:9});t.after(g.close);g.frame();
     const p=g.state('state.pimples[0]');
     const finger={identifier:7,clientX:p.x,clientY:p.y};
     if(input==='mouse')g.mouse('skin-canvas','mousedown',p.x,p.y,1000);
@@ -47,7 +47,7 @@ test('heat depends on held time, not the number of mouse or touch reports', asyn
 });
 
 test('an ignored second finger cannot reset the active tweezer speed sample', async t => {
-  const g=await createGame({seed:3});t.after(g.close);g.frame();
+  const g=await createGame({legacyRecipe:true,seed:3});t.after(g.close);g.frame();
   const p=g.state('state.pimples.find(p=>p.type==="blackhead")');p.steamed=1;
   g.click('tool-tweezers');
   const primary={identifier:11,clientX:p.x,clientY:p.y};
@@ -65,7 +65,7 @@ test('an ignored second finger cannot reset the active tweezer speed sample', as
 
 test('slow and fast tweezer drags behave consistently at 30, 60 and 240 reports per second', async t => {
   for(const input of ['mouse','touch']) for(const hz of [30,60,240]) for(const speed of [120,600]) {
-    const g=await createGame({seed:3});t.after(g.close);g.frame();
+    const g=await createGame({legacyRecipe:true,seed:3});t.after(g.close);g.frame();
     const p=g.state('state.pimples.find(p=>p.type==="blackhead")');
     // Begin with a valid, fully softened target; the gesture itself uses DOM input.
     p.steamed=1;g.click('tool-tweezers');
@@ -86,7 +86,7 @@ test('slow and fast tweezer drags behave consistently at 30, 60 and 240 reports 
 
 test('swab strokes clean the same path at sparse and dense input rates', async t => {
   for(const reports of [1,8,80]) {
-    const g=await createGame({seed:6});t.after(g.close);g.frame();g.click('tool-swab');
+    const g=await createGame({legacyRecipe:true,seed:6});t.after(g.close);g.frame();g.click('tool-swab');
     const p=g.state('state.pimples.find(p=>p.type==="whitehead")');
     p.state=3;p.surfacePusMound=2;p.bloodDropSize=2;
     g.mouse('skin-canvas','mousedown',p.x-40,p.y,1000);
@@ -98,7 +98,7 @@ test('swab strokes clean the same path at sparse and dense input rates', async t
 });
 
 test('stationary move reports do not wipe and a sparse ice stroke covers the space between reports', async t => {
-  const g=await createGame({seed:6});t.after(g.close);g.frame();g.click('tool-swab');
+  const g=await createGame({legacyRecipe:true,seed:6});t.after(g.close);g.frame();g.click('tool-swab');
   const p=g.state('state.pimples.find(p=>p.type==="whitehead")');
   p.state=3;g.mouse('skin-canvas','mousedown',p.x,p.y,1000);
   const wiped=p.wipeProgress;
@@ -111,3 +111,4 @@ test('stationary move reports do not wipe and a sparse ice stroke covers the spa
   assert.equal(p.iced,true,'an ice stroke must paint its middle, not only its endpoints');
   assert.deepEqual(g.runtimeErrors,[]);
 });
+

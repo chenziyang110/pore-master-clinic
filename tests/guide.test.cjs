@@ -2,9 +2,9 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const {createGame}=require('./harness.cjs');
 
-test('the first guide selects one target per type and uses legal next-tool advice',async t=>{
+test('the first guide teaches only the simple blackhead route with legal next-tool advice',async t=>{
   const g=await createGame({seed:12});t.after(g.close);g.frame();
-  assert.deepEqual(JSON.parse(g.state('JSON.stringify(state.practiceGuide.ids.map(id=>state.pimples.find(p=>p.id===id).type))')),['blackhead','whitehead','cyst']);
+  assert.deepEqual(JSON.parse(g.state('JSON.stringify(state.practiceGuide.ids.map(id=>state.pimples.find(p=>p.id===id).type))')),['blackhead']);
   assert.equal(g.d.getElementById('practice-guide').hidden,false);
   assert.match(g.d.getElementById('practice-label').textContent,/黑头/);
   // Isolate instructional state transitions; extraction mechanics have their own tests.
@@ -13,7 +13,8 @@ test('the first guide selects one target per type and uses legal next-tool advic
   g.click('btn-care-next');assert.equal(g.state('state.currentTool'),'tweezers');
   g.evaluate('getPracticeTarget().state=P_STATE.HEALING;updateHUD();');
   assert.equal(g.state('state.practiceGuide.step'),1);
-  assert.match(g.d.getElementById('practice-label').textContent,/白头/);
+  assert.equal(g.state('state.practiceGuide.active'),false);
+  assert.equal(g.d.getElementById('practice-guide').hidden,true);
   assert.deepEqual(g.runtimeErrors,[]);
 });
 
@@ -29,3 +30,4 @@ test('skip persists without changing the treatment and help can resume the guide
   assert.equal(g.d.getElementById('help-modal').classList.contains('open'),false);
   assert.deepEqual(g.runtimeErrors,[]);
 });
+

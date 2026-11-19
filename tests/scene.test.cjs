@@ -23,7 +23,7 @@ function assertLayout(game, context) {
 
 test('actual mobile and landscape sizes: 20 seeds, all client recipes and custom densities fit', async () => {
   for (const [width, height] of sizes) {
-    const game = await createGame({ width, height, seed: 1 });
+    const game = await createGame({legacyRecipe:true, width, height, seed: 1 });
     try {
       for (let seed = 1; seed <= 20; seed++) {
         for (const [client, density] of [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0], [0, 8], [0, 11]]) {
@@ -39,7 +39,7 @@ test('actual mobile and landscape sizes: 20 seeds, all client recipes and custom
 test('20 seeds resize in both directions without collisions, state loss or cumulative radius drift', async () => {
   for (const [width, height] of sizes) {
     for (let seed = 1; seed <= 20; seed++) {
-      const game = await createGame({ width, height, seed });
+      const game = await createGame({legacyRecipe:true, width, height, seed });
       try {
         game.evaluate('state.pimples[0].steamed = 0.91; state.pimples[0].pressure = 0.32; state.pimples[1].iced = true;');
         const original = read(game, 'state.pimples.map(p => ({id:p.id,x:p.x,y:p.y,radius:p.radius}))');
@@ -61,7 +61,7 @@ test('20 seeds resize in both directions without collisions, state loss or cumul
 });
 
 test('resize carries attached residue geometry, gel, bruises, lens drops and flying trophy destinations', async () => {
-  const game = await createGame({ width: 666, height: 197, seed: 8 });
+  const game = await createGame({legacyRecipe:true, width: 666, height: 197, seed: 8 });
   try {
     game.evaluate(`(() => {
       state.clientIndex = 2; generateLevel();
@@ -92,7 +92,7 @@ test('resize carries attached residue geometry, gel, bruises, lens drops and fly
 });
 
 test('before/after re-render identical untreated skin after style/rotation and preserve original state on restore', async () => {
-  const game = await createGame({ width: 296, height: 230, seed: 5 });
+  const game = await createGame({legacyRecipe:true, width: 296, height: 230, seed: 5 });
   try {
     game.frame();
     game.evaluate('captureFaceSnapshot(afterSnap)');
@@ -115,7 +115,7 @@ test('before/after re-render identical untreated skin after style/rotation and p
 });
 
 test('clean comparisons omit active guidance and leave the live canvas unchanged', async () => {
-  const game = await createGame({ width: 296, height: 230, seed: 3 });
+  const game = await createGame({legacyRecipe:true, width: 296, height: 230, seed: 3 });
   try {
     game.frame();
     const before = digest(game, 'beforeSnap');
@@ -129,7 +129,7 @@ test('clean comparisons omit active guidance and leave the live canvas unchanged
 });
 
 test('departed lens drops clear the cleaning badge without awarding collection points', async () => {
-  const game = await createGame({ width: 296, height: 230, seed: 2 });
+  const game = await createGame({legacyRecipe:true, width: 296, height: 230, seed: 2 });
   try {
     game.evaluate("state.lensSplatters = [{x:100,y:245,r:5,alpha:0.8,color:'#eeddbb',subDrops:[]}]; updateHUD();");
     const score = game.evaluate('state.score');
@@ -145,3 +145,4 @@ test('departed lens drops clear the cleaning badge without awarding collection p
     assert.equal(game.evaluate('state.lensSplatters.length'), 0, 'resize does not resurrect departed drops');
   } finally { game.close(); }
 });
+

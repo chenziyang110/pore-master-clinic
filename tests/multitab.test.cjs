@@ -281,7 +281,8 @@ test('a completed run is paid once when the result is reopened or its completion
   assert.equal(profile(hub).records.history.length, 1);
   assert.equal(profile(hub).records.history[0].score, 1234);
   assert.equal(Object.values(profile(hub).records.bests)[0].completions, 1);
-  assert.equal(second.d.getElementById('res-score').textContent, '1234');
+  assert.equal(second.state('careRecords.history[0].score'), 1234);
+  assert.equal(second.state('wardrobeProgress.level'), 2, 'replaying a paid run cannot advance another level');
 });
 
 test('v2 resources, guide and partial session migrate once; later legacy writes cannot replace the profile', {timeout: 15000}, async t => {
@@ -338,3 +339,4 @@ test('without Web Locks a cooperative takeover still resumes the saved run and b
   first.resize(666, 151);
   assert.equal(hub.snapshot()[PROFILE_KEY], saved);
 });
+

@@ -26,7 +26,7 @@ function care(g,p) {
 }
 
 test('keyboard uses normal tool rules to clean a blackhead, whitehead and deep target', async t=>{
-  const g=await createGame({seed:4});t.after(g.close);g.frame();g.d.getElementById('skin-canvas').focus();
+  const g=await createGame({legacyRecipe:true,seed:4});t.after(g.close);g.frame();g.d.getElementById('skin-canvas').focus();
   for(const type of ['blackhead','whitehead','cyst']) {
     const p=g.state('state.pimples.find(p=>p.type==='+JSON.stringify(type)+')');
     care(g,p);
@@ -41,7 +41,7 @@ test('keyboard uses normal tool rules to clean a blackhead, whitehead and deep t
   assert.deepEqual(g.runtimeErrors,[]);
 });
 
-test('complete keyboard care transitions to eleven fresh targets without stale accessible announcements', async t=>{
+test('complete keyboard care advances from three to four targets without stale accessible announcements', async t=>{
   const g=await createGame({seed:7});t.after(g.close);g.frame();g.d.getElementById('skin-canvas').focus();
   const targets=g.state('state.pimples.map(p=>({id:p.id,type:p.type}))');
   for(const p of targets)care(g,p);
@@ -55,17 +55,16 @@ test('complete keyboard care transitions to eleven fresh targets without stale a
   assert.ok(g.state('state.coins')>0);
   assert.equal(g.state('state.pimples.every(p=>p.iced)'),true);
 
-  // Follow the actual result controls: the previous eight-target ice status
-  // must not become the accessible name of the next eleven-target treatment.
+  // The completed first level's status must not become the accessible name
+  // of the next level's four fresh targets.
   await new Promise(setImmediate);
-  g.d.querySelector('.preset-btn[data-density="11"]').click();
   g.click('btn-next-face');g.frame();
   const canvas=g.d.getElementById('skin-canvas');
-  assert.equal(g.state('state.pimples.length'),11);
-  assert.doesNotMatch(canvas.getAttribute('aria-label'),/\/8|已敷膜|已清理/);
+  assert.equal(g.state('state.pimples.length'),4);
+  assert.doesNotMatch(canvas.getAttribute('aria-label'),/\/3|已敷膜|已清理/);
   assert.equal(g.d.getElementById('keyboard-care-status').textContent,'');
   canvas.focus();key(g,'ArrowRight');
-  assert.match(canvas.getAttribute('aria-label'),/2\/11.*待护理/);
+  assert.match(canvas.getAttribute('aria-label'),/2\/4.*待护理/);
 
   g.click('btn-help');
   await new Promise(setImmediate);
@@ -74,15 +73,15 @@ test('complete keyboard care transitions to eleven fresh targets without stale a
   g.w.dispatchEvent(new g.w.Event('pagehide'));
   const resumed=await createGame({seed:7,storage:g.storage()});t.after(resumed.close);resumed.frame();
   const restoredCanvas=resumed.d.getElementById('skin-canvas');
-  assert.doesNotMatch(restoredCanvas.getAttribute('aria-label'),/\/8|已敷膜|已清理/);
+  assert.doesNotMatch(restoredCanvas.getAttribute('aria-label'),/\/3|已敷膜|已清理/);
   restoredCanvas.focus();key(resumed,'ArrowRight');
-  assert.match(restoredCanvas.getAttribute('aria-label'),/2\/11.*待护理/);
+  assert.match(restoredCanvas.getAttribute('aria-label'),/2\/4.*待护理/);
   assert.deepEqual(resumed.runtimeErrors,[]);
   assert.deepEqual(g.runtimeErrors,[]);
 });
 
 test('Escape and focus loss cancel keyboard needle; assistance is kept only for the current treatment', async t=>{
-  const g=await createGame({seed:9});t.after(g.close);g.frame();const canvas=g.d.getElementById('skin-canvas');canvas.focus();
+  const g=await createGame({legacyRecipe:true,seed:9});t.after(g.close);g.frame();const canvas=g.d.getElementById('skin-canvas');canvas.focus();
   const p=g.state('state.pimples.find(p=>p.type==="cyst")');choose(g,p.id);key(g,'2');
   key(g,' ');key(g,' ', 'keydown', true);key(g,'Escape');key(g,' ','keyup');
   assert.equal(p.pierced,false);assert.equal(g.state('state.keyboardCare.active'),false);
@@ -92,7 +91,7 @@ test('Escape and focus loss cancel keyboard needle; assistance is kept only for 
   assert.equal(g.state('state.controlMode'),'keyboard');assert.equal(g.state('state.pointer.touchId'),null);
   assert.equal(g.state('state.runControlMode'),'keyboard');
   g.w.dispatchEvent(new g.w.Event('pagehide'));
-  const resumed=await createGame({seed:9,storage:g.storage()});t.after(resumed.close);resumed.frame();
+  const resumed=await createGame({legacyRecipe:true,seed:9,storage:g.storage()});t.after(resumed.close);resumed.frame();
   assert.equal(resumed.state('state.runControlMode'),'keyboard','reloading keeps the active assisted run');
   resumed.click('btn-reset');
   if(resumed.d.getElementById('reset-modal').classList.contains('open'))resumed.click('btn-confirm-reset');
@@ -106,7 +105,7 @@ test('Escape and focus loss cancel keyboard needle; assistance is kept only for 
 });
 
 test('paused and hidden scenes do not repaint, then resume and resize render correctly', async t=>{
-  const g=await createGame({seed:5});t.after(g.close);g.frame();
+  const g=await createGame({legacyRecipe:true,seed:5});t.after(g.close);g.frame();
   g.evaluate('window.assistPaints=0;window.assistOriginalRender=renderScene;renderScene=(...args)=>{if(!args[0])window.assistPaints++;return window.assistOriginalRender(...args);};');
   g.click('btn-help');g.frame(20);assert.equal(g.state('window.assistPaints'),0);
   g.resize(420,580);g.frame(10);assert.equal(g.state('window.assistPaints'),0);
@@ -123,3 +122,4 @@ test('paused and hidden scenes do not repaint, then resume and resize render cor
   g.click('tool-needle');g.frame();assert.equal(g.state('state.currentTool'),'needle');
   assert.deepEqual(g.runtimeErrors,[]);
 });
+
