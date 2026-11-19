@@ -210,6 +210,13 @@
     .care-stages li[aria-current='step'] { color: #365441; font-weight: 600; }
     .care-stages li[aria-current='step'] > span { opacity: 1; }
     .canvas-status { padding: 7px 9px; border-radius: 4px; background: rgba(250,249,241,.74); color: #53624c; font-size: 10px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .canvas-status.warn { color: #8b403a; background: rgba(251,235,226,.94); }
+    .client-history { margin-top: 5px; color: var(--muted); font-size: 10px; line-height: 1.5; }
+    .result-quality-note { margin: 14px 0; color: var(--muted); font-size: 11px; line-height: 1.8; }
+    .result-quality-note p { margin: 4px 0; }
+    .care-record { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 11px; line-height: 1.6; }
+    .care-record small { display: block; color: var(--muted); }
+    .care-record-score { flex: none; text-align: right; color: var(--green); }
     .tool-assist { display: flex; align-items: center; justify-content: flex-end; gap: 12px; flex-shrink: 0; }
     .next-tool-btn { min-height: 27px; padding: 2px 0 2px 6px; color: var(--green); background: transparent; border: 0; font-size: 11px; white-space: nowrap; }
     .next-tool-btn:hover { text-decoration: underline; text-underline-offset: 3px; }
@@ -379,6 +386,12 @@
       .care-stages { padding: 4px 7px; }
       .canvas-status { padding: 4px 6px; }
     }
+    #practice-guide { display: flex; align-items: center; gap: 9px; min-height: 34px; margin: 0 22px; color: var(--green); border-bottom: 1px solid var(--line); font-size: 11px; }
+    #practice-guide[hidden] { display: none; }
+    #practice-step { white-space: nowrap; opacity: .8; font-variant-numeric: tabular-nums; }
+    #practice-label { flex: 1; font-weight: 500; }
+    #btn-skip-practice { min-height: 30px; padding: 4px 7px; border: 0; background: transparent; color: var(--muted); font-size: 11px; cursor: pointer; }
+    @media (max-width: 760px) { #practice-guide { margin-inline: 12px; min-height: 28px; gap: 7px; font-size: 10.5px; } #btn-skip-practice { min-height: 28px; font-size: 10px; } }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
   </style>
 </head>
@@ -418,9 +431,9 @@
           <p id="patient-quote" class="patient-quote">最近作息有些乱，想清理一下鼻翼。</p><div id="patient-steam-tag">已充分热敷</div>
         </div>
         <div class="case-stats">
-          <div class="stat-card"><div class="stat-label"><span>护理得分</span><span id="combo-tag" class="combo-pill">2连击</span></div><div id="score-val" class="stat-value gold">0</div><span id="best-score-label">最高 0</span></div>
+          <div class="stat-card"><div class="stat-label"><span>护理得分</span><span id="combo-tag" class="combo-pill">连贯 2 步</span></div><div id="score-val" class="stat-value gold">0</div><span id="best-score-label">本档最高 0</span></div>
           <div class="stat-card"><div class="stat-label"><span>清理进度</span></div><div id="progress-val" class="stat-value">0 / 8</div><div class="progress-track" role="progressbar" aria-label="清理进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="care-progress-fill"></span></div></div>
-          <div class="stat-card damage-stat"><div class="stat-label"><span>皮肤刺激度</span><span id="damage-val">0%</span></div><div class="damage-bar-track"><div id="damage-fill" class="damage-bar-fill"></div></div></div>
+          <div class="stat-card damage-stat"><div class="stat-label"><span>即时刺激度</span><span id="damage-val">0%</span></div><div class="damage-bar-track"><div id="damage-fill" class="damage-bar-fill"></div></div></div>
         </div>
         <div class="condition-list" aria-label="本次清理内容"><span>黑头 <b id="count-blackhead">5</b></span><span>白头 <b id="count-whitehead">2</b></span><span>深层 <b id="count-cyst">1</b></span></div>
         <button id="btn-tray-inspect" class="tray-trigger-box" type="button" title="查看本次收集盘"><svg class="icon " aria-hidden="true"><use href="#i-tray"/></svg><span class="tray-text"><span>收集盘</span><span id="trophy-count">已收集 0 颗</span></span><span class="tray-arrow" aria-hidden="true">↗</span></button>
@@ -434,6 +447,7 @@
           <div class="ice-cta-group"><button id="btn-ice-finish" class="ice-finish-cta" type="button">涂抹舒缓冰膜</button><button id="btn-ice-quick" class="ice-quick-btn" type="button">一键敷膜 · 完成护理</button></div>
           <div class="macro-frame-overlay"></div><div id="macro-reticle" class="macro-reticle">鼻翼沟与内侧脸颊 · 自然肌理</div>
         </main>
+        <div id="practice-guide" role="group" aria-label="上手引导" hidden><span id="practice-step">第 1 / 3 处</span><strong id="practice-label">黑头 · 按住圈内热敷</strong><button id="btn-skip-practice" type="button">跳过</button></div>
         <div class="tool-section"><div class="tool-section-head"><div id="active-tool-name" class="active-tool-title">热喷 · 温热软化</div><div class="tool-assist"><span class="shortcut-note">快捷键 1–5</span><button id="btn-care-next" class="next-tool-btn" type="button" hidden></button></div></div><p id="hint-banner" class="hint-banner" role="status" aria-live="polite" aria-atomic="true">按住皮肤缓缓移动，先让护理区域充分热敷。</p><nav class="toolbar-dock" aria-label="护理工具"><button id="tool-steam" class="tool-btn selected" type="button" data-tool="steam" aria-pressed="true" title="热喷 · 快捷键 1">
         <span class="tool-step" aria-hidden="true">01</span><span id="badge-steam" class="tool-badge ice">先</span>
         <span class="tool-icon"><svg class="icon " aria-hidden="true"><use href="#i-steam"/></svg></span><span class="tool-name">热喷</span><span class="tool-desc">温热软化</span>
@@ -474,7 +488,7 @@
         <div class="trophy-tray-box">
           <div>
             <div style="font-weight:500;color:var(--ink);">本次收集</div>
-            <div id="res-trophies" style="font-size:11px;color:var(--muted);margin-top:2px;">完整黑头脂栓 0 颗 · 固态白芯脓核 0 颗</div>
+            <div id="res-trophies" style="font-size:11px;color:var(--muted);margin-top:2px;">黑头提取物 0 颗 · 固态白芯 0 颗</div>
           </div>
           <div id="res-coins-earned" style="font-size:20px;font-weight:500;color:var(--green);">+¥220</div>
         </div>
@@ -485,7 +499,7 @@
             <div id="res-score" class="val" style="color: var(--accent-gold);">0</div>
           </div>
           <div class="summary-item">
-            <div class="label">皮肤刺激度</div>
+            <div class="label">结束时刺激度</div>
             <div id="res-damage" class="val" style="color: var(--accent-mint);">0%</div>
           </div>
           <div class="summary-item">
@@ -493,10 +507,12 @@
             <div id="res-breakdown" class="val" style="font-size: 12.5px; margin-top: 5px;">白0 · 黑0 · 肿0</div>
           </div>
           <div class="summary-item">
-            <div class="label">轻柔操作</div>
+            <div class="label">轻柔取出</div>
             <div id="res-perfect" class="val" style="color: var(--accent-rose);">0 次</div>
           </div>
         </div>
+
+        <div class="result-quality-note"><p id="res-quality"></p><p id="res-goal"></p><p>评级参考累计刺激与误操作。损伤或夹断按一次连续操作计数；棉签和冰膜可以舒缓，历史记录会保留。</p></div>
 
         <details class="session-settings"><summary>下一次护理设置</summary><div class="level-presets" role="group" aria-label="自由难度档位">
           <button class="preset-btn active" type="button" data-density="0">当前顾客</button>
@@ -538,6 +554,8 @@
         </div>
         <div class="client-list" id="upgrade-list-container"></div>
 
+        <details class="session-settings"><summary>已完成的护理 <span id="care-record-count">0</span></summary><div id="care-record-list"></div></details>
+
         <button id="btn-close-clinic" class="secondary-btn" type="button">返回当前护理台</button>
       </div>
     </div>
@@ -545,7 +563,7 @@
     <!-- Care notes remain available without occupying the main toolbar. -->
     <div id="plan-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="plan-title">
       <div class="modal-card"><button class="modal-close" type="button" data-close-modal="plan-modal" aria-label="关闭弹窗"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button><div class="modal-header"><h2 id="plan-title" class="modal-title">护理手记</h2><p class="modal-subtitle">不用赶进度。清理、收集，再看看前后的变化。</p></div>
-        <div class="guide-list"><div class="guide-row"><strong>从热敷开始</strong><br>用热喷缓缓扫过操作区。皮肤出现细小水珠后，再开始后续步骤。</div><div class="guide-row"><strong>留意每一次反馈</strong><br>使用粉刺针或细胞夹时，按住会出现局部放大镜。夹取时观察进度和速度提示，缓慢移动更容易完整取出。</div><div class="guide-row"><strong>给这次护理留个记录</strong><br>点开收集盘查看清理成果。完成清洁后敷上冰膜，在护理记录中拖动分割线，比较前后变化。</div></div>
+        <div class="guide-list"><div class="guide-row"><strong>本次可选目标</strong><br><span id="care-goal-current"></span><br>不影响通关，也不限制顾客选择。</div><div class="guide-row"><strong>按自己的节奏</strong><br>轻松模式没有倒计时，也不会强制失败。力度超过 90% 会增加刺激，出现“松一点”时往外放松；低力度也可以完成清理。</div><div class="guide-row"><strong>连贯操作与评级</strong><br>每次有效处理记一步，损伤或夹断会中断，停下来休息不会清零。第 3 步起得分 ×1.25，第 6 步起 ×1.5。S：累计刺激不超过 14 且零失误；A：不超过 32、至多 2 次；B：不超过 58、至多 5 次；其余为 C。</div><div class="guide-row"><strong>给这次护理留个记录</strong><br>敷膜后才会计入最高分。成绩按顾客和护理档位分别保存；在接诊台查看最近的完成记录与可选目标。</div></div>
         <button id="btn-close-plan" class="primary-btn" type="button">回到护理台</button>
       </div>
     </div>
@@ -558,12 +576,14 @@
           <p class="modal-subtitle">桌面端按 1–5 切换工具；触屏点击下方器械。</p>
         </div>
         <div class="guide-list">
-          <div class="guide-row"><strong>01 / 热喷</strong><br>按住并缓慢移动，给操作区域热敷。出现凝露后，后续清理会更轻松。</div>
-          <div class="guide-row"><strong>02 / 粉刺针</strong><br>按住可打开局部放大镜。对准深层痘的浅色尖端，松开完成破口。</div>
+          <div class="guide-row"><strong>本次可选目标</strong><br><span id="help-care-goal"></span><br>按自己的节奏尝试，不影响正常完成护理。</div>
+          <div class="guide-row"><strong>01 / 热喷</strong><br>按住并缓慢移动。充分软化的黑头可以直接夹取；白头可轻挤，深层先用粉刺针破口。</div>
+          <div class="guide-row"><strong>02 / 粉刺针</strong><br>按住查看放大镜，松开挑开未破口的尖端。黑头可先挑松再夹取；已露出一半的黑头也可直接针取。</div>
           <div class="guide-row"><strong>03 / 轻柔挤压</strong><br>鼠标或单指在瑕疵旁按住，向中心缓缓推。也可以用双指从两侧向内捏合。</div>
-          <div class="guide-row"><strong>04 / 细胞夹</strong><br>夹住已经露头的黑头，缓慢向外拖动。进度条表示已拉出的长度；出现“放慢一点”时，减慢拖动。</div>
+          <div class="guide-row"><strong>04 / 细胞夹</strong><br>黑头充分软化、挑松或露头后可以夹取；白头和深层破口后也可夹取。缓慢向外拖动，进度满格即取出；皮肤上的残留可点按收进盘。</div>
           <div class="guide-row"><strong>05 / 清洁棉签</strong><br>轻轻擦净残留。再点一次棉签可换新。全部清理后，涂抹冰膜完成本次护理。</div>
         </div>
+        <button id="btn-replay-practice" class="secondary-btn" type="button">重新跟随操作引导</button>
         <button id="btn-close-help" class="primary-btn" type="button">知道了，开始护理</button>
       </div>
     </div>
@@ -660,6 +680,7 @@
         OVER_SQUEEZE_EMPTY_PORE_DPS: 14.5,
         WRONG_NEEDLE_DAMAGE: 5.0,
         WRONG_ACTION_SCORE_PENALTY: 25,
+        GENTLE_FORCE_LIMIT: 0.9,
         SWAB_SOOTHE_HEAL: 2.5,
         HEAL_FADE_SECONDS: 0.90
       }
@@ -754,6 +775,15 @@
         recipe: { blackhead: 12, whitehead: 0, cyst: 0 }
       }
     ];
+
+    const CARE_GOALS = {
+      coder: { id: 'warm_blackheads', title: '先软化再取出', description: '每一处黑头都充分热敷后再取出。' },
+      student: { id: 'gentle_care', title: '轻手护理', description: '全程零误操作，累计刺激不超过 8。' },
+      anchor: { id: 'gentle_deep_care', title: '耐心处理深层', description: '深层目标先破口，轻柔取出，不用过大的力度。' },
+      foodie_vip: { id: 'complete_collection', title: '一盘齐全', description: '每处提取物都收入盘中，累计刺激不超过 20。' },
+      strawberry_nose: { id: 'unbroken_blackheads', title: '完整收集', description: '收齐本次黑头，全程不夹断。' }
+    };
+    const CARE_RECORDS_KEY = 'pimple_clinic_records_v2';
 
     const UPGRADES = [
       {
@@ -1195,6 +1225,12 @@
       targetDensity: 0,
       faceSeed: Math.random() * 10000,
       clientIndex: 0,
+      runId: '',
+      runDensity: 0,
+      runControlMode: 'pointer',
+      runStats: createRunStats(),
+      actionSerial: 0,
+      resultRecorded: false,
 
       coins: 0,
       upgrades: { steamer: false, tweezers: false, iceprobe: false },
@@ -1222,6 +1258,7 @@
       initialPimples: [],
       sceneLayout: null,
       snapshotBasis: null,
+      practiceGuide: null,
       compareSplit: 0.5,      // 结算面板护理前/护理后分割比例 0.08~0.92
 
       pimples: [],
@@ -1279,14 +1316,14 @@
     };
 
     try {
-      const savedBest = localStorage.getItem('pimple_pop_best_score');
-      if (savedBest) state.bestScore = parseInt(savedBest, 10) || 0;
       const savedCoins = localStorage.getItem('pimple_clinic_coins');
       if (savedCoins) state.coins = parseInt(savedCoins, 10) || 0;
       const savedUpg = localStorage.getItem('pimple_clinic_upgrades');
       if (savedUpg) Object.assign(state.upgrades, JSON.parse(savedUpg));
     } catch (_) {}
 
+    const careRecords = loadCareRecords();
+    let lastSavedCareRecords = '';
     const savedValueCache = new Map();
     const SESSION_KEY = 'pimple_clinic_session_v2';
     const SESSION_FIELDS = [
@@ -1380,6 +1417,10 @@
           && ledger[item.collectionId]?.location === 'flight' && ledger[item.collectionId].kind === item.kind)) return false;
         if (!data.trophyTrayItems.every(item => numbers(item, ['wormLen', 'ox', 'oy', 'rot']) && ledger[item.collectionId]?.location === 'tray')) return false;
         if (!data.surfaceResidues.every(item => !['worm', 'core_seed'].includes(item.kind) || ledger[item.collectionId]?.location === 'skin')) return false;
+        if (data.runStats !== undefined && (!data.runStats || typeof data.runStats !== 'object' || Array.isArray(data.runStats))) return false;
+        if (data.practiceGuide != null && (typeof data.practiceGuide.active !== 'boolean' || !Array.isArray(data.practiceGuide.ids)
+          || !data.practiceGuide.ids.every(id => Number.isInteger(id) && data.pimples.some(p => p.id === id))
+          || !Number.isInteger(data.practiceGuide.step) || data.practiceGuide.step < 0 || data.practiceGuide.step > data.practiceGuide.ids.length)) return false;
         state.clientIndex = data.clientIndex;
         state.targetDensity = data.targetDensity || 0;
         generateLevel(state.targetDensity);
@@ -1387,6 +1428,7 @@
         state.runDensity = data.runDensity === undefined ? data.targetDensity || 0 : data.runDensity;
         state.runControlMode = data.runControlMode || (data.controlMode === 'keyboard' ? 'keyboard' : 'pointer');
         if (typeof normalizeRunStats === 'function') normalizeRunStats();
+        if (typeof getCompletedBest === 'function') state.bestScore = getCompletedBest()?.bestScore || 0;
         const hydrate = p => ({ ...p, cfg: CONFIG.TYPES[p.type.toUpperCase()], pressure: 0, tentOffsetX: 0, tentOffsetY: 0 });
         state.pimples = state.pimples.map(hydrate);
         if (Array.isArray(state.initialPimples)) state.initialPimples = state.initialPimples.map(hydrate);
@@ -1416,12 +1458,8 @@
     }
 
     function persistSaveData() {
-      if (state.score > state.bestScore) {
-        state.bestScore = Math.round(state.score);
-      }
       try {
         const values = {
-          pimple_pop_best_score: String(state.bestScore),
           pimple_clinic_coins: String(state.coins),
           pimple_clinic_upgrades: JSON.stringify(state.upgrades)
         };
@@ -1432,13 +1470,165 @@
           }
         }
       } catch (_) {}
-      updateText(bestScoreLabelEl, `最高 ${state.bestScore}`);
+      updateText(bestScoreLabelEl, `本档最高 ${state.bestScore}`);
       updateText(coinValEl, `¥ ${state.coins}`);
       queueSessionSave();
     }
 
     function currentClient() {
       return CLIENTS[state.clientIndex % CLIENTS.length];
+    }
+
+    function createRunStats() {
+      return { totalDamage: 0, peakDamage: 0, mistakes: 0, snaps: 0, cleanExtractions: 0, maxStreak: 0, toolsUsed: {}, lastMistakeAction: -1 };
+    }
+
+    function normalizeRunStats() {
+      const fallback = createRunStats();
+      const stats = state.runStats && typeof state.runStats === 'object' && !Array.isArray(state.runStats) ? state.runStats : {};
+      for (const key of ['totalDamage', 'peakDamage', 'mistakes', 'snaps', 'cleanExtractions', 'maxStreak']) {
+        if (!Number.isFinite(stats[key]) || stats[key] < 0) stats[key] = fallback[key];
+      }
+      stats.totalDamage = Math.max(stats.totalDamage, state.damage);
+      stats.peakDamage = Math.max(stats.peakDamage, state.damage);
+      if (state.damage > 0 && stats.mistakes === 0) stats.mistakes = 1;
+      if (!stats.toolsUsed || typeof stats.toolsUsed !== 'object' || Array.isArray(stats.toolsUsed)) stats.toolsUsed = {};
+      if (!Number.isInteger(stats.lastMistakeAction)) stats.lastMistakeAction = -1;
+      if (!Number.isInteger(state.actionSerial) || state.actionSerial < 0) state.actionSerial = 0;
+      state.runStats = stats;
+      return stats;
+    }
+
+    function beginCareAction() {
+      normalizeRunStats();
+      state.actionSerial += 1;
+      if (state.controlMode === 'keyboard') {
+        state.runControlMode = 'keyboard';
+        state.bestScore = getCompletedBest() ? getCompletedBest().bestScore : 0;
+      }
+      state.runStats.toolsUsed[state.currentTool] = true;
+    }
+
+    function recordCareMistake() {
+      if (state.runStats.lastMistakeAction !== state.actionSerial) {
+        state.runStats.mistakes += 1;
+        state.runStats.lastMistakeAction = state.actionSerial;
+      }
+      state.combo = 0;
+    }
+
+    function careModeKey(clientId = currentClient().id, density = state.runDensity, inputMode = state.runControlMode) {
+      return `${clientId}|relaxed|${density || 'client'}|${inputMode === 'keyboard' ? 'keyboard' : 'pointer'}`;
+    }
+
+    function careModeLabel(density = state.runDensity, inputMode = state.runControlMode) {
+      return `${density ? `轻松 · ${density} 处` : '轻松 · 顾客原案'} · ${inputMode === 'keyboard' ? '键盘辅助' : '触控 / 鼠标'}`;
+    }
+
+    function loadCareRecords() {
+      const empty = { version: 2, bests: {}, history: [] };
+      try {
+        const saved = JSON.parse(localStorage.getItem(CARE_RECORDS_KEY) || 'null');
+        if (!saved || saved.version !== 2 || !Array.isArray(saved.history) || !saved.bests || typeof saved.bests !== 'object') return empty;
+        const validClient = id => CLIENTS.some(c => c.id === id);
+        const validNumber = n => Number.isFinite(n) && n >= 0 && n <= 1e9;
+        const validDensity = n => Number.isInteger(n) && n >= 0 && n <= 50;
+        empty.history = saved.history.filter(r => r && typeof r.runId === 'string' && r.runId.length <= 100 && validClient(r.clientId) && validDensity(r.density) && validNumber(r.score) && validNumber(r.earnedCoins) && Number.isFinite(r.completedAt) && /^[SABC]$/.test(r.grade) && (r.inputMode === 'pointer' || r.inputMode === 'keyboard') && r.stats && validNumber(r.stats.totalDamage) && validNumber(r.stats.mistakes) && validNumber(r.stats.cleanExtractions) && validNumber(r.stats.maxStreak) && validNumber(r.finalDamage) && r.goal && r.goal.id === CARE_GOALS[r.clientId].id && typeof r.goal.title === 'string' && typeof r.goal.description === 'string' && typeof r.goal.met === 'boolean').slice(0, 60);
+        for (const [key, best] of Object.entries(saved.bests)) {
+          if (best && validClient(best.clientId) && validDensity(best.density) && key === careModeKey(best.clientId, best.density, best.inputMode) && validNumber(best.bestScore) && validNumber(best.completions) && /^[SABC]$/.test(best.bestGrade)) {
+            empty.bests[key] = { clientId: best.clientId, density: best.density, inputMode: best.inputMode === 'keyboard' ? 'keyboard' : 'pointer', bestScore: best.bestScore, bestGrade: best.bestGrade, completions: best.completions, goalMet: Boolean(best.goalMet) };
+          }
+        }
+      } catch (_) {}
+      return empty;
+    }
+
+    function getCompletedBest(clientId = currentClient().id, density = state.runDensity, inputMode = state.runControlMode) {
+      return careRecords.bests[careModeKey(clientId, density, inputMode)] || null;
+    }
+
+    function getCareGrade(stats = normalizeRunStats()) {
+      if (stats.totalDamage <= 14 && stats.mistakes === 0) return 'S';
+      if (stats.totalDamage <= 32 && stats.mistakes <= 2) return 'A';
+      if (stats.totalDamage <= 58 && stats.mistakes <= 5) return 'B';
+      return 'C';
+    }
+
+    function evaluateCareGoal() {
+      normalizeRunStats();
+      const client = currentClient();
+      const goal = CARE_GOALS[client.id];
+      const extracted = Object.values(state.collectionLedger).filter(item => item.rewards.extract);
+      const blackheads = state.pimples.filter(p => p.type === 'blackhead');
+      const cysts = state.pimples.filter(p => p.type === 'cyst');
+      let eligible = false;
+      let progress = '';
+      if (client.id === 'coder') {
+        const warmed = extracted.filter(item => item.sourceType === 'blackhead' && item.softened).length;
+        eligible = blackheads.length > 0 && warmed === blackheads.length;
+        progress = `${warmed} / ${blackheads.length} 处先软化`;
+      } else if (client.id === 'student') {
+        eligible = state.runStats.mistakes === 0 && state.runStats.totalDamage <= 8;
+        progress = `误操作 ${state.runStats.mistakes} 次 · 累计刺激 ${state.runStats.totalDamage.toFixed(1)}`;
+      } else if (client.id === 'anchor') {
+        const gentle = extracted.filter(item => item.sourceType === 'cyst' && item.pierced && item.gentle).length;
+        eligible = cysts.length > 0 && gentle === cysts.length;
+        progress = `${gentle} / ${cysts.length} 处轻柔取出`;
+      } else if (client.id === 'foodie_vip') {
+        const count = state.trophiesPlucked + state.coreSeedsCollected;
+        eligible = count === state.pimples.length && state.runStats.totalDamage <= 20;
+        progress = `已收集 ${count} / ${state.pimples.length} · 累计刺激 ${state.runStats.totalDamage.toFixed(1)}`;
+      } else {
+        eligible = state.trophiesPlucked === blackheads.length && state.runStats.snaps === 0;
+        progress = `已收集 ${state.trophiesPlucked} / ${blackheads.length} · 夹断 ${state.runStats.snaps} 次`;
+      }
+      return { id: goal.id, title: goal.title, description: goal.description, progress, met: state.settled && eligible };
+    }
+
+    function recordCompletedCare() {
+      normalizeRunStats();
+      const existing = careRecords.history.find(record => record.runId === state.runId);
+      if (existing) {
+        state.resultRecorded = true;
+        state.bestScore = getCompletedBest() ? getCompletedBest().bestScore : existing.score;
+        return existing;
+      }
+      if (!state.settled || !state.pimples.length || state.pimples.some(p => p.state < P_STATE.HEALING)) return null;
+      const client = currentClient();
+      const grade = getCareGrade();
+      const record = {
+        runId: state.runId, clientId: client.id, density: state.runDensity, mode: 'relaxed', inputMode: state.runControlMode,
+        upgrades: { ...state.upgrades },
+        score: Math.round(state.score), grade, earnedCoins: client.bounty + ({ S: 80, A: 40, B: 10, C: 0 })[grade],
+        completedAt: Date.now(), stats: { ...state.runStats, toolsUsed: { ...state.runStats.toolsUsed } },
+        finalDamage: Math.round(state.damage), collected: state.trophiesPlucked + state.coreSeedsCollected,
+        goal: evaluateCareGoal()
+      };
+      if (state.resultRecorded) return record;
+      state.resultRecorded = true;
+      state.coins += record.earnedCoins;
+      const key = careModeKey();
+      const prior = careRecords.bests[key];
+      const gradeOrder = ['S', 'A', 'B', 'C'];
+      careRecords.bests[key] = {
+        clientId: client.id, density: state.runDensity, inputMode: state.runControlMode,
+        bestScore: Math.max(prior ? prior.bestScore : 0, record.score),
+        bestGrade: prior && gradeOrder.indexOf(prior.bestGrade) < gradeOrder.indexOf(grade) ? prior.bestGrade : grade,
+        completions: (prior ? prior.completions : 0) + 1,
+        goalMet: Boolean((prior && prior.goalMet) || record.goal.met)
+      };
+      state.bestScore = careRecords.bests[key].bestScore;
+      careRecords.history.unshift(record);
+      careRecords.history.length = Math.min(60, careRecords.history.length);
+      try {
+        const value = JSON.stringify(careRecords);
+        if (value !== lastSavedCareRecords) {
+          localStorage.setItem(CARE_RECORDS_KEY, value);
+          lastSavedCareRecords = value;
+        }
+      } catch (_) {}
+      persistSaveData();
+      return record;
     }
 
     function setPatientMood(emoji) {
@@ -1903,6 +2093,13 @@
     }
 
     function generateLevel(overrideDensity = 0) {
+      state.runId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 11)}`;
+      state.runDensity = overrideDensity;
+      state.runControlMode = state.controlMode === 'keyboard' ? 'keyboard' : 'pointer';
+      state.runStats = createRunStats();
+      state.actionSerial = 0;
+      state.resultRecorded = false;
+      state.bestScore = getCompletedBest() ? getCompletedBest().bestScore : 0;
       state.faceSeed = Math.random() * 99999;
       state.pimples = [];
       state.flyingParticles = [];
@@ -2042,8 +2239,9 @@
       layoutTreatmentScene();
       state.initialPimples = state.pimples.map(({ cfg, ...p }) => JSON.parse(JSON.stringify(p)));
       state.snapshotBasis = null;
+      startPracticeGuide(false);
       updateHUD();
-      setHint('从热敷开始，按住操作区缓缓移动。', 'normal');
+      setHint(state.practiceGuide && state.practiceGuide.active ? '跟着细线圈出的三处，慢慢熟悉工具；也可以随时跳过引导。' : '从热敷开始，按住操作区缓缓移动。', 'normal');
       resultModalEl.classList.remove('open');
     }
 
@@ -2183,6 +2381,7 @@
 
     function addScore(points, x, y, label) {
       state.combo += 1;
+      state.runStats.maxStreak = Math.max(state.runStats.maxStreak, state.combo);
       const mult = state.combo >= 6 ? 1.5 : state.combo >= 3 ? 1.25 : 1;
       const gained = Math.round(points * mult);
       state.score = Math.max(0, state.score + gained);
@@ -2195,10 +2394,13 @@
 
     function addDamage(amount, x, y, reason) {
       if (amount <= 0) return;
+      normalizeRunStats();
       const client = currentClient();
       const scaled = amount * client.painMult;
       state.damage = Math.min(100, state.damage + scaled);
-      state.combo = 0;
+      state.runStats.totalDamage += scaled;
+      state.runStats.peakDamage = Math.max(state.runStats.peakDamage, state.damage);
+      recordCareMistake();
 
       setPatientMood('😣');
       patientQuoteEl.textContent = client.painQuote;
@@ -2238,6 +2440,16 @@
       const item = state.collectionLedger[collectionId];
       if (!item || item.rewards[reward]) return false;
       item.rewards[reward] = true;
+      if (reward === 'extract') {
+        const source = state.pimples.find(p => trophyIdFor(p) === collectionId);
+        if (source) {
+          item.sourceType = source.type;
+          item.softened = source.steamed >= 0.75;
+          item.pierced = source.pierced;
+          item.gentle = !source.hardSqueezeWarned && !source.snappedCap && source.traumaLevel <= 0.1;
+          if (item.gentle) state.runStats.cleanExtractions += 1;
+        }
+      }
       addScore(points, x, y, label);
       return true;
     }
@@ -2289,10 +2501,43 @@
       return true;
     }
 
+    function needleActionFor(p) {
+      if (p.type === 'blackhead' && p.state === P_STATE.EXTRUDING && p.extrudeProgress >= 0.5) return 'extract';
+      if (p.state === P_STATE.INTACT && !p.pierced) return p.type === 'blackhead' ? 'loosen' : 'pierce';
+      return null;
+    }
+
+    function canTweezePimple(p) {
+      if (p.state === P_STATE.INTACT) return p.type === 'blackhead' && (p.steamed >= 0.75 || p.pierced);
+      return p.state === P_STATE.EXTRUDING && (p.type !== 'blackhead' || p.extrudeProgress >= 0.16);
+    }
+
+    function getRecommendedTool(target = null) {
+      const targets = target ? [target] : state.pimples;
+      const active = targets.filter(p => p.state < P_STATE.HEALING);
+      if (!active.length) return 'ice_brush';
+      if (active.some(p => p.state === P_STATE.OOZING) || (!target && state.lensSplatters.length)) return 'swab';
+      if (active.some(canTweezePimple) || state.surfaceResidues.some(r => (r.kind === 'worm' || r.kind === 'core_seed') && (!target || r.pimpleId === target.id))) return 'tweezers';
+      if (active.some(p => p.type === 'cyst' && needleActionFor(p) === 'pierce')) return 'needle';
+      if (active.some(p => p.state === P_STATE.EXTRUDING || p.state === P_STATE.RUPTURED || (p.state === P_STATE.INTACT && (p.steamed >= 0.75 || p.pierced)))) return 'squeeze';
+      return 'steam';
+    }
+
+    function updatePressureFeedback() {
+      const pointer = state.pointer;
+      const active = pointer.active && (pointer.mode === 'two-finger' || pointer.mode === 'mirror-pinch');
+      const status = document.getElementById('canvas-status');
+      const wasActive = status.dataset.pressure === 'true';
+      status.dataset.pressure = String(active);
+      const tooStrong = active && pointer.squeezeForce > CONFIG.RULES.GENTLE_FORCE_LIMIT;
+      status.classList.toggle('warn', tooStrong);
+      if (active) updateText(status, `${tooStrong ? '松一点' : '轻推'} ${Math.round(pointer.squeezeForce * 100)}%`);
+      else if (wasActive) updateCareGuidance();
+    }
+
     function updateCareGuidance() {
       const total = state.pimples.length;
       if (!total) return;
-      const intact = state.pimples.filter(p => p.state === P_STATE.INTACT);
       const remaining = state.pimples.filter(p => p.state < P_STATE.HEALING).length;
       const warmed = state.pimples.filter(p => p.steamed >= 0.75).length;
       const iced = state.pimples.filter(p => p.iced).length;
@@ -2311,30 +2556,109 @@
       updateText(document.getElementById('canvas-status'), status);
       if (state.currentTool === 'ice_brush') updateText(document.getElementById('active-tool-name'), `舒缓冰膜 · 已覆盖 ${iced} / ${total}`);
 
-      let nextTool = '';
-      if (remaining > 0) {
-        if (state.pimples.some(p => p.state === P_STATE.OOZING) || state.lensSplatters.length) nextTool = 'swab';
-        else if (state.pimples.some(p => p.state === P_STATE.EXTRUDING && ((p.type === 'blackhead' && p.extrudeProgress >= 0.22) || (p.type !== 'blackhead' && p.pusRemaining <= 0.45)))) nextTool = 'tweezers';
-        else if (intact.some(p => p.type === 'cyst' && !p.pierced && p.steamed >= 0.75)) nextTool = 'needle';
-        else if (intact.some(p => p.steamed >= 0.75 && (p.type !== 'cyst' || p.pierced)) || state.pimples.some(p => p.state === P_STATE.EXTRUDING)) nextTool = 'squeeze';
-        else if (intact.length) nextTool = 'steam';
-      }
+      const nextTool = remaining > 0 ? getRecommendedTool() : '';
       const nextButton = document.getElementById('btn-care-next');
       nextButton.hidden = !nextTool || nextTool === state.currentTool || state.iceFinishing || state.settled;
       nextButton.dataset.tool = nextTool;
       const labels = { steam: '先热敷', needle: '用粉刺针', squeeze: '轻柔挤压', tweezers: '换细胞夹', swab: '换棉签' };
       if (nextTool) updateText(nextButton, `${labels[nextTool]} →`);
+      const goal = evaluateCareGoal();
+      updateText(document.getElementById('care-goal-current'), `${goal.title}：${goal.description} ${goal.progress}`);
+      updateText(document.getElementById('help-care-goal'), `${goal.title}：${goal.description} ${goal.progress}`);
+      updatePressureFeedback();
+      updatePracticeGuide();
+    }
+
+    function startPracticeGuide(force = false) {
+      let seen = false;
+      try { seen = Boolean(localStorage.getItem('pimple_clinic_guide_v1')); } catch (_) {}
+      const ids = ['blackhead', 'whitehead', 'cyst'].map(type => state.pimples.find(p => p.type === type && p.state < P_STATE.HEALING)?.id).filter(id => id !== undefined);
+      state.practiceGuide = { active: Boolean(ids.length && (force || !seen)), ids, step: 0 };
+      updatePracticeGuide();
+    }
+
+    function finishPracticeGuide(skipped = false) {
+      if (state.practiceGuide) state.practiceGuide.active = false;
+      try { localStorage.setItem('pimple_clinic_guide_v1', skipped ? 'skipped' : 'completed'); } catch (_) {}
+      document.getElementById('practice-guide').hidden = true;
+      if (!skipped) setHint('引导已完成。接下来按自己的节奏，完成剩下的护理。', 'good');
+      saveCurrentSession();
+    }
+
+    function getPracticeTarget() {
+      const guide = state.practiceGuide;
+      return guide && guide.active && Array.isArray(guide.ids) ? state.pimples.find(p => p.id === guide.ids[guide.step]) : null;
+    }
+
+    function getPracticeAction(p) {
+      if (typeof getRecommendedTool === 'function') return getRecommendedTool(p);
+      if (p.state === P_STATE.OOZING) return 'swab';
+      if (p.type === 'blackhead' && (p.pierced || p.steamed >= .75 || p.state === P_STATE.EXTRUDING)) return 'tweezers';
+      if (p.type === 'cyst' && !p.pierced) return p.steamed >= .75 ? 'needle' : 'steam';
+      return p.steamed < .75 && p.state === P_STATE.INTACT ? 'steam' : 'squeeze';
+    }
+
+    function updatePracticeGuide() {
+      const guide = state.practiceGuide, box = document.getElementById('practice-guide');
+      if (!guide || !guide.active || !Array.isArray(guide.ids)) { box.hidden = true; return; }
+      let p = getPracticeTarget();
+      while (guide.step < guide.ids.length && (!p || p.state >= P_STATE.HEALING)) {
+        guide.step += 1;
+        p = getPracticeTarget();
+      }
+      if (!p || guide.step >= guide.ids.length) { finishPracticeGuide(); return; }
+      box.hidden = false;
+      const tool = getPracticeAction(p);
+      const names = { blackhead: '黑头', whitehead: '白头', cyst: '深层' };
+      const instructions = { steam: '按住圈内热敷', needle: '对准浅色尖端松手', squeeze: '从圈外向内轻推', tweezers: '夹住中心，慢慢拉出', swab: '擦净圈内残留', ice_brush: '涂抹冰膜收尾' };
+      updateText(document.getElementById('practice-step'), `第 ${guide.step + 1} / ${guide.ids.length} 处`);
+      updateText(document.getElementById('practice-label'), `${names[p.type]} · ${instructions[tool] || '继续轻缓操作'}`);
+      const next = document.getElementById('btn-care-next');
+      const labels = { steam: '先热敷', needle: '用粉刺针', squeeze: '轻柔挤压', tweezers: '换细胞夹', swab: '换棉签' };
+      next.dataset.tool = tool;
+      next.hidden = !tool || tool === state.currentTool || state.settled || state.iceFinishing;
+      if (labels[tool]) updateText(next, `${labels[tool]} →`);
+    }
+
+    function drawPracticeCue() {
+      const p = getPracticeTarget();
+      if (!p || state.settled || state.iceFinishing || p.state >= P_STATE.HEALING) return;
+      const radius = Math.max(18, p.radius + 9);
+      const action = getPracticeAction(p);
+      ctx.save();
+      ctx.strokeStyle = 'rgba(57, 88, 69, .78)';
+      ctx.fillStyle = '#365641';
+      ctx.lineWidth = 1.15;
+      ctx.setLineDash([3, 4]);
+      ctx.beginPath(); ctx.arc(p.x, p.y, radius, 0, Math.PI * 2); ctx.stroke();
+      ctx.setLineDash([]);
+      if (action === 'steam' && p.steamed > 0) {
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(p.x, p.y, radius, -Math.PI / 2, -Math.PI / 2 + Math.min(1, p.steamed / .75) * Math.PI * 2); ctx.stroke();
+      }
+      ctx.font = '500 10px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(String(state.practiceGuide.step + 1).padStart(2, '0'), Math.max(16, p.x - radius + 2), Math.max(46, p.y - radius - 6));
+      if (action === 'squeeze' && !state.pointer.active) {
+        const from = p.x + radius + 16, to = p.x + radius - 3;
+        if (from < state.width - 8) {
+          ctx.beginPath(); ctx.moveTo(from, p.y); ctx.lineTo(to, p.y); ctx.lineTo(to + 4, p.y - 3); ctx.moveTo(to, p.y); ctx.lineTo(to + 4, p.y + 3); ctx.stroke();
+        }
+      }
+      ctx.restore();
     }
 
     function updateHUD() {
+      normalizeRunStats();
       updateText(scoreValEl, Math.round(state.score));
       persistSaveData();
 
       if (state.combo >= 2) {
-        comboTagEl.textContent = `${state.combo}连击`;
+        updateText(comboTagEl, `连贯 ${state.combo} 步`);
         comboTagEl.classList.add('show');
       } else {
         comboTagEl.classList.remove('show');
+        comboTagEl.textContent = '';
       }
 
       const healedCount = state.pimples.filter(
@@ -2351,15 +2675,14 @@
 
       const dmgRounded = Math.round(state.damage);
       updateText(damageValEl, `${dmgRounded}%`);
+      damageValEl.title = `累计刺激 ${state.runStats.totalDamage.toFixed(1)} · 误操作 ${state.runStats.mistakes} 次`;
       damageFillEl.style.width = `${dmgRounded}%`;
       damageValEl.style.color = dmgRounded < 25 ? 'var(--green)' : dmgRounded < 55 ? 'var(--accent-gold)' : 'var(--accent-danger)';
 
       const unsteamedCount = state.pimples.filter((p) => p.state === P_STATE.INTACT && p.steamed < 0.6).length;
       badgeSteamEl.classList.toggle('show', !state.iceBrushingMode && unsteamedCount >= Math.ceil(state.pimples.length * 0.6));
 
-      const needNeedleCount = state.pimples.filter(
-        (p) => p.type === 'cyst' && !p.pierced && p.state === P_STATE.INTACT
-      ).length;
+      const needNeedleCount = state.pimples.filter(p => needleActionFor(p)).length;
       if (needNeedleCount > 0 && !state.iceBrushingMode) {
         badgeNeedleEl.textContent = String(needNeedleCount);
         badgeNeedleEl.classList.add('show');
@@ -2367,12 +2690,7 @@
         badgeNeedleEl.classList.remove('show');
       }
 
-      const pluckableCount = state.pimples.filter(
-        (p) => p.state === P_STATE.EXTRUDING && (
-          (p.type === 'blackhead' && p.extrudeProgress >= 0.22) ||
-          (p.type !== 'blackhead' && p.pusRemaining <= 0.45)
-        )
-      ).length;
+      const pluckableCount = state.pimples.filter(canTweezePimple).length + state.surfaceResidues.filter(r => r.kind === 'worm' || r.kind === 'core_seed').length;
       if (pluckableCount > 0 && !state.iceBrushingMode) {
         badgeTweezersEl.textContent = String(pluckableCount);
         badgeTweezersEl.classList.add('show');
@@ -2697,7 +3015,7 @@
         return;
       }
 
-      if (hit.type === 'blackhead' && hit.state === P_STATE.EXTRUDING && hit.extrudeProgress >= 0.5) {
+      if (needleActionFor(hit) === 'extract') {
         hit.extrudeProgress = 1;
         sound.playPop('blackhead');
         triggerHaptic(16);
@@ -2791,25 +3109,25 @@
       }
 
       if (!target) {
-        setHint('先轻挤，让黑头露出一小截，再用细胞夹缓慢取出。', 'normal');
+        setHint('黑头充分软化、挑松或露头后都可夹取；也可以点按皮肤上的提取物。', 'normal');
+        return;
+      }
+
+      if (!canTweezePimple(target)) {
+        const message = target.state === P_STATE.OOZING ? '这里已排空，换清洁棉签擦净残留。'
+          : target.type === 'blackhead' ? '先充分热敷或用粉刺针挑松，也可以轻挤到露头再夹取。'
+          : target.type === 'cyst' && !target.pierced ? '深层目标先用粉刺针破口，再轻挤到露头。'
+          : '先轻挤到破口，白头和深层的剩余部分都能夹取。';
+        setHint(message, 'normal');
         return;
       }
 
       if (target.state === P_STATE.INTACT) {
-        if (target.type === 'blackhead' && (target.steamed >= 0.75 || target.pierced)) {
-          target.state = P_STATE.EXTRUDING;
-          target.extrudeProgress = 0.22;
-        } else {
-          setHint('还没有露头，先热敷或轻挤一下，再尝试夹取。', 'warn');
-          return;
-        }
+        target.state = P_STATE.EXTRUDING;
+        target.extrudeProgress = 0.22;
       }
 
       if (target.state === P_STATE.EXTRUDING) {
-        if (target.type === 'blackhead' && target.extrudeProgress < 0.16) {
-          setHint('已经松动，再轻挤一点就能夹住了。', 'normal');
-          return;
-        }
         sound.playTweezerClamp();
         triggerHaptic(15);
         state.tweezers.clampedPimple = target;
@@ -2843,6 +3161,8 @@
 
       if (p.type === 'blackhead' && speed > maxSafeSpeed && !p.snappedCap && p.extrudeProgress < 0.85) {
         p.snappedCap = true;
+        state.runStats.snaps += 1;
+        recordCareMistake();
         p.extrudeProgress = Math.max(0.12, p.extrudeProgress - 0.15);
         p.tentOffsetX = 0;
         p.tentOffsetY = 0;
@@ -2850,6 +3170,7 @@
         sound.playWarnHurt();
         triggerHaptic([20, 30]);
         setHint('拉得太快，夹断了一截。试着更慢一些，或继续轻挤。', 'warn');
+        updateHUD();
         return;
       }
 
@@ -2861,6 +3182,8 @@
       const pullNeeded = CONFIG.INTERACTION.TWEEZER_PULL_NEEDED_PX *
         (state.upgrades.steamer && p.steamed >= 0.75 ? 0.75 : 1);
       tw.pullRatio = Math.min(1, tw.pullDist / pullNeeded);
+      // A full-length drag can be a fraction of a floating-point pixel short.
+      if (1 - tw.pullRatio < 1e-8) tw.pullRatio = 1;
 
       p.tentOffsetX = (pullVecX / pullVecLen) * tw.pullRatio * 4.2;
       p.tentOffsetY = (pullVecY / pullVecLen) * tw.pullRatio * 4.2;
@@ -3580,6 +3903,7 @@
         }
       }
       sound.setTension(activeTensionAudio);
+      updatePressureFeedback();
 
       for (const p of state.pimples) {
         const isBeingSqueezed = ptr.active && ptr.lockedPimple === p && ptr.squeezeForce > 0.12;
@@ -3658,7 +3982,17 @@
       }
     }
 
+    function recordSqueezePressure(p, force, dt) {
+      if (force <= CONFIG.RULES.GENTLE_FORCE_LIMIT) return;
+      p.hardSqueezeWarned = true;
+      p.traumaLevel = Math.min(1, p.traumaLevel + dt * (force - CONFIG.RULES.GENTLE_FORCE_LIMIT));
+      const relief = p.steamed >= 0.75 ? 0.5 : 1;
+      addDamage(CONFIG.RULES.HARD_SQUEEZE_DAMAGE_PER_SEC * (force - CONFIG.RULES.GENTLE_FORCE_LIMIT) * relief * dt, p.x, p.y, '力度超过 90% 了，往外松一点；保持轻推也能完成。');
+    }
+
     function applySqueezeToIntact(p, force, axisAngle, initSpan, dt) {
+      const alreadyWarned = p.hardSqueezeWarned;
+      recordSqueezePressure(p, force, dt);
       const steamEase = p.steamed >= 0.75 ? (state.upgrades.steamer ? 1.65 : 1.40) : 1.0;
       const painRelief = p.steamed >= 0.75 ? 0.5 : 1.0;
 
@@ -3676,7 +4010,7 @@
             '这处深层痘需要先破口。用粉刺针对准浅色尖端。'
           );
           sound.playWarnHurt();
-          if (!p.hardSqueezeWarned && force > 0.58) {
+          if (!alreadyWarned && force > 0.58) {
             p.hardSqueezeWarned = true;
             state.score = Math.max(0, state.score - CONFIG.RULES.WRONG_ACTION_SCORE_PENALTY);
             spawnFloatingText(p.x, p.y - 22, '需要先破口', '#ff6b7a');
@@ -3762,6 +4096,7 @@
     }
 
     function applySqueezeToExtruding(p, force, axisAngle, dt) {
+      recordSqueezePressure(p, force, dt);
       const steamEase = p.steamed >= 0.75 ? (state.upgrades.steamer ? 1.55 : 1.35) : 1.0;
 
       if (p.type === 'blackhead') {
@@ -3898,6 +4233,8 @@
         ctx.restore();
         return;
       }
+
+      drawPracticeCue();
 
       // 5) 热喷在皮肤表面凝结的晶莹微水珠 (Micro-Dewdrops)
       for (const dw of state.dewDrops) {
@@ -5392,7 +5729,7 @@
 
         const total = state.trophyTrayItems.length;
         document.getElementById('tray-modal-sub').textContent = total > 0
-          ? `已收集 ${state.trophiesPlucked} 颗完整水滴状黑头栓 · ${state.coreSeedsCollected} 颗固态白芯脓核`
+          ? `已收集 ${state.trophiesPlucked} 颗黑头提取物 · ${state.coreSeedsCollected} 颗固态白芯`
           : '暂时还没有收集物。用细胞夹取出的内容会保存在这里。';
 
         if (total === 0) return;
@@ -5468,6 +5805,8 @@
         const area = c.zoneId === 'nose_tip' ? '鼻部集中护理' : c.zoneId === 'chin_jaw' ? '下巴与唇周' : '鼻翼与脸颊';
         const total = canContinue ? state.pimples.length : Object.values(c.recipe).reduce((sum, count) => sum + count, 0);
         const action = canContinue ? '护理中 · 继续' : isCurrent ? '再护理一次' : '开始护理';
+        const best = getCompletedBest(c.id, canContinue ? state.runDensity : 0, canContinue ? state.runControlMode : state.controlMode);
+        const history = best ? `${best.completions} 次完成 · 最高分 ${best.bestScore} · 最佳评级 ${best.bestGrade}${best.goalMet ? ' · 目标已达成' : ''}` : `可选目标 · ${CARE_GOALS[c.id].title}`;
         const card = document.createElement('button');
         card.type = 'button';
         card.className = 'client-card' + (isCurrent ? ' active-client' : '');
@@ -5477,6 +5816,7 @@
           <div class="client-meta">
             <div class="client-title">${c.name}${isCurrent ? `<span class="client-state">${action}</span>` : ''}</div>
             <div class="client-area">${area} · ${total} 处</div>
+            <div class="client-history">${history}</div>
           </div>
           <div class="client-reward">酬金 ¥${c.bounty}</div>
           <span class="client-arrow" aria-hidden="true">→</span>
@@ -5527,62 +5867,70 @@
         row.appendChild(btn);
         upgradeListEl.appendChild(row);
       });
+      renderCareRecordList();
+    }
+
+    function renderCareRecordList() {
+      const list = document.getElementById('care-record-list');
+      const total = Object.values(careRecords.bests).reduce((sum, best) => sum + best.completions, 0);
+      updateText(document.getElementById('care-record-count'), total);
+      list.replaceChildren();
+      if (!careRecords.history.length) {
+        const empty = document.createElement('p');
+        empty.className = 'client-history';
+        empty.textContent = '完成清理并敷膜后，护理记录会保存在这里。';
+        list.appendChild(empty);
+        return;
+      }
+      for (const record of careRecords.history.slice(0, 8)) {
+        const client = CLIENTS.find(c => c.id === record.clientId);
+        const row = document.createElement('div');
+        row.className = 'care-record';
+        const info = document.createElement('div');
+        info.textContent = `${client.name} · ${careModeLabel(record.density, record.inputMode)}`;
+        const detail = document.createElement('small');
+        const date = new Date(record.completedAt).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' });
+        detail.textContent = `${date} · 累计刺激 ${record.stats.totalDamage.toFixed(1)} · 误操作 ${record.stats.mistakes} 次${record.goal.met ? ' · 可选目标达成' : ''}`;
+        info.appendChild(detail);
+        const equipment = document.createElement('small');
+        const upgraded = UPGRADES.filter(upgrade => record.upgrades && record.upgrades[upgrade.key]).map(upgrade => upgrade.name);
+        equipment.textContent = `器械：${upgraded.length ? upgraded.join('、') : '基础配置'}`;
+        info.appendChild(equipment);
+        const score = document.createElement('div');
+        score.className = 'care-record-score';
+        score.textContent = `${record.grade} · ${record.score} 分`;
+        row.append(info, score);
+        list.appendChild(row);
+      }
     }
 
     function openSettlementModal() {
-      const dmg = Math.round(state.damage);
+      const record = recordCompletedCare();
+      if (!record) return;
       const client = currentClient();
-      let rank = 'S';
-      let title = `${client.name}的护理记录`;
-      let subtitle = client.happyQuote;
-      let tipBonus = 80;
-
-      if (dmg <= 14) {
-        rank = 'S';
-      } else if (dmg <= 32) {
-        rank = 'A';
-        title = `${client.name}的护理记录`;
-        tipBonus = 40;
-      } else if (dmg <= 58) {
-        rank = 'B';
-        title = `${client.name}的护理记录`;
-        subtitle = '清理完成。下次可以多热敷一会儿，再轻一些。';
-        tipBonus = 10;
-      } else {
-        rank = 'C';
-        title = `${client.name}的护理记录`;
-        subtitle = '有几处刺激比较明显，下次试试更轻缓的操作。';
-        tipBonus = 0;
-      }
-
-      const earnedCoins = client.bounty + tipBonus;
-      state.coins += earnedCoins;
-      persistSaveData();
-
-      const wCount = state.pimples.filter((p) => p.type === 'whitehead').length;
-      const bCount = state.pimples.filter((p) => p.type === 'blackhead').length;
-      const cCount = state.pimples.filter((p) => p.type === 'cyst').length;
-
-      document.getElementById('result-rank').textContent = rank;
-      document.getElementById('result-title').textContent = title;
-      document.getElementById('result-subtitle').textContent = subtitle;
+      const dmg = record.finalDamage;
+      const wCount = state.pimples.filter(p => p.type === 'whitehead').length;
+      const bCount = state.pimples.filter(p => p.type === 'blackhead').length;
+      const cCount = state.pimples.filter(p => p.type === 'cyst').length;
+      document.getElementById('result-rank').textContent = record.grade;
+      document.getElementById('result-title').textContent = `${client.name}的护理记录`;
+      document.getElementById('result-subtitle').textContent = record.grade === 'S' || record.grade === 'A'
+        ? client.happyQuote : '护理已经完成。下次可以放轻力度，给每一步多一点时间。';
       document.getElementById('res-trophies').textContent =
-        `完整黑头脂栓 ${state.trophiesPlucked} 颗 · 固态白芯脓核 ${state.coreSeedsCollected} 颗`;
-      document.getElementById('res-coins-earned').textContent = `+¥${earnedCoins}`;
-      document.getElementById('res-score').textContent = String(Math.round(state.score));
-
+        `黑头提取物 ${state.trophiesPlucked} 颗 · 固态白芯 ${state.coreSeedsCollected} 颗`;
+      document.getElementById('res-coins-earned').textContent = `+¥${record.earnedCoins}`;
+      document.getElementById('res-score').textContent = String(record.score);
       const resDmgEl = document.getElementById('res-damage');
       resDmgEl.textContent = `${dmg}%`;
       resDmgEl.style.color = dmg <= 20 ? 'var(--green)' : dmg <= 50 ? 'var(--accent-gold)' : 'var(--accent-danger)';
-
       document.getElementById('res-breakdown').textContent = `白头 ${wCount} · 黑头 ${bCount} · 深层 ${cCount}`;
-      document.getElementById('res-perfect').textContent = `${state.perfectOps} 次`;
-
+      document.getElementById('res-perfect').textContent = `${record.stats.cleanExtractions} 处`;
+      document.getElementById('res-quality').textContent = `${careModeLabel(record.density, record.inputMode)} · 累计刺激 ${record.stats.totalDamage.toFixed(1)} · 误操作 ${record.stats.mistakes} 次 · 最长连贯 ${record.stats.maxStreak} 步`;
+      document.getElementById('res-goal').textContent = `可选目标「${record.goal.title}」${record.goal.met ? '已达成' : '本次未达成'} · ${record.goal.description}`;
+      persistSaveData();
       state.compareSplit = 0.5;
       resultModalEl.classList.add('open');
-      requestAnimationFrame(() => {
-        renderBeforeAfterComparison();
-      });
+      requestAnimationFrame(renderBeforeAfterComparison);
     }
 
     function selectTool(toolName) {
@@ -5609,16 +5957,16 @@
 
       if (toolName === 'steam') {
         viewportWrap.style.cursor = 'pointer';
-        setHint('按住皮肤缓缓移动，先让护理区域充分热敷。', 'good');
+        setHint('按住缓缓移动；黑头充分软化后可直接夹取。', 'good');
       } else if (toolName === 'needle') {
         viewportWrap.style.cursor = 'crosshair';
-        setHint('按住打开局部放大镜，对准深层痘的浅色尖端，松开完成破口。', 'normal');
+        setHint('对准未破口尖端再松开；黑头可先挑松，露出一半后可针取。', 'normal');
       } else if (toolName === 'squeeze') {
         viewportWrap.style.cursor = 'grab';
         setHint('在瑕疵旁按住，向中心缓缓推；双指也可向内捏合。', 'normal');
       } else if (toolName === 'tweezers') {
         viewportWrap.style.cursor = 'crosshair';
-        setHint('夹住已露头的黑头，缓慢向外拖动；出现提示时放慢。', 'good');
+        setHint('夹住软化、挑松或已露头的黑头，缓慢外拉；白头和深层破口后也可夹取。', 'good');
       } else if (toolName === 'swab') {
         viewportWrap.style.cursor = 'pointer';
         state.swabStain = { pus: 0, blood: 0, sebum: 0 };
@@ -5635,6 +5983,19 @@
     }
 
     function bindUIControls() {
+      document.getElementById('btn-skip-practice').addEventListener('click', () => {
+        finishPracticeGuide(true);
+        updateCareGuidance();
+        setHint('已收起引导。操作指南里可以随时重新练习。', 'normal');
+      });
+      document.getElementById('btn-replay-practice').addEventListener('click', () => {
+        closeStudioModal(helpModalEl);
+        startPracticeGuide(true);
+        const p = getPracticeTarget();
+        if (p) selectTool(getPracticeAction(p));
+        else setHint('这次清理已完成。下一位顾客开始后，可以再打开练习。', 'good');
+        saveCurrentSession();
+      });
       document.querySelectorAll('[data-close-modal]').forEach(button => {
         button.addEventListener('click', () => closeStudioModal(document.getElementById(button.dataset.closeModal)));
       });
@@ -5875,6 +6236,24 @@
       }
       sessionSaveEnabled = true;
       saveCurrentSession();
+
+      // Teaching and compact layouts can change the board without a window resize.
+      if (typeof ResizeObserver === 'function') {
+        let boardResizePending = false;
+        const boardObserver = new ResizeObserver(() => {
+          if (boardResizePending) return;
+          boardResizePending = true;
+          requestAnimationFrame(() => {
+            boardResizePending = false;
+            const rect = viewportWrap.getBoundingClientRect();
+            if (Math.floor(rect.width) !== state.width || Math.floor(rect.height) !== state.height) {
+              resizeCanvas();
+              saveCurrentSession();
+            }
+          });
+        });
+        boardObserver.observe(viewportWrap);
+      }
 
       window.addEventListener('resize', () => {
         resizeCanvas();
