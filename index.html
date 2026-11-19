@@ -558,9 +558,9 @@
         <div class="result-quality-note"><p id="res-quality"></p><p id="res-goal"></p><p>评级参考累计刺激与误操作。损伤或夹断按一次连续操作计数；棉签和冰膜可以舒缓，历史记录会保留。</p></div>
 
         <details class="session-settings"><summary>下一次护理设置</summary><div class="level-presets" role="group" aria-label="自由难度档位">
-          <button class="preset-btn active" type="button" data-density="0">当前顾客</button>
-          <button class="preset-btn" type="button" data-density="8">标准 · 8 处</button>
-          <button class="preset-btn" type="button" data-density="11">进阶 · 11 处</button>
+          <button class="preset-btn active" type="button" data-density="0" aria-pressed="true">按顾客安排</button>
+          <button class="preset-btn" type="button" data-density="8" aria-pressed="false">标准 · 8 处</button>
+          <button class="preset-btn" type="button" data-density="11" aria-pressed="false">进阶 · 11 处</button>
         </div></details>
 
         <button id="btn-next-face" class="primary-btn" type="button">接待下一位顾客</button>
@@ -640,7 +640,7 @@
         <button id="btn-close-help" class="primary-btn" type="button">知道了，开始护理</button>
       </div>
     </div>
-    <div id="reset-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="reset-title"><div class="modal-card"><button class="modal-close" type="button" data-close-modal="reset-modal" aria-label="关闭弹窗"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button><div class="modal-header"><h2 id="reset-title" class="modal-title">重新开始这次护理？</h2><p class="modal-subtitle">本次清理进度会重新开始。已获得的收入、器械和最高得分会保留。</p></div><button id="btn-cancel-reset" class="primary-btn" type="button">继续当前护理</button><button id="btn-confirm-reset" class="secondary-btn" type="button">重新开始</button></div></div>
+    <div id="reset-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="reset-title" aria-describedby="reset-description"><div class="modal-card"><button class="modal-close" type="button" data-close-modal="reset-modal" aria-label="关闭弹窗"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button><div class="modal-header"><h2 id="reset-title" class="modal-title">重新开始这次护理？</h2><p id="reset-description" class="modal-subtitle">本次清理进度会重新开始。已获得的收入、器械和最高得分会保留。</p></div><button id="btn-cancel-reset" class="primary-btn" type="button">继续当前护理</button><button id="btn-confirm-reset" class="secondary-btn" type="button">重新开始</button></div></div>
   </div>
 
   <script>
@@ -864,43 +864,220 @@
 
     /**
      * ============================================================================
-     * Web Audio API 精工近场 ASMR 合成引擎（新增金属落盘清脆声、拉栓摩擦声、冰膜水润声）
+     * 操作音与提示音：统一输出、轻缓起音和页面生命周期管理
      * ============================================================================
      */
+    const AUDIO_PREFERENCE_KEY = 'pimple_clinic_audio_v1';
     class SoundEngine {
       constructor() {
         this.ctx = null;
         this.muted = false;
+        try { this.muted = localStorage.getItem(AUDIO_PREFERENCE_KEY) === 'off'; } catch (_) {}
+        this.blocked = false;
+        this.master = null;
+        this.masterAudible = false;
+        this.voices = new Set();
+        this.maxVoices = 12;
+        this.tensionLevel = 0;
         this.tensionOsc = null;
         this.tensionGain = null;
         this.noiseBuffer = null;
-        this.lastWipeSoundTime = 0;
-        this.lastWarnSoundTime = 0;
-        this.lastOozeTickTime = 0;
-        this.lastSteamTime = 0;
-        this.lastGelTime = 0;
+        this.idleTimer = null;
+        this.resumePending = null;
+        this.pendingEffects = [];
+        this.effectGeneration = 0;
+        this.maxPendingEffects = 8;
+        this.pendingEffectMaxAge = 250;
+        this.lastWipeSoundTime = this.lastWarnSoundTime = this.lastOozeTickTime = this.lastSteamTime = this.lastGelTime = this.lastPopNoiseTime = -Infinity;
+        const pause = () => this.pause();
+        window.addEventListener('blur', pause);
+        window.addEventListener('pagehide', pause);
+        document.addEventListener('visibilitychange', () => { if (document.hidden) this.pause(); });
+        // A returning page stays silent until the next deliberate interaction.
+        document.addEventListener('pointerdown', () => this.unlock(), {capture:true, passive:true});
+        document.addEventListener('keydown', event => { if (!event.repeat) this.unlock(); }, true);
       }
 
-      unlock() {
-        if (this.muted) return;
-        if (!this.ctx) {
+      unlock(userGesture = true) {
+        if (this.muted || document.hidden || (this.canPlay && !this.canPlay())) return false;
+        if (userGesture) this.blocked = false;
+        if (this.blocked || (!this.ctx && !userGesture)) return false;
+        clearTimeout(this.idleTimer);
+        this.idleTimer = null;
+        if (!this.ctx || this.ctx.state === 'closed') {
           const AudioCtx = window.AudioContext || window.webkitAudioContext;
-          if (!AudioCtx) return;
-          this.ctx = new AudioCtx();
-          this._buildNoiseBuffer();
-          this._setupTensionSynth();
+          if (!AudioCtx) return false;
+          try {
+            for (const voice of [...this.voices]) this._releaseVoice(voice);
+            this.tensionLevel = 0;
+            this.resumePending = null;
+            this._discardPendingEffects();
+            this.ctx = new AudioCtx();
+            this.master = this.ctx.createGain();
+            this.master.gain.value = 0.65;
+            this.masterAudible = true;
+            const limiter = this.ctx.createDynamicsCompressor();
+            limiter.threshold.value = -14;
+            limiter.knee.value = 12;
+            limiter.ratio.value = 6;
+            limiter.attack.value = 0.003;
+            limiter.release.value = 0.12;
+            this.master.connect(limiter);
+            limiter.connect(this.ctx.destination);
+            this._buildNoiseBuffer();
+            this._setupTensionSynth();
+          } catch (_) {
+            try { this.ctx?.close()?.catch(() => {}); } catch (_) {}
+            this.ctx = null;
+            return false;
+          }
         }
-        if (this.ctx && this.ctx.state === 'suspended') {
-          this.ctx.resume();
+        const now = this.ctx.currentTime;
+        if (!this.masterAudible) {
+          this.master.gain.cancelScheduledValues(now);
+          this.master.gain.setTargetAtTime(0.65, now, 0.012);
+          this.masterAudible = true;
         }
+        if (this.ctx.state !== 'running' && (!this.resumePending || userGesture)) {
+          // A new gesture may retry an interrupted promise. Effects from the
+          // abandoned attempt must not follow it into the new interaction.
+          if (this.resumePending) this._discardPendingEffects();
+          const context = this.ctx, generation = this.effectGeneration;
+          try {
+            const pending = Promise.resolve(context.resume()).then(() => {
+              if (context !== this.ctx) return;
+              if (!this._mayPlay()) {
+                this._discardPendingEffects();
+                this._suspend();
+                return;
+              }
+              if (generation !== this.effectGeneration) return;
+              if (context.state === 'running') this._flushPendingEffects(generation);
+              else this._discardPendingEffects();
+            }).catch(() => {
+              if (context === this.ctx && generation === this.effectGeneration) this._discardPendingEffects();
+            }).finally(() => {
+              if (this.resumePending === pending) this.resumePending = null;
+              this._idleSoon();
+            });
+            this.resumePending = pending;
+          } catch (_) { this._discardPendingEffects(); }
+        }
+        this._idleSoon();
+        return this.ctx.state === 'running';
+      }
+
+      _mayPlay() {
+        return !this.muted && !this.blocked && !document.hidden && (!this.canPlay || this.canPlay());
+      }
+
+      _discardPendingEffects() {
+        this.effectGeneration++;
+        this.pendingEffects = [];
+      }
+
+      _playOnce(play, key = '') {
+        if (this.unlock(false)) { play(); return; }
+        if (!this.ctx || !this.resumePending || !this._mayPlay()) return;
+        // Keep brief feedback through a normal async resume, but never accumulate
+        // continuous tool noise or replay a backlog after an interruption.
+        const now = performance.now();
+        this.pendingEffects = this.pendingEffects.filter(effect => effect.generation === this.effectGeneration && now - effect.at <= this.pendingEffectMaxAge);
+        if (key && this.pendingEffects.some(effect => effect.key === key)) return;
+        if (this.pendingEffects.length >= this.maxPendingEffects) this.pendingEffects.shift();
+        this.pendingEffects.push({play, key, at:now, generation:this.effectGeneration});
+      }
+
+      _flushPendingEffects(generation) {
+        const effects = this.pendingEffects;
+        this.pendingEffects = [];
+        for (const effect of effects) {
+          if (generation !== this.effectGeneration || !this._mayPlay()) break;
+          if (effect.generation === generation && performance.now() - effect.at <= this.pendingEffectMaxAge) effect.play();
+        }
+      }
+
+      setMuted(muted, persist = true) {
+        this.muted = Boolean(muted);
+        if (this.muted) this.pause();
+        if (persist) {
+          try { localStorage.setItem(AUDIO_PREFERENCE_KEY, this.muted ? 'off' : 'on'); } catch (_) {}
+        }
+      }
+
+      pause() {
+        this.blocked = true;
+        this.tensionLevel = 0;
+        this._discardPendingEffects();
+        this.resumePending = null;
+        clearTimeout(this.idleTimer);
+        this.idleTimer = null;
+        if (!this.ctx || this.ctx.state === 'closed') return;
+        const now = this.ctx.currentTime;
+        this.tensionGain.gain.cancelScheduledValues(now);
+        this.tensionGain.gain.setTargetAtTime(0.0001, now, 0.005);
+        this.master.gain.cancelScheduledValues(now);
+        this.master.gain.setTargetAtTime(0.0001, now, 0.005);
+        this.masterAudible = false;
+        for (const voice of [...this.voices]) {
+          try { voice.source.stop(now + 0.02); } catch (_) {}
+        }
+        this.idleTimer = setTimeout(() => {
+          this.idleTimer = null;
+          for (const voice of [...this.voices]) this._releaseVoice(voice);
+          this._suspend();
+        }, 30);
+      }
+
+      _suspend() {
+        if (!this.ctx || this.ctx.state === 'closed' || this.ctx.state === 'suspended') return;
+        try { Promise.resolve(this.ctx.suspend()).catch(() => {}); } catch (_) {}
+      }
+
+      _idleSoon() {
+        if (!this.ctx || this.ctx.state !== 'running' || this.blocked || this.voices.size || this.tensionLevel > 0.04 || this.idleTimer !== null) return;
+        this.idleTimer = setTimeout(() => {
+          this.idleTimer = null;
+          if (!this.voices.size && this.tensionLevel <= 0.04) this._suspend();
+        }, 180);
+      }
+
+      _releaseVoice(voice) {
+        if (!this.voices.delete(voice)) return;
+        voice.source.onended = null;
+        for (const node of voice.nodes) { try { node.disconnect(); } catch (_) {} }
+        this._idleSoon();
+      }
+
+      _startVoice(source, gain, filter, start, duration, offset = 0) {
+        // Reap already ended voices even if the main thread received onended late.
+        for (const voice of [...this.voices]) {
+          if (voice.end <= this.ctx.currentTime) this._releaseVoice(voice);
+        }
+        if (this.voices.size >= this.maxVoices) return false;
+        clearTimeout(this.idleTimer);
+        this.idleTimer = null;
+        const nodes = filter ? [source, filter, gain] : [source, gain];
+        source.connect(filter || gain);
+        if (filter) filter.connect(gain);
+        gain.connect(this.master);
+        const voice = {source, nodes, end:start + duration};
+        this.voices.add(voice);
+        source.onended = () => this._releaseVoice(voice);
+        if ('buffer' in source) source.start(start, offset, duration);
+        else { source.start(start); source.stop(start + duration); }
+        return true;
+      }
+
+      _envelope(gain, start, peak, duration, attack = 0.004) {
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.linearRampToValueAtTime(peak, start + attack);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
       }
 
       _buildNoiseBuffer() {
-        if (!this.ctx) return;
-        const sr = this.ctx.sampleRate;
-        const len = Math.floor(sr * 1.5);
-        const buf = this.ctx.createBuffer(1, len, sr);
-        const data = buf.getChannelData(0);
+        const sr = this.ctx.sampleRate, len = Math.floor(sr * 1.5);
+        const buf = this.ctx.createBuffer(1, len, sr), data = buf.getChannelData(0);
         let b0 = 0, b1 = 0, b2 = 0;
         for (let i = 0; i < len; i++) {
           const white = Math.random() * 2 - 1;
@@ -913,298 +1090,99 @@
       }
 
       _setupTensionSynth() {
-        if (!this.ctx) return;
         this.tensionOsc = this.ctx.createOscillator();
         this.tensionGain = this.ctx.createGain();
         const filter = this.ctx.createBiquadFilter();
         filter.type = 'lowpass';
         filter.frequency.value = 195;
-
         this.tensionOsc.type = 'triangle';
         this.tensionOsc.frequency.value = 58;
         this.tensionGain.gain.value = 0.0001;
-
         this.tensionOsc.connect(filter);
         filter.connect(this.tensionGain);
-        this.tensionGain.connect(this.ctx.destination);
+        this.tensionGain.connect(this.master);
         this.tensionOsc.start();
       }
 
       setTension(level) {
-        if (!this.ctx || !this.tensionGain || this.muted) {
-          if (this.tensionGain && this.ctx) {
-            this.tensionGain.gain.setTargetAtTime(0.0001, this.ctx.currentTime, 0.05);
-          }
-          return;
-        }
+        const clamped = Math.max(0, Math.min(1, Number(level) || 0));
+        if (clamped > 0.04 && !this.unlock(false)) return;
+        if (!this.ctx || !this.tensionGain) return;
+        if (Math.abs(this.tensionLevel - clamped) < 0.005) { if (!clamped) this._idleSoon(); return; }
+        this.tensionLevel = clamped;
         const now = this.ctx.currentTime;
-        const clamped = Math.max(0, Math.min(1, level));
-        const targetGain = clamped > 0.04 ? 0.012 + clamped * 0.072 : 0.0001;
-        const targetFreq = 55 + clamped * 82;
-        this.tensionOsc.frequency.setTargetAtTime(targetFreq, now, 0.04);
-        this.tensionGain.gain.setTargetAtTime(targetGain, now, 0.04);
+        this.tensionOsc.frequency.setTargetAtTime(55 + clamped * 82, now, 0.04);
+        this.tensionGain.gain.setTargetAtTime(clamped > 0.04 ? 0.012 + clamped * 0.072 : 0.0001, now, 0.04);
+        if (!clamped) this._idleSoon();
       }
 
-      playSteam() {
-        if (this.muted) return;
-        this.unlock();
-        if (!this.ctx || !this.noiseBuffer) return;
+      _noise(kind, interval, frequency, peak, duration, attack, q) {
+        if (!this.unlock(false) || !this.noiseBuffer) return;
         const now = this.ctx.currentTime;
-        if (now - this.lastSteamTime < 0.09) return;
-        this.lastSteamTime = now;
-
-        const src = this.ctx.createBufferSource();
+        if (now - this[kind] < interval) return;
+        this[kind] = now;
+        const src = this.ctx.createBufferSource(), filter = this.ctx.createBiquadFilter(), gain = this.ctx.createGain();
         src.buffer = this.noiseBuffer;
-        const filter = this.ctx.createBiquadFilter();
         filter.type = 'bandpass';
-        filter.frequency.setValueAtTime(2400 + Math.random() * 400, now);
-        filter.Q.value = 0.9;
+        filter.frequency.setValueAtTime(frequency, now);
+        filter.Q.value = q;
+        this._envelope(gain, now, peak, duration - 0.01, attack);
+        this._startVoice(src, gain, filter, now, duration, Math.random() * 0.5);
+      }
 
-        const gain = this.ctx.createGain();
-        gain.gain.setValueAtTime(0.001, now);
-        gain.gain.linearRampToValueAtTime(0.085, now + 0.03);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+      playSteam() { this._noise('lastSteamTime', 0.09, 2400 + Math.random() * 400, 0.085, 0.13, 0.03, 0.9); }
+      playViscousOoze() { this._noise('lastOozeTickTime', 0.14, 680 + Math.random() * 260, 0.11, 0.12, 0.03, 3.2); }
+      playWipe() { this._noise('lastWipeSoundTime', 0.085, 1650 + Math.random() * 350, 0.13, 0.09, 0.02, 1.6); }
 
-        src.connect(filter);
-        filter.connect(gain);
-        gain.connect(this.ctx.destination);
-        src.start(now, Math.random() * 0.5, 0.13);
+      _tone(frequencies, peak, duration, type = 'sine', delay = 0, filterFrequency = 0) {
+        if (!this.unlock(false)) return;
+        const now = this.ctx.currentTime + delay, osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(frequencies[0][0], now);
+        for (const [freq, time] of frequencies.slice(1)) osc.frequency.exponentialRampToValueAtTime(freq, now + time);
+        this._envelope(gain, now, peak, duration - 0.005);
+        let filter = null;
+        if (filterFrequency) { filter = this.ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = filterFrequency; }
+        this._startVoice(osc, gain, filter, now, duration);
       }
 
       playIceGelSpread() {
-        if (this.muted) return;
-        this.unlock();
-        if (!this.ctx) return;
+        if (!this.unlock(false)) return;
         const now = this.ctx.currentTime;
         if (now - this.lastGelTime < 0.095) return;
         this.lastGelTime = now;
-
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(920 + Math.random() * 450, now);
-        osc.frequency.exponentialRampToValueAtTime(1480, now + 0.07);
-        gain.gain.setValueAtTime(0.055, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.085);
+        this._tone([[920 + Math.random() * 450, 0], [1480, 0.07]], 0.045, 0.085);
       }
 
-      playTweezerClamp() {
-        if (this.muted) return;
-        this.unlock();
-        if (!this.ctx) return;
-        const now = this.ctx.currentTime;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(3200, now);
-        osc.frequency.exponentialRampToValueAtTime(1400, now + 0.025);
-        gain.gain.setValueAtTime(0.14, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.035);
-      }
-
-      // 战利品脂栓落入不锈钢弯盘的清脆微距金属轻响
+      playTweezerClamp() { this._playOnce(() => this._tone([[2600, 0], [1400, 0.025]], 0.09, 0.035)); }
+      playPierce() { this._playOnce(() => this._tone([[2100, 0], [680, 0.038]], 0.12, 0.048)); }
       playTrayClink() {
-        if (this.muted) return;
-        this.unlock();
-        if (!this.ctx) return;
-        const now = this.ctx.currentTime;
-        [2680, 4120].forEach((freq, idx) => {
-          const osc = this.ctx.createOscillator();
-          const gain = this.ctx.createGain();
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(freq, now + idx * 0.015);
-          gain.gain.setValueAtTime(0.075, now + idx * 0.015);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
-          osc.connect(gain);
-          gain.connect(this.ctx.destination);
-          osc.start(now + idx * 0.015);
-          osc.stop(now + 0.15);
-        });
+        this._playOnce(() => [2380, 3560].forEach((freq, index) => this._tone([[freq, 0]], 0.055, 0.15, 'sine', index * 0.015)));
       }
 
       playPop(kind = 'whitehead') {
-        if (this.muted) return;
-        this.unlock();
-        if (!this.ctx) return;
-        const now = this.ctx.currentTime;
-
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-
-        if (kind === 'whitehead') {
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(980, now);
-          osc.frequency.exponentialRampToValueAtTime(175, now + 0.062);
-          gain.gain.setValueAtTime(0.32, now);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.072);
-        } else if (kind === 'blackhead' || kind === 'tweeze_pluck') {
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(kind === 'tweeze_pluck' ? 310 : 240, now);
-          osc.frequency.exponentialRampToValueAtTime(kind === 'tweeze_pluck' ? 680 : 480, now + 0.042);
-          osc.frequency.exponentialRampToValueAtTime(185, now + 0.095);
-          gain.gain.setValueAtTime(0.26, now);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.105);
-        } else if (kind === 'core_plug') {
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(520, now);
-          osc.frequency.exponentialRampToValueAtTime(95, now + 0.125);
-          gain.gain.setValueAtTime(0.40, now);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.135);
-        } else {
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(380, now);
-          osc.frequency.exponentialRampToValueAtTime(110, now + 0.10);
-          gain.gain.setValueAtTime(0.28, now);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.11);
-        }
-
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.15);
-
-        if (this.noiseBuffer && kind !== 'blackhead' && kind !== 'tweeze_pluck') {
-          const nSrc = this.ctx.createBufferSource();
-          nSrc.buffer = this.noiseBuffer;
-          const nFilter = this.ctx.createBiquadFilter();
-          nFilter.type = 'bandpass';
-          nFilter.frequency.setValueAtTime(kind === 'whitehead' ? 1600 : 980, now);
-          nFilter.Q.value = 2.6;
-
-          const nGain = this.ctx.createGain();
-          nGain.gain.setValueAtTime(0.25, now);
-          nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.065);
-
-          nSrc.connect(nFilter);
-          nFilter.connect(nGain);
-          nGain.connect(this.ctx.destination);
-          nSrc.start(now, Math.random() * 0.5, 0.08);
-        }
-      }
-
-      playViscousOoze() {
-        if (this.muted || !this.ctx || !this.noiseBuffer) return;
-        const now = this.ctx.currentTime;
-        if (now - this.lastOozeTickTime < 0.14) return;
-        this.lastOozeTickTime = now;
-
-        const src = this.ctx.createBufferSource();
-        src.buffer = this.noiseBuffer;
-        const filter = this.ctx.createBiquadFilter();
-        filter.type = 'bandpass';
-        filter.frequency.setValueAtTime(680 + Math.random() * 260, now);
-        filter.Q.value = 3.2;
-
-        const gain = this.ctx.createGain();
-        gain.gain.setValueAtTime(0.001, now);
-        gain.gain.linearRampToValueAtTime(0.11, now + 0.03);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.11);
-
-        src.connect(filter);
-        filter.connect(gain);
-        gain.connect(this.ctx.destination);
-        src.start(now, Math.random() * 0.5, 0.12);
-      }
-
-      playPierce() {
-        if (this.muted) return;
-        this.unlock();
-        if (!this.ctx) return;
-        const now = this.ctx.currentTime;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(2100, now);
-        osc.frequency.exponentialRampToValueAtTime(680, now + 0.038);
-        gain.gain.setValueAtTime(0.16, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.042);
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.048);
-      }
-
-      playWipe() {
-        if (this.muted) return;
-        this.unlock();
-        if (!this.ctx || !this.noiseBuffer) return;
-        const now = this.ctx.currentTime;
-        if (now - this.lastWipeSoundTime < 0.085) return;
-        this.lastWipeSoundTime = now;
-
-        const src = this.ctx.createBufferSource();
-        src.buffer = this.noiseBuffer;
-        const filter = this.ctx.createBiquadFilter();
-        filter.type = 'bandpass';
-        filter.frequency.setValueAtTime(1650 + Math.random() * 350, now);
-        filter.Q.value = 1.6;
-
-        const gain = this.ctx.createGain();
-        gain.gain.setValueAtTime(0.001, now);
-        gain.gain.linearRampToValueAtTime(0.13, now + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
-
-        src.connect(filter);
-        filter.connect(gain);
-        gain.connect(this.ctx.destination);
-        src.start(now, Math.random() * 0.6, 0.09);
-      }
-
-      playCleanChime(isIceFinale = false) {
-        if (this.muted) return;
-        this.unlock();
-        if (!this.ctx) return;
-        const now = this.ctx.currentTime;
-        const notes = isIceFinale ? [523.25, 659.25, 783.99, 1046.5, 1318.5] : [587.33, 783.99, 1046.5];
-        notes.forEach((freq, idx) => {
-          const osc = this.ctx.createOscillator();
-          const gain = this.ctx.createGain();
-          osc.type = 'sine';
-          const t = now + idx * 0.06;
-          osc.frequency.setValueAtTime(freq, t);
-          gain.gain.setValueAtTime(0.11, t);
-          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
-          osc.connect(gain);
-          gain.connect(this.ctx.destination);
-          osc.start(t);
-          osc.stop(t + 0.30);
+        this._playOnce(() => {
+          if (kind === 'whitehead') this._tone([[980, 0], [175, 0.062]], 0.24, 0.08);
+          else if (kind === 'blackhead' || kind === 'tweeze_pluck') {
+            this._tone([[kind === 'tweeze_pluck' ? 310 : 240, 0], [kind === 'tweeze_pluck' ? 680 : 480, 0.042], [185, 0.095]], 0.22, 0.11);
+          } else if (kind === 'core_plug') this._tone([[520, 0], [95, 0.125]], 0.28, 0.14, 'triangle');
+          else this._tone([[380, 0], [110, 0.10]], 0.24, 0.12, 'triangle');
+          if (kind !== 'blackhead' && kind !== 'tweeze_pluck') this._noise('lastPopNoiseTime', 0, kind === 'whitehead' ? 1600 : 980, 0.16, 0.08, 0.004, 2.6);
         });
       }
 
+      playCleanChime(isIceFinale = false) {
+        const notes = isIceFinale ? [523.25, 659.25, 783.99, 1046.5, 1318.5] : [587.33, 783.99, 1046.5];
+        this._playOnce(() => notes.forEach((freq, index) => this._tone([[freq, 0]], 0.075, 0.30, 'sine', index * 0.06)));
+      }
+
       playWarnHurt() {
-        if (this.muted) return;
-        this.unlock();
-        if (!this.ctx) return;
-        const now = this.ctx.currentTime;
-        if (now - this.lastWarnSoundTime < 0.34) return;
-        this.lastWarnSoundTime = now;
-
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(118, now);
-        osc.frequency.linearRampToValueAtTime(64, now + 0.12);
-
-        const filter = this.ctx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.value = 220;
-
-        gain.gain.setValueAtTime(0.13, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
-
-        osc.connect(filter);
-        filter.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.14);
+        this._playOnce(() => {
+          const now = this.ctx.currentTime;
+          if (now - this.lastWarnSoundTime < 0.34) return;
+          this.lastWarnSoundTime = now;
+          this._tone([[118, 0], [64, 0.12]], 0.10, 0.14, 'triangle', 0, 220);
+        }, 'warning');
       }
     }
 
@@ -1222,6 +1200,7 @@
      * ============================================================================
      */
     const sound = new SoundEngine();
+    sound.canPlay = () => careControl.owned && !state.paused && !state.settled && !document.hidden;
 
     const canvas = document.getElementById('skin-canvas');
     const ctx = canvas.getContext('2d');
@@ -1348,6 +1327,8 @@
         active: false,
         touchId: null,
         secondTouchId: null,
+        inputTime: 0,
+        strokeCarry: 0,
         mode: 'none',
         x: 0,
         y: 0,
@@ -1369,6 +1350,43 @@
         lockedPimple: null
       }
     };
+
+    const VIEW_PREFERENCE_KEY = 'pimple_clinic_view_v1';
+    let preferredStyleMode = readViewPreference();
+    if (preferredStyleMode) state.styleMode = preferredStyleMode;
+    let pendingTreatmentChange = null;
+
+    function readViewPreference() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(VIEW_PREFERENCE_KEY) || 'null');
+        return saved?.version === 1 && ['realistic', 'creamy'].includes(saved.styleMode) ? saved.styleMode : null;
+      } catch (_) { return null; }
+    }
+
+    function rememberViewPreference(styleMode) {
+      if (!['realistic', 'creamy'].includes(styleMode)) return;
+      preferredStyleMode = styleMode;
+      try { localStorage.setItem(VIEW_PREFERENCE_KEY, JSON.stringify({ version: 1, styleMode })); } catch (_) {}
+    }
+
+    function syncViewPreferenceControls() {
+      const isCreamy = state.styleMode === 'creamy';
+      document.getElementById('style-mode-label').textContent = isCreamy ? '柔和肌理' : '自然肌理';
+      const button = document.getElementById('btn-style-mode');
+      button.setAttribute('aria-pressed', String(isCreamy));
+      button.classList.toggle('active-mode', isCreamy);
+    }
+
+    function applyViewPreference(styleMode) {
+      if (!['realistic', 'creamy'].includes(styleMode)) return;
+      state.styleMode = styleMode;
+      syncViewPreferenceControls();
+      renderSkinTexture();
+      if (state.settled) {
+        refreshComparisonSnapshots();
+        if (resultModalEl.classList.contains('open')) renderBeforeAfterComparison();
+      } else requestSceneFrame();
+    }
 
     try {
       const savedCoins = localStorage.getItem('pimple_clinic_coins');
@@ -1491,6 +1509,9 @@
     function hydrateCareProfile(snapshot) {
       careControl.hydrating = true;
       sessionSaveEnabled = false;
+      pendingTreatmentChange = null;
+      preferredStyleMode = readViewPreference() || preferredStyleMode;
+      if (preferredStyleMode) state.styleMode = preferredStyleMode;
       try {
         const profile = snapshot.profile;
         lastProfileRaw = snapshot.raw;
@@ -1525,6 +1546,7 @@
     }
 
     function showCareGate(message = '这页已暂停。你可以回到原页面，也可以在这里接着最新进度继续。') {
+      pendingTreatmentChange = null;
       state.paused = true;
       document.querySelectorAll('.modal-backdrop.open').forEach(modal => modal.classList.remove('open'));
       document.getElementById('storage-gate-copy').textContent = careControl.conflict
@@ -1571,6 +1593,7 @@
         sessionSaveEnabled = true;
         state.paused = false;
         saveCurrentSession(true);
+        requestSceneFrame();
         if (!navigator.locks?.request) {
           careControl.heartbeat = setInterval(() => {
             if (ensureCareControl()) {
@@ -1672,6 +1695,7 @@
         hydrateCareProfile(snapshot);
         sessionSaveEnabled = true;
         state.paused = false;
+        requestSceneFrame();
         setHint('当前浏览器无法保存进度。这次仍可正常护理，请先保留当前页面。', 'warn');
         return Promise.resolve(true);
       }
@@ -1785,6 +1809,12 @@
         state.targetDensity = data.targetDensity || 0;
         generateLevel(state.targetDensity);
         for (const key of SESSION_FIELDS) if (data[key] !== undefined) state[key] = data[key];
+        // A view choice outlives a single treatment. Migrate a valid older
+        // session only when there is no newer independent preference.
+        if (!preferredStyleMode) rememberViewPreference(state.styleMode);
+        state.styleMode = preferredStyleMode || state.styleMode;
+        syncViewPreferenceControls();
+        syncDensityControls();
         state.runDensity = data.runDensity === undefined ? data.targetDensity || 0 : data.runDensity;
         state.runControlMode = data.runControlMode || (data.controlMode === 'keyboard' ? 'keyboard' : 'pointer');
         if (typeof normalizeRunStats === 'function') normalizeRunStats();
@@ -1797,10 +1827,6 @@
         state.beforeCaptured = false;
         releasePointer();
         resizeCanvas();
-        const isCreamy = state.styleMode === 'creamy';
-        document.getElementById('style-mode-label').textContent = isCreamy ? '柔和肌理' : '自然肌理';
-        document.getElementById('btn-style-mode').setAttribute('aria-pressed', String(isCreamy));
-        document.getElementById('btn-style-mode').classList.toggle('active-mode', isCreamy);
         const resumeTool = ['steam', 'needle', 'squeeze', 'tweezers', 'swab', 'ice_brush'].includes(state.currentTool) ? state.currentTool : 'steam';
         selectTool(resumeTool);
         if (resumeTool === 'ice_brush') enterIceBrushingStage();
@@ -2435,6 +2461,10 @@
 
     function generateLevel(overrideDensity = 0) {
       if (!ensureCareControl()) return;
+      pendingTreatmentChange = null;
+      state.targetDensity = overrideDensity;
+      syncDensityControls();
+      syncViewPreferenceControls();
       state.runId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 11)}`;
       state.runDensity = overrideDensity;
       // Assistance belongs to the current treatment; a fresh run is classified anew.
@@ -2591,6 +2621,7 @@
       updateHUD();
       setHint(state.practiceGuide && state.practiceGuide.active ? '跟着细线圈出的三处，慢慢熟悉工具；也可以随时跳过引导。' : '从热敷开始，按住操作区缓缓移动。', 'normal');
       resultModalEl.classList.remove('open');
+      requestSceneFrame();
     }
 
     /**
@@ -2721,7 +2752,7 @@
       text = text.replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, '').trim();
       color = ['#ff6b7a', '#ff5c70', '#ff4d5e'].includes(color) ? '#8b403a' : '#405b43';
       const nearby = state.floatingTexts.findIndex(item => Math.hypot(item.x - x, item.y - y) < 72 && item.life > 0.35);
-      const feedback = { x, y, vy: -25, text, color, life: 0.95, maxLife: 0.95 };
+      const feedback = { x, y, vy: motionPreference?.matches ? 0 : -25, text, color, life: 0.95, maxLife: 0.95 };
       if (nearby >= 0) state.floatingTexts[nearby] = feedback;
       else state.floatingTexts.push(feedback);
       if (state.floatingTexts.length > 3) state.floatingTexts.shift();
@@ -2807,6 +2838,10 @@
       const item = state.collectionLedger[id];
       if (item && item.location !== 'skin') return false;
       state.collectionLedger[id] = { kind, location: 'flight', rewards: item ? item.rewards : {} };
+      if (motionPreference?.matches) {
+        finalizeTrophyInTray(kind, wormLen, id);
+        return true;
+      }
       const targetX = state.width - 54 + (Math.random() - 0.5) * 26;
       const targetY = 66 + (Math.random() - 0.5) * 10;
       state.flyingTrophies.push({
@@ -2831,7 +2866,7 @@
       if (kind === 'blackhead') state.trophiesPlucked += 1;
       else state.coreSeedsCollected += 1;
 
-      state.trayPulse = 1.0;
+      state.trayPulse = motionPreference?.matches ? 0 : 1;
       sound.playTrayClink();
       setPatientMood('🤩');
 
@@ -3507,7 +3542,7 @@
       if (!p) return;
 
       const stepDist = Math.hypot(pt.x - tw.lastX, pt.y - tw.lastY);
-      const speed = stepDist / Math.max(0.008, dt);
+      const speed = stepDist / Math.max(0.001, dt);
       tw.lastX = pt.x;
       tw.lastY = pt.y;
       tw.curTipX = pt.x;
@@ -3974,9 +4009,43 @@
       canvas.addEventListener('touchstart', pointerTakesOver, {capture: true, passive: true});
     }
 
+    function beginPointerStroke(pt, timestamp) {
+      state.pointer.inputTime = timestamp;
+      state.pointer.strokeCarry = 0;
+    }
+
+    function movePointerTool(pt, timestamp) {
+      const ptr = state.pointer;
+      const from = { x: ptr.x, y: ptr.y };
+      const elapsed = (timestamp - ptr.inputTime) / 1000;
+      ptr.inputTime = timestamp;
+      ptr.x = pt.x;
+      ptr.y = pt.y;
+      if (ptr.mode === 'tweezers') {
+        // Input devices report at different rates. Use the time between samples
+        // so the same physical drag has the same speed on a mouse or touch screen.
+        updateTweezerPull(pt, Number.isFinite(elapsed) && elapsed > 0 ? Math.min(.1, elapsed) : 1 / 60);
+        return;
+      }
+      if (ptr.mode !== 'swab' && ptr.mode !== 'ice_brush') return;
+      const distance = Math.hypot(pt.x - from.x, pt.y - from.y);
+      if (!distance) return;
+      const spacing = ptr.mode === 'swab' ? 8 : 12;
+      const paint = ptr.mode === 'swab' ? handleSwabWipe : handleIceBrushPaint;
+      const first = spacing - ptr.strokeCarry;
+      // Sample the travelled path, including the space between sparse events.
+      // Repeated events at one position cannot speed up wiping.
+      for (let travelled = first, samples = 0; travelled <= distance && samples < 256; travelled += spacing, samples++) {
+        paint({ x: from.x + (pt.x - from.x) * travelled / distance, y: from.y + (pt.y - from.y) * travelled / distance });
+        if (!ptr.active || state.iceFinishing) break;
+      }
+      ptr.strokeCarry = (ptr.strokeCarry + distance) % spacing;
+    }
+
     function bindCanvasInteractions() {
       canvas.addEventListener('contextmenu', (e) => e.preventDefault());
       const touchIdentity = (touch, index = 0) => touch.identifier === undefined ? index : touch.identifier;
+      const canvasTouchIds = new Set();
       const trackedTouches = list => {
         const all = Array.from(list);
         const first = all.find((touch, index) => touchIdentity(touch, index) === state.pointer.touchId);
@@ -3987,11 +4056,14 @@
       canvas.addEventListener('touchstart', (e) => {
         e.preventDefault();
         if (state.settled || state.paused || state.iceFinishing) return;
-        const allTouches = Array.from(e.touches);
+        const incoming = Array.from(e.changedTouches || []);
+        incoming.forEach((touch, index) => canvasTouchIds.add(touchIdentity(touch, index)));
+        const allTouches = e.targetTouches ? Array.from(e.targetTouches) : Array.from(e.touches).filter((touch, index) => canvasTouchIds.has(touchIdentity(touch, index)));
         if (!allTouches.length) return;
         if (state.pointer.active && (state.currentTool !== 'squeeze' || state.pointer.mode === 'two-finger')) return;
         if (!state.pointer.active) {
-          state.pointer.touchId = touchIdentity(allTouches[0]);
+          const started = incoming.find(touch => allTouches.some(candidate => candidate.identifier === touch.identifier)) || allTouches[0];
+          state.pointer.touchId = touchIdentity(started);
           state.pointer.secondTouchId = null;
           if (typeof beginCareAction === 'function') beginCareAction();
         }
@@ -4004,6 +4076,7 @@
         const touches = trackedTouches(e.touches);
         if (touches.length === 0) return;
         const pt = getCanvasPoint(touches[0].clientX, touches[0].clientY);
+        beginPointerStroke(pt, e.timeStamp);
 
         // 点击画布右上角战利品弯盘也可直接弹出 25X 检视窗
         if (state.trophyTrayItems.length > 0 && pt.x > state.width - 96 && pt.y < 92) {
@@ -4032,7 +4105,7 @@
           state.pointer.mode = 'steam';
           state.pointer.x = pt.x;
           state.pointer.y = pt.y;
-          handleSteamSpray(pt, 0.04);
+          handleSteamSpray(pt, 0);
           return;
         }
         if (state.currentTool === 'tweezers') {
@@ -4082,37 +4155,17 @@
       canvas.addEventListener('touchmove', (e) => {
         e.preventDefault();
         if (!state.pointer.active || state.settled || state.paused || state.iceFinishing) return;
+        const changed = Array.from(e.changedTouches || []);
+        if (changed.length && !changed.some((touch, index) => {
+          const id = touchIdentity(touch, index);
+          return id === state.pointer.touchId || (state.pointer.mode === 'two-finger' && id === state.pointer.secondTouchId);
+        })) return;
         const touches = trackedTouches(e.touches);
         if (touches.length === 0) return;
         const pt = getCanvasPoint(touches[0].clientX, touches[0].clientY);
 
-        if (state.currentTool === 'ice_brush') {
-          state.pointer.x = pt.x;
-          state.pointer.y = pt.y;
-          handleIceBrushPaint(pt);
-          return;
-        }
-        if (state.currentTool === 'needle') {
-          state.pointer.x = pt.x;
-          state.pointer.y = pt.y;
-          return;
-        }
-        if (state.currentTool === 'steam') {
-          state.pointer.x = pt.x;
-          state.pointer.y = pt.y;
-          handleSteamSpray(pt, 0.035);
-          return;
-        }
-        if (state.currentTool === 'tweezers') {
-          state.pointer.x = pt.x;
-          state.pointer.y = pt.y;
-          updateTweezerPull(pt, 0.025);
-          return;
-        }
-        if (state.currentTool === 'swab') {
-          state.pointer.x = pt.x;
-          state.pointer.y = pt.y;
-          handleSwabWipe(pt);
+        if (state.currentTool !== 'squeeze') {
+          movePointerTool(pt, e.timeStamp);
           return;
         }
 
@@ -4152,6 +4205,7 @@
       const endTouch = (e) => {
         e.preventDefault();
         const ended = Array.from(e.changedTouches || []);
+        ended.forEach((touch, index) => canvasTouchIds.delete(touchIdentity(touch, index)));
         const primary = ended.find((touch, index) => touchIdentity(touch, index) === state.pointer.touchId);
         const secondEnded = ended.some((touch, index) => touchIdentity(touch, index) === state.pointer.secondTouchId);
         if (primary && state.pointer.active && state.pointer.mode === 'needle' && !state.paused && !state.settled && !state.iceFinishing) {
@@ -4163,13 +4217,18 @@
         }
       };
       canvas.addEventListener('touchend', endTouch, { passive: false });
-      canvas.addEventListener('touchcancel', (e) => { e.preventDefault(); releasePointer(); }, { passive: false });
+      canvas.addEventListener('touchcancel', (e) => {
+        e.preventDefault();
+        Array.from(e.changedTouches || []).forEach((touch, index) => canvasTouchIds.delete(touchIdentity(touch, index)));
+        releasePointer();
+      }, { passive: false });
 
       canvas.addEventListener('mousedown', (e) => {
         if (e.button !== 0 || state.settled || state.paused || state.iceFinishing) return;
         if (typeof beginCareAction === 'function') beginCareAction();
         sound.unlock();
         const pt = getCanvasPoint(e.clientX, e.clientY);
+        beginPointerStroke(pt, e.timeStamp);
         state.pointer.hoverX = pt.x;
         state.pointer.hoverY = pt.y;
 
@@ -4199,7 +4258,7 @@
           state.pointer.mode = 'steam';
           state.pointer.x = pt.x;
           state.pointer.y = pt.y;
-          handleSteamSpray(pt, 0.04);
+          handleSteamSpray(pt, 0);
           return;
         }
         if (state.currentTool === 'tweezers') {
@@ -4227,26 +4286,9 @@
         state.pointer.hoverY = pt.y;
 
         if (!state.pointer.active || state.settled || state.paused || state.iceFinishing) return;
-        if (state.currentTool === 'ice_brush' && state.pointer.mode === 'ice_brush') {
-          state.pointer.x = pt.x;
-          state.pointer.y = pt.y;
-          handleIceBrushPaint(pt);
-        } else if (state.currentTool === 'needle' && state.pointer.mode === 'needle') {
-          state.pointer.x = pt.x;
-          state.pointer.y = pt.y;
-        } else if (state.currentTool === 'steam' && state.pointer.mode === 'steam') {
-          state.pointer.x = pt.x;
-          state.pointer.y = pt.y;
-          handleSteamSpray(pt, 0.03);
-        } else if (state.currentTool === 'tweezers' && state.pointer.mode === 'tweezers') {
-          state.pointer.x = pt.x;
-          state.pointer.y = pt.y;
-          updateTweezerPull(pt, 0.02);
-        } else if (state.currentTool === 'swab' && state.pointer.mode === 'swab') {
-          state.pointer.x = pt.x;
-          state.pointer.y = pt.y;
-          handleSwabWipe(pt);
-        } else if (state.currentTool === 'squeeze' && state.pointer.mode === 'mirror-pinch') {
+        if (state.currentTool !== 'squeeze') {
+          movePointerTool(pt, e.timeStamp);
+        } else if (state.pointer.mode === 'mirror-pinch') {
           updateMirrorPinch(pt);
         }
       });
@@ -4393,7 +4435,8 @@
       state.pointer.rawForce = 0;
       state.pointer.lockedPimple = null;
       state.tweezers.clampedPimple = null;
-      sound.setTension(0);
+      if (state.paused || state.settled || !careControl.owned) sound.pause();
+      else sound.setTension(0);
       saveCurrentSession();
     }
 
@@ -4445,19 +4488,21 @@
     function updateSimulation(dt) {
       if (!ensureCareControl()) return;
       if (state.paused) return;
+      const reducedMotion = motionPreference?.matches;
+      const frameScale = dt * 60;
       updateKeyboardCare(dt);
 
       if (state.cameraShake > 0) {
-        state.cameraShake = Math.max(0, state.cameraShake - dt * 30);
+        state.cameraShake = reducedMotion ? 0 : Math.max(0, state.cameraShake - dt * 30);
       }
       if (state.trayPulse > 0) {
-        state.trayPulse = Math.max(0, state.trayPulse - dt * 3.5);
+        state.trayPulse = reducedMotion ? 0 : Math.max(0, state.trayPulse - dt * 3.5);
       }
 
       // 更新飞向右上角战利品不锈钢弯盘的脂栓抛物线
       for (let i = state.flyingTrophies.length - 1; i >= 0; i--) {
         const ft = state.flyingTrophies[i];
-        ft.progress += dt / ft.duration;
+        ft.progress = reducedMotion ? 1 : ft.progress + dt / ft.duration;
         if (ft.progress >= 1) {
           finalizeTrophyInTray(ft.kind, ft.wormLen, ft.collectionId);
           state.flyingTrophies.splice(i, 1);
@@ -4488,13 +4533,15 @@
       }
 
       if (ptr.active && (ptr.mode === 'two-finger' || ptr.mode === 'mirror-pinch')) {
-        ptr.squeezeForce += (ptr.rawForce - ptr.squeezeForce) * CONFIG.SKIN.ELASTICITY * 1.5;
-        ptr.smoothP1.x += (ptr.p1.x - ptr.smoothP1.x) * 0.34;
-        ptr.smoothP1.y += (ptr.p1.y - ptr.smoothP1.y) * 0.34;
-        ptr.smoothP2.x += (ptr.p2.x - ptr.smoothP2.x) * 0.34;
-        ptr.smoothP2.y += (ptr.p2.y - ptr.smoothP2.y) * 0.34;
+        const forceEase = 1 - Math.pow(1 - CONFIG.SKIN.ELASTICITY * 1.5, frameScale);
+        const fingerEase = 1 - Math.pow(1 - 0.34, frameScale);
+        ptr.squeezeForce += (ptr.rawForce - ptr.squeezeForce) * forceEase;
+        ptr.smoothP1.x += (ptr.p1.x - ptr.smoothP1.x) * fingerEase;
+        ptr.smoothP1.y += (ptr.p1.y - ptr.smoothP1.y) * fingerEase;
+        ptr.smoothP2.x += (ptr.p2.x - ptr.smoothP2.x) * fingerEase;
+        ptr.smoothP2.y += (ptr.p2.y - ptr.smoothP2.y) * fingerEase;
       } else {
-        ptr.squeezeForce *= (1 - Math.min(0.92, dt * 11));
+        ptr.squeezeForce *= Math.pow(1 - 11 / 60, frameScale);
         if (ptr.squeezeForce < 0.005) ptr.squeezeForce = 0;
       }
 
@@ -4539,7 +4586,8 @@
         if (!isBeingSqueezed && p.state === P_STATE.INTACT) {
           p.pressure = Math.max(0, p.pressure - p.cfg.decayRate * dt);
         }
-        p.swellVisual += (p.pressure - p.swellVisual) * CONFIG.SKIN.ELASTICITY;
+        p.swellVisual += (p.pressure - p.swellVisual) * (1 - Math.pow(1 - CONFIG.SKIN.ELASTICITY, frameScale));
+        if (Math.abs(p.pressure - p.swellVisual) < 0.0001) p.swellVisual = p.pressure;
 
         if (p.state === P_STATE.RUPTURED) {
           p.ruptureTimer -= dt;
@@ -4558,17 +4606,20 @@
       for (let i = state.steamPuffs.length - 1; i >= 0; i--) {
         const sp = state.steamPuffs[i];
         sp.life -= dt;
-        sp.x += sp.vx * dt;
-        sp.y += sp.vy * dt;
-        sp.r += 16 * dt;
+        if (!reducedMotion) {
+          sp.x += sp.vx * dt;
+          sp.y += sp.vy * dt;
+          sp.r += 16 * dt;
+        }
         if (sp.life <= 0) state.steamPuffs.splice(i, 1);
       }
 
       for (let i = state.flyingParticles.length - 1; i >= 0; i--) {
         const fp = state.flyingParticles[i];
         fp.flightTime += dt;
-        fp.vx *= CONFIG.PARTICLES.DRAG;
-        fp.vy = fp.vy * CONFIG.PARTICLES.DRAG + CONFIG.PARTICLES.GRAVITY * dt;
+        const drag = Math.pow(CONFIG.PARTICLES.DRAG, frameScale);
+        fp.vx *= drag;
+        fp.vy = fp.vy * drag + CONFIG.PARTICLES.GRAVITY * dt;
         fp.x += fp.vx * dt;
         fp.y += fp.vy * dt;
 
@@ -4605,8 +4656,8 @@
       for (let i = state.floatingTexts.length - 1; i >= 0; i--) {
         const ft = state.floatingTexts[i];
         ft.life -= dt;
-        ft.y += ft.vy * dt;
-        ft.vy *= 0.94;
+        if (!reducedMotion) ft.y += ft.vy * dt;
+        ft.vy *= Math.pow(0.94, frameScale);
         if (ft.life <= 0) state.floatingTexts.splice(i, 1);
       }
     }
@@ -5262,6 +5313,11 @@
 
     function renderIceMaskWave(w, h) {
       const p = state.iceWaveProgress;
+      if (motionPreference?.matches) {
+        ctx.fillStyle = `rgba(196, 219, 196, ${0.15 * Math.sin(p * Math.PI)})`;
+        ctx.fillRect(0, 0, w, h);
+        return;
+      }
       const maxR = Math.hypot(w, h);
       const curR = p * maxR;
       ctx.save();
@@ -6345,12 +6401,8 @@
         `;
         card.addEventListener('click', () => {
           const resumeCurrent = idx === state.clientIndex % CLIENTS.length && !state.settled;
-          closeStudioModal(clinicModalEl);
-          if (resumeCurrent) return;
-          state.clientIndex = idx;
-          state.targetDensity = 0;
-          generateLevel(0);
-          selectTool('steam');
+          if (resumeCurrent) { closeStudioModal(clinicModalEl); return; }
+          requestTreatmentChange('client', idx, 0);
         });
         clientListEl.appendChild(card);
       });
@@ -6456,6 +6508,7 @@
     }
 
     function selectTool(toolName) {
+      requestSceneFrame();
       if (state.iceBrushingMode && toolName !== 'ice_brush') {
         state.iceBrushingMode = false;
       }
@@ -6498,9 +6551,65 @@
       updateKeyboardCareStatus();
     }
 
+    function syncDensityControls() {
+      document.querySelectorAll('.preset-btn').forEach(button => {
+        const selected = Number(button.dataset.density) === state.targetDensity;
+        button.classList.toggle('active', selected);
+        button.setAttribute('aria-pressed', String(selected));
+      });
+    }
+
+    function hasUnfinishedCareProgress() {
+      return !state.settled && (state.score > 0 || state.damage > 0
+        || state.pimples.some(p => p.steamed > 0.1 || p.pierced || p.state !== P_STATE.INTACT));
+    }
+
+    function performTreatmentChange(change) {
+      // Recheck at the final action: another page may have taken over or
+      // replaced this run while its confirmation was open.
+      if (!change || !ensureCareControl() || change.runId !== state.runId) return false;
+      if (!Number.isInteger(change.clientIndex) || !CLIENTS[change.clientIndex]) return false;
+      pendingTreatmentChange = null;
+      document.getElementById('reset-modal').classList.remove('open');
+      clinicModalEl.classList.remove('open');
+      state.paused = false;
+      state.clientIndex = change.clientIndex;
+      sound.unlock();
+      generateLevel(change.density);
+      selectTool('steam');
+      return true;
+    }
+
+    function requestTreatmentChange(kind, clientIndex = state.clientIndex, density = state.targetDensity) {
+      if (!ensureCareControl()) return;
+      const change = { kind, clientIndex, density, runId: state.runId,
+        returnToClinic: clinicModalEl.classList.contains('open') };
+      if (!hasUnfinishedCareProgress()) { performTreatmentChange(change); return; }
+      state.paused = true;
+      releasePointer();
+      pendingTreatmentChange = change;
+      clinicModalEl.classList.remove('open');
+      const switching = kind === 'client';
+      document.getElementById('reset-title').textContent = switching ? `接待${CLIENTS[clientIndex].name}？` : '重新开始这次护理？';
+      document.getElementById('reset-description').textContent = switching
+        ? `${currentClient().name}的本次护理还没有完成。接待新顾客后，这次未完成的进度会舍弃；已获得的收入、器械和完成记录会保留。`
+        : '本次清理进度会重新开始。已获得的收入、器械和最高得分会保留。';
+      document.getElementById('btn-cancel-reset').textContent = change.returnToClinic ? '返回接诊台' : '继续当前护理';
+      document.getElementById('btn-confirm-reset').textContent = switching ? `放弃当前进度，接待${CLIENTS[clientIndex].name}` : '重新开始';
+      document.getElementById('reset-modal').classList.add('open');
+    }
+
     function closeStudioModal(modal) {
       if (modal.id === 'storage-gate-modal' || !careControl.owned) return;
       modal.classList.remove('open');
+      if (modal.id === 'reset-modal') {
+        const returnToClinic = pendingTreatmentChange?.returnToClinic;
+        pendingTreatmentChange = null;
+        if (returnToClinic) {
+          renderClinicModalContents();
+          clinicModalEl.classList.add('open');
+        }
+      }
       if (modal === clinicModalEl && state.settled) resultModalEl.classList.add('open');
       state.paused = Boolean(document.querySelector('.modal-backdrop.open'));
       releasePointer();
@@ -6594,29 +6703,36 @@
       });
 
       const styleBtn = document.getElementById('btn-style-mode');
-      const styleLabel = document.getElementById('style-mode-label');
+      syncViewPreferenceControls();
       styleBtn.addEventListener('click', () => {
-        state.styleMode = state.styleMode === 'realistic' ? 'creamy' : 'realistic';
-        const isCreamy = state.styleMode === 'creamy';
-        styleLabel.textContent = isCreamy ? '柔和肌理' : '自然肌理';
-        styleBtn.setAttribute('aria-pressed', String(isCreamy));
-        styleBtn.classList.toggle('active-mode', isCreamy);
-        renderSkinTexture();
+        const styleMode = state.styleMode === 'realistic' ? 'creamy' : 'realistic';
+        rememberViewPreference(styleMode);
+        applyViewPreference(styleMode);
+      });
+      window.addEventListener('storage', event => {
+        if (event.key !== VIEW_PREFERENCE_KEY && event.key !== null) return;
+        // Read the latest value instead of applying an out-of-order notification.
+        preferredStyleMode = readViewPreference() || 'realistic';
+        applyViewPreference(preferredStyleMode);
       });
 
       const soundBtn = document.getElementById('btn-sound');
       const soundIcon = document.getElementById('sound-icon');
-      soundBtn.addEventListener('click', () => {
-        sound.muted = !sound.muted;
+      const renderSoundPreference = () => {
         soundBtn.setAttribute('aria-pressed', String(!sound.muted));
         soundBtn.setAttribute('aria-label', sound.muted ? '开启音效' : '关闭音效');
-        if (sound.muted) {
-          sound.setTension(0);
-          soundIcon.textContent = '音效关';
-        } else {
-          sound.unlock();
-          soundIcon.textContent = '音效开';
-        }
+        soundIcon.textContent = sound.muted ? '音效关' : '音效开';
+      };
+      renderSoundPreference();
+      soundBtn.addEventListener('click', () => {
+        sound.setMuted(!sound.muted);
+        if (!sound.muted) sound.unlock();
+        renderSoundPreference();
+      });
+      window.addEventListener('storage', event => {
+        if (event.key !== AUDIO_PREFERENCE_KEY && event.key !== null) return;
+        try { sound.setMuted(localStorage.getItem(AUDIO_PREFERENCE_KEY) === 'off', false); } catch (_) { return; }
+        renderSoundPreference();
       });
 
       document.getElementById('btn-help').addEventListener('click', () => {
@@ -6634,37 +6750,23 @@
       });
 
       const resetModal = document.getElementById('reset-modal');
-      const restartTreatment = () => {
-        resetModal.classList.remove('open');
-        state.paused = false;
-        sound.unlock();
-        generateLevel(state.targetDensity);
-        selectTool('steam');
-      };
-      document.getElementById('btn-reset').addEventListener('click', () => {
-        const hasProgress = state.score > 0 || state.damage > 0 || state.pimples.some(p => p.steamed > 0.1 || p.pierced || p.state !== P_STATE.INTACT);
-        if (!hasProgress) { restartTreatment(); return; }
-        releasePointer();
-        state.paused = true;
-        resetModal.classList.add('open');
+      document.getElementById('btn-reset').addEventListener('click', () => requestTreatmentChange('restart'));
+      document.getElementById('btn-confirm-reset').addEventListener('click', () => {
+        if (!resetModal.classList.contains('open')) return;
+        if (!performTreatmentChange(pendingTreatmentChange) && careControl.owned) closeStudioModal(resetModal);
       });
-      document.getElementById('btn-confirm-reset').addEventListener('click', restartTreatment);
       document.getElementById('btn-cancel-reset').addEventListener('click', () => closeStudioModal(resetModal));
       resetModal.addEventListener('click', event => { if (event.target === resetModal) closeStudioModal(resetModal); });
 
       document.querySelectorAll('.preset-btn').forEach((btn) => {
         btn.addEventListener('click', () => {
-          document.querySelectorAll('.preset-btn').forEach((b) => b.classList.remove('active'));
-          btn.classList.add('active');
           state.targetDensity = parseInt(btn.dataset.density, 10) || 0;
+          syncDensityControls();
         });
       });
 
       document.getElementById('btn-next-face').addEventListener('click', () => {
-        sound.unlock();
-        state.clientIndex = (state.clientIndex + 1) % CLIENTS.length;
-        generateLevel(state.targetDensity);
-        selectTool('steam');
+        requestTreatmentChange('next', (state.clientIndex + 1) % CLIENTS.length, state.targetDensity);
       });
     }
 
@@ -6732,24 +6834,69 @@
       // Also run at equal dimensions after session hydration.
       refreshComparisonSnapshots();
       if (state.pimples.length) updateHUD();
+      requestSceneFrame();
     }
 
     let rafId = null;
-    let lastTime = 0;
+    let lastTime = null;
+    let nextFrameTime = 0;
+    const FRAME_INTERVAL_MS = 1000 / 60;
+
+    function canRenderCare() {
+      return !document.hidden && careControl.owned && !state.paused && !state.settled;
+    }
+
+    function stopSceneFrames() {
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      rafId = null;
+      lastTime = null;
+      nextFrameTime = 0;
+    }
+
+    function requestSceneFrame() {
+      if (!canRenderCare()) { stopSceneFrames(); return; }
+      if (rafId === null) rafId = requestAnimationFrame(mainLoop);
+    }
+
+    function sceneHasMotion() {
+      if (state.pointer.active || state.keyboardCare.active || state.iceFinishing
+        || state.cameraShake > 0 || state.trayPulse > 0 || state.pointer.squeezeForce > 0) return true;
+      if ([state.flyingTrophies, state.flyingParticles, state.steamPuffs, state.dewDrops,
+        state.lensSplatters, state.floatingTexts].some(items => items.length)) return true;
+      return state.pimples.some(p => p.state === P_STATE.RUPTURED || p.state === P_STATE.HEALING
+        || (p.state === P_STATE.INTACT && p.pressure > 0) || p.swellVisual !== p.pressure);
+    }
 
     function mainLoop(timestamp) {
-      if (!lastTime) lastTime = timestamp;
-      const dt = Math.min(0.05, Math.max(0.001, (timestamp - lastTime) / 1000));
-      lastTime = timestamp;
-
-      // Keep the last frame while a modal is open or the tab is hidden.
-      // Active scenes redraw on the next frame after resume, resize or a tool/style change.
-      if (!document.hidden && careControl.owned && !state.paused && !state.settled) {
-        updateSimulation(dt);
-        renderScene(false);
+      rafId = null;
+      if (!canRenderCare()) { stopSceneFrames(); return; }
+      // Keep high-refresh displays responsive without doing duplicate Canvas work.
+      if (lastTime !== null && timestamp + 0.1 < nextFrameTime) {
+        rafId = requestAnimationFrame(mainLoop);
+        return;
       }
+      const dt = lastTime === null ? 1 / 60 : Math.min(0.05, Math.max(0.001, (timestamp - lastTime) / 1000));
+      lastTime = timestamp;
+      nextFrameTime = Math.max(nextFrameTime + FRAME_INTERVAL_MS, timestamp);
+      if (nextFrameTime <= timestamp) nextFrameTime = timestamp + FRAME_INTERVAL_MS;
+      updateSimulation(dt);
+      renderScene(false);
 
-      rafId = requestAnimationFrame(mainLoop);
+      if (canRenderCare() && sceneHasMotion()) rafId = requestAnimationFrame(mainLoop);
+      else stopSceneFrames();
+    }
+
+    function bindSceneScheduling() {
+      // Run after the gameplay handlers, so a click that closes a modal wakes
+      // the updated scene, and a click that opens one cancels its pending frame.
+      for (const type of ['mousedown', 'mousemove', 'mouseup', 'touchstart', 'touchmove', 'touchend', 'touchcancel', 'keydown', 'keyup', 'click', 'focusin', 'focusout']) {
+        window.addEventListener(type, requestSceneFrame, { passive: true });
+      }
+      document.addEventListener('visibilitychange', requestSceneFrame);
+      window.addEventListener('pagehide', stopSceneFrames);
+      window.addEventListener('pageshow', requestSceneFrame);
+      window.addEventListener('blur', requestSceneFrame);
+      motionPreference?.addEventListener?.('change', requestSceneFrame);
     }
 
     window.addEventListener('load', () => {
@@ -6758,6 +6905,7 @@
       bindCanvasInteractions();
       bindKeyboardCare();
       bindCareStorage();
+      bindSceneScheduling();
       resizeCanvas();
       careControlReady = startCareStorage();
 
@@ -6786,8 +6934,7 @@
         }
       });
 
-      if (rafId) cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(mainLoop);
+      requestSceneFrame();
     });
   </script>
 </body>

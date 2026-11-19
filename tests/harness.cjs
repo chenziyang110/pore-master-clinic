@@ -178,7 +178,7 @@ async function createGame(options = {}) {
   const html = fs.readFileSync(input, 'utf8');
   let dimensions = { width: options.width || 390, height: options.height || 550, dpr: options.dpr || 1 };
   const pixels = new WeakMap(), raf = new Map(), runtimeErrors = [];
-  let nextRAF = 1, now = 1000, disconnectStorage = () => {};
+  let nextRAF = 1, now = 1000, inputTime = 1000, disconnectStorage = () => {};
   const rect = (width, height) => ({x:0,y:0,left:0,top:0,right:width,bottom:height,width,height,toJSON(){return {...this};}});
   const virtualConsole = new VirtualConsole();
   virtualConsole.on('jsdomError', error => { if (error.type !== 'css-parsing') runtimeErrors.push(error.stack || String(error)); });
@@ -239,8 +239,9 @@ async function createGame(options = {}) {
   if(d.readyState!=='complete')await new Promise(resolve=>w.addEventListener('load',resolve,{once:true}));
   await evaluate('typeof careControlReady === "undefined" ? undefined : careControlReady');
   const frame=(count=1,dt=1000/60)=>{for(let i=0;i<count;i++){now+=dt;const callbacks=[...raf.values()];raf.clear();for(const callback of callbacks)callback(now);}};
-  const mouse=(target,type,x,y)=>{if(typeof target==='string')target=d.getElementById(target);target.dispatchEvent(new w.MouseEvent(type,{bubbles:true,button:0,buttons:type==='mouseup'?0:1,clientX:x,clientY:y}));};
-  const touch=(type,touches,changedTouches=touches)=>{const event=new w.Event(type,{bubbles:true,cancelable:true});Object.defineProperties(event,{touches:{value:touches},changedTouches:{value:changedTouches}});d.getElementById('skin-canvas').dispatchEvent(event);};
+  const timestampInput=(event, timestamp)=>{inputTime=timestamp ?? Math.max(now,inputTime+1000/60);Object.defineProperty(event,'timeStamp',{value:inputTime});return event;};
+  const mouse=(target,type,x,y,timestamp)=>{if(typeof target==='string')target=d.getElementById(target);target.dispatchEvent(timestampInput(new w.MouseEvent(type,{bubbles:true,button:0,buttons:type==='mouseup'?0:1,clientX:x,clientY:y}),timestamp));};
+  const touch=(type,touches,changedTouches=touches,timestamp)=>{const event=timestampInput(new w.Event(type,{bubbles:true,cancelable:true}),timestamp);Object.defineProperties(event,{touches:{value:touches},changedTouches:{value:changedTouches}});d.getElementById('skin-canvas').dispatchEvent(event);};
   const click=id=>{const element=d.getElementById(id);if(!element)throw new Error('Missing #'+id);element.click();};
   const resize=(width,height,dpr=dimensions.dpr)=>{dimensions={width,height,dpr};w.dispatchEvent(new w.Event('resize'));};
   const storage=()=>Object.fromEntries(Array.from({length:w.localStorage.length},(_,i)=>{const key=w.localStorage.key(i);return [key,w.localStorage.getItem(key)];}));
