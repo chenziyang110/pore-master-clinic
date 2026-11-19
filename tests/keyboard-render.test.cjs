@@ -31,6 +31,8 @@ test('keyboard uses normal tool rules to clean a blackhead, whitehead and deep t
     const p=g.state('state.pimples.find(p=>p.type==='+JSON.stringify(type)+')');
     care(g,p);
     assert.ok(p.state>=4, type+' should be cleaned by held tool input');
+    assert.equal(g.d.getElementById('btn-care-next').hidden,true,'a cleaned keyboard target does not suggest a tool for another tutorial target');
+    assert.match(g.d.getElementById('hint-banner').textContent,/这处已清理/);
   }
   assert.equal(g.state('state.controlMode'),'keyboard');
   assert.equal(g.state('state.pointer.active'),false);

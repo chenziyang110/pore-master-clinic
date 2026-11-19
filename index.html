@@ -424,14 +424,14 @@
       .treatment-heading h2 { font-size: 14px; }
       #btn-style-mode { min-height: 25px; }
       #viewport-wrap { min-height: 270px; }
-      .tool-section { padding-top: 6px; padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px)); }
+      .tool-section { padding-top: 4px; padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px)); }
       .tool-section-head { min-height: 19px; margin-bottom: 1px; }
       .next-tool-btn { min-height: 22px; }
-      .hint-banner { min-height: 32px; margin-bottom: 4px; font-size: 10.5px; line-height: 1.5; }
+      .hint-banner { min-height: 30px; margin-bottom: 4px; font-size: 10.5px; line-height: 1.5; }
       .tool-btn { min-height: 54px; gap: 2px; padding-block: 5px; }
       .tool-icon, .tool-icon .icon { width: 22px; height: 22px; }
       .tool-name { font-size: 10.5px; }
-      #practice-guide { margin-block: 3px 0; font-size: 10px; line-height: 18px; }
+      #practice-guide { margin-block: 1px 0; font-size: 10px; line-height: 18px; }
     }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
   </style>
@@ -2607,7 +2607,10 @@
       updateText(document.getElementById('canvas-status'), status);
       if (state.currentTool === 'ice_brush') updateText(document.getElementById('active-tool-name'), `舒缓冰膜 · 已覆盖 ${iced} / ${total}`);
 
-      const nextTool = remaining > 0 ? getRecommendedTool() : '';
+      const selected = isKeyboardCareFocused() ? currentKeyboardTarget() : null;
+      const nextTool = remaining === 0 ? '' : !selected ? getRecommendedTool()
+        : selected.kind === 'pimple' ? (selected.item.state < P_STATE.HEALING ? getRecommendedTool(selected.item) : '')
+        : selected.kind === 'splatter' || !['worm', 'core_seed'].includes(selected.item.kind) ? 'swab' : 'tweezers';
       const nextButton = document.getElementById('btn-care-next');
       nextButton.hidden = !nextTool || nextTool === state.currentTool || state.iceFinishing || state.settled;
       nextButton.dataset.tool = nextTool;
@@ -2618,6 +2621,7 @@
       updateText(document.getElementById('help-care-goal'), `${goal.title}：${goal.description} ${goal.progress}`);
       updatePressureFeedback();
       updatePracticeGuide();
+      updateKeyboardCareStatus();
     }
 
     function startPracticeGuide(force = false) {
@@ -2663,7 +2667,12 @@
       const names = { blackhead: '黑头', whitehead: '白头', cyst: '深层' };
       const instructions = { steam: '按住圈内热敷', needle: '对准浅色尖端松手', squeeze: '从圈外向内轻推', tweezers: '夹住中心，慢慢拉出', swab: '擦净圈内残留', ice_brush: '涂抹冰膜收尾' };
       updateText(document.getElementById('practice-step'), `第 ${guide.step + 1} / ${guide.ids.length} 处`);
-      updateText(document.getElementById('practice-label'), `${names[p.type]} · ${instructions[tool] || '继续轻缓操作'}`);
+      const keyboardFocused = isKeyboardCareFocused();
+      const instruction = keyboardFocused
+        ? currentKeyboardTarget()?.item === p ? '按住空格或回车护理' : '用方向键选到练习目标'
+        : instructions[tool] || '继续轻缓操作';
+      updateText(document.getElementById('practice-label'), `${names[p.type]} · ${instruction}`);
+      if (keyboardFocused) return;
       const next = document.getElementById('btn-care-next');
       const labels = { steam: '先热敷', needle: '用粉刺针', squeeze: '轻柔挤压', tweezers: '换细胞夹', swab: '换棉签' };
       next.dataset.tool = tool;
@@ -2673,7 +2682,7 @@
 
     function drawPracticeCue() {
       const p = getPracticeTarget();
-      if (!p || state.settled || state.iceFinishing || p.state >= P_STATE.HEALING) return;
+      if (!p || state.settled || state.iceFinishing || p.state >= P_STATE.HEALING || isKeyboardCareFocused()) return;
       const radius = Math.max(18, p.radius + 9);
       const action = getPracticeAction(p);
       ctx.save();
@@ -3440,16 +3449,31 @@
       return `${name} · ${status}`;
     }
 
+    function isKeyboardCareFocused() {
+      return state.keyboardCare.visible && document.activeElement === canvas && !state.paused && !state.settled;
+    }
+
     function updateKeyboardCareStatus() {
       const status = document.getElementById('keyboard-care-status');
       const target = currentKeyboardTarget();
       const targets = keyboardCareTargets();
-      const visible = state.keyboardCare.visible && document.activeElement === canvas && !state.settled;
+      const visible = isKeyboardCareFocused();
       status.hidden = !visible;
-      if (!visible) return;
+      if (!visible) { state.keyboardCare.hintKey = ''; return; }
       const text = `键盘辅助 · ${state.keyboardCare.index + 1}/${targets.length} · ${keyboardTargetDescription(target)}`;
       updateText(status, text);
       canvas.setAttribute('aria-label', `护理画布。${text}`);
+      const hintKey = `${text}|${state.currentTool}`;
+      if (state.keyboardCare.hintKey !== hintKey) {
+        state.keyboardCare.hintKey = hintKey;
+        const cleaned = target?.kind === 'pimple' && target.item.state >= P_STATE.HEALING;
+        const allCleaned = state.pimples.every(p => p.state >= P_STATE.HEALING);
+        const message = cleaned && state.currentTool !== 'ice_brush'
+          ? allCleaned ? '清理已完成。按 6 进入冰膜，再逐处按住空格涂抹。' : '这处已清理。用方向键选择下一处，继续护理。'
+          : state.currentTool === 'needle' ? '按住空格或回车对准当前目标，松开破口；Esc 取消。'
+          : '按住空格或回车护理当前目标，松开停手；方向键换一处。';
+        setHint(message, 'normal');
+      }
     }
 
     function selectKeyboardTarget(step) {
@@ -3461,7 +3485,7 @@
       care.index = (care.index + step + targets.length) % targets.length;
       care.target = targets[care.index].item;
       care.visible = true;
-      updateKeyboardCareStatus();
+      updateCareGuidance();
     }
 
     function startKeyboardCare(key) {
@@ -3612,12 +3636,12 @@
     function bindKeyboardCare() {
       canvas.addEventListener('focus', () => {
         state.keyboardCare.visible = canvas.matches(':focus-visible');
-        updateKeyboardCareStatus();
+        updateCareGuidance();
       });
       canvas.addEventListener('blur', () => {
         finishKeyboardCare(true);
         state.keyboardCare.visible = false;
-        updateKeyboardCareStatus();
+        updateCareGuidance();
       });
       canvas.addEventListener('keydown', event => {
         if (event.altKey || event.ctrlKey || event.metaKey || state.paused || state.settled || document.querySelector('.modal-backdrop.open')) return;
