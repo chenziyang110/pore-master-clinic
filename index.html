@@ -1,0 +1,5676 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>妙手净肤馆 · 精工微距清痘护理模拟器</title>
+  <style>
+    :root {
+      --bg-dark: #131015;
+      --panel-bg: rgba(26, 21, 29, 0.92);
+      --panel-border: rgba(255, 236, 230, 0.14);
+      --text-main: #fdf6f3;
+      --text-sub: #c6b3ad;
+      --accent-rose: #ff6b8b;
+      --accent-gold: #ffca63;
+      --accent-mint: #4cd9a4;
+      --accent-ice: #6be2ff;
+      --accent-danger: #ff4d5e;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
+      touch-action: none;
+      background: radial-gradient(circle at 50% 22%, #2a2028 0%, #0e0b10 82%);
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #app-shell {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      max-width: 468px;
+      max-height: 930px;
+      display: flex;
+      flex-direction: column;
+      background: #1a1418;
+      overflow: hidden;
+      box-shadow: 0 24px 72px rgba(0, 0, 0, 0.74), 0 0 0 1px rgba(255, 255, 255, 0.08);
+    }
+
+    @media (min-width: 500px) {
+      #app-shell {
+        height: min(95vh, 900px);
+        border-radius: 28px;
+      }
+    }
+
+    /* 顶部诊所状态栏 HUD */
+    .hud-header {
+      position: relative;
+      z-index: 20;
+      padding: 9px 12px 8px;
+      background: linear-gradient(180deg, rgba(21, 17, 24, 0.97) 0%, rgba(21, 17, 24, 0.86) 100%);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--panel-border);
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .hud-top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .brand-title {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      font-weight: 800;
+      color: #fff3ee;
+      white-space: nowrap;
+    }
+
+    .coin-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(255, 202, 99, 0.16);
+      border: 1px solid rgba(255, 202, 99, 0.42);
+      color: #ffd980;
+      font-size: 11px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-wrap: nowrap;
+    }
+
+    .icon-btn {
+      appearance: none;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.07);
+      color: var(--text-main);
+      height: 28px;
+      padding: 0 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      white-space: nowrap;
+      transition: transform 0.14s ease, background 0.18s ease, border-color 0.18s ease;
+    }
+
+    .icon-btn:hover {
+      background: rgba(255, 255, 255, 0.14);
+    }
+
+    .icon-btn:active {
+      transform: scale(0.94);
+    }
+
+    .icon-btn.active-mode {
+      border-color: rgba(255, 202, 99, 0.55);
+      background: rgba(255, 202, 99, 0.16);
+      color: #ffe29e;
+    }
+
+    .icon-btn.highlight-plan {
+      border-color: rgba(107, 226, 255, 0.5);
+      background: rgba(107, 226, 255, 0.14);
+      color: #c7f4ff;
+    }
+
+    /* 顾客实时问诊与微表情状态条 */
+    .patient-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 5px 9px;
+    }
+
+    .patient-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .patient-avatar-wrap {
+      position: relative;
+      width: 30px;
+      height: 30px;
+      flex-shrink: 0;
+    }
+
+    .patient-avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #ff9bb3, #ffd275);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      transition: transform 0.18s ease;
+    }
+
+    .mood-badge {
+      position: absolute;
+      right: -4px;
+      bottom: -3px;
+      font-size: 11px;
+      line-height: 1;
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.6));
+    }
+
+    .patient-text-wrap {
+      min-width: 0;
+    }
+
+    .patient-name-line {
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff5f0;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .patient-quote {
+      font-size: 10.5px;
+      color: var(--text-sub);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: color 0.2s ease;
+    }
+
+    .tray-trigger-box {
+      text-align: right;
+      flex-shrink: 0;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      transition: background 0.16s ease, border-color 0.16s ease;
+    }
+
+    .tray-trigger-box:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 226, 158, 0.35);
+    }
+
+    .hud-stats-row {
+      display: grid;
+      grid-template-columns: 0.95fr 0.95fr 1.25fr;
+      gap: 7px;
+      align-items: center;
+    }
+
+    .stat-card {
+      background: rgba(255, 255, 255, 0.045);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 11px;
+      padding: 4px 8px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .stat-label {
+      font-size: 10px;
+      color: var(--text-sub);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .stat-value {
+      font-size: 14px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      color: #ffffff;
+      margin-top: 1px;
+    }
+
+    .stat-value.gold {
+      color: var(--accent-gold);
+    }
+
+    .combo-pill {
+      font-size: 10px;
+      font-weight: 700;
+      color: #ff9eb5;
+      opacity: 0;
+      transform: scale(0.85);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .combo-pill.show {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .damage-bar-track {
+      width: 100%;
+      height: 6px;
+      background: rgba(0, 0, 0, 0.44);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 3px;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    .damage-bar-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #4cd9a4 0%, #ffca63 60%, #ff4d5e 100%);
+      transition: width 0.18s ease-out;
+    }
+
+    /* 主画布视窗 */
+    #viewport-wrap {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      overflow: hidden;
+      touch-action: none;
+      cursor: grab;
+    }
+
+    #skin-canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
+
+    .hint-banner {
+      position: absolute;
+      top: 9px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 15;
+      width: calc(100% - 22px);
+      max-width: 416px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(20, 16, 22, 0.82);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.13);
+      color: #f8e9e4;
+      font-size: 11.5px;
+      text-align: center;
+      line-height: 1.35;
+      pointer-events: none;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+    }
+
+    .hint-banner.warn {
+      border-color: rgba(255, 92, 112, 0.65);
+      color: #ffd0d6;
+      background: rgba(48, 14, 22, 0.88);
+    }
+
+    .hint-banner.good {
+      border-color: rgba(76, 217, 164, 0.6);
+      color: #d4ffee;
+    }
+
+    /* 冰敷修护浮动操作组 */
+    .ice-cta-group {
+      position: absolute;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 18;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .ice-finish-cta {
+      appearance: none;
+      border: 1.5px solid rgba(107, 226, 255, 0.78);
+      background: linear-gradient(135deg, rgba(20, 84, 114, 0.94), rgba(34, 142, 174, 0.94));
+      color: #ebfcff;
+      padding: 9px 16px;
+      border-radius: 999px;
+      font-size: 12.5px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(56, 198, 238, 0.44);
+      display: none;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+      animation: floatPulse 1.6s infinite ease-in-out;
+    }
+
+    .ice-finish-cta.show {
+      display: inline-flex;
+    }
+
+    .ice-quick-btn {
+      appearance: none;
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      background: rgba(22, 28, 36, 0.88);
+      color: #d8f6ff;
+      padding: 9px 12px;
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+      display: none;
+      white-space: nowrap;
+    }
+
+    .ice-quick-btn.show {
+      display: inline-flex;
+    }
+
+    @keyframes floatPulse {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-3px); }
+    }
+
+    .macro-frame-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 10;
+      box-shadow: inset 0 0 46px rgba(18, 9, 11, 0.45);
+    }
+
+    .macro-reticle {
+      position: absolute;
+      bottom: 8px;
+      left: 12px;
+      font-size: 10px;
+      letter-spacing: 0.4px;
+      color: rgba(255, 240, 235, 0.52);
+      pointer-events: none;
+      z-index: 12;
+    }
+
+    /* 五步专业清痘工具栏 */
+    .toolbar-dock {
+      position: relative;
+      z-index: 20;
+      padding: 8px 8px calc(10px + env(safe-area-inset-bottom, 0px));
+      background: linear-gradient(0deg, rgba(18, 14, 20, 0.98) 0%, rgba(27, 21, 30, 0.92) 100%);
+      border-top: 1px solid var(--panel-border);
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+    }
+
+    .tool-btn {
+      position: relative;
+      appearance: none;
+      border: 1.5px solid rgba(255, 255, 255, 0.10);
+      background: rgba(255, 255, 255, 0.045);
+      color: var(--text-sub);
+      border-radius: 14px;
+      padding: 7px 3px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      transition: all 0.16s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .tool-btn:hover {
+      background: rgba(255, 255, 255, 0.09);
+      color: #fff;
+    }
+
+    .tool-btn:active {
+      transform: scale(0.95);
+    }
+
+    .tool-btn.selected {
+      background: linear-gradient(180deg, rgba(255, 107, 139, 0.25) 0%, rgba(255, 107, 139, 0.1) 100%);
+      border-color: var(--accent-rose);
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(255, 107, 139, 0.22);
+      transform: translateY(-2px);
+    }
+
+    .tool-icon {
+      font-size: 18px;
+      line-height: 1.1;
+    }
+
+    .tool-name {
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .tool-desc {
+      font-size: 9px;
+      opacity: 0.72;
+      white-space: nowrap;
+    }
+
+    .tool-badge {
+      position: absolute;
+      top: 3px;
+      right: 4px;
+      min-width: 15px;
+      height: 15px;
+      padding: 0 4px;
+      border-radius: 999px;
+      font-size: 9px;
+      font-weight: 800;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      color: #1b1216;
+      background: var(--accent-gold);
+    }
+
+    .tool-badge.show {
+      display: inline-flex;
+      animation: pulseBadge 1.5s infinite ease-in-out;
+    }
+
+    .tool-badge.mint {
+      background: var(--accent-mint);
+    }
+
+    .tool-badge.ice {
+      background: var(--accent-ice);
+    }
+
+    @keyframes pulseBadge {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.14); }
+    }
+
+    /* 模态弹窗通用样式 */
+    .modal-backdrop {
+      position: absolute;
+      inset: 0;
+      z-index: 50;
+      background: rgba(11, 8, 13, 0.82);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 15px;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+      animation: fadeIn 0.22s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .modal-card {
+      width: 100%;
+      max-width: 404px;
+      max-height: 88vh;
+      overflow-y: auto;
+      background: linear-gradient(180deg, #29212c 0%, #1a151d 100%);
+      border: 1px solid rgba(255, 232, 224, 0.18);
+      border-radius: 22px;
+      padding: 16px 15px 15px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.68);
+      color: var(--text-main);
+    }
+
+    .modal-header {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .rank-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 50px;
+      height: 50px;
+      border-radius: 16px;
+      font-size: 25px;
+      font-weight: 900;
+      margin-bottom: 5px;
+      background: linear-gradient(135deg, #ffd875, #ff85a1);
+      color: #23141b;
+      box-shadow: 0 8px 24px rgba(255, 133, 161, 0.35);
+    }
+
+    .modal-title {
+      font-size: 16.5px;
+      font-weight: 800;
+      margin-bottom: 3px;
+    }
+
+    .modal-subtitle {
+      font-size: 11px;
+      color: var(--text-sub);
+    }
+
+    /* 结算面板核心爽点：可拖动护理前后对比视窗 (Before / After Slider) */
+    .ba-compare-wrap {
+      position: relative;
+      width: 100%;
+      height: 126px;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      margin-bottom: 10px;
+      touch-action: none;
+      cursor: ew-resize;
+      background: #22181c;
+    }
+
+    #compare-canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .ba-tag {
+      position: absolute;
+      top: 7px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 700;
+      background: rgba(15, 12, 18, 0.72);
+      color: #fff;
+      pointer-events: none;
+    }
+
+    .ba-tag.left { left: 8px; }
+    .ba-tag.right { right: 8px; color: #9effdf; }
+
+    .ba-hint {
+      position: absolute;
+      bottom: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 9.5px;
+      padding: 1px 8px;
+      border-radius: 999px;
+      background: rgba(15, 12, 18, 0.65);
+      color: #ffe8b8;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 7px;
+      margin: 9px 0;
+    }
+
+    .summary-item {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 7px 9px;
+      text-align: center;
+    }
+
+    .summary-item .label {
+      font-size: 10px;
+      color: var(--text-sub);
+    }
+
+    .summary-item .val {
+      font-size: 15px;
+      font-weight: 800;
+      margin-top: 2px;
+    }
+
+    .trophy-tray-box {
+      background: linear-gradient(135deg, rgba(188, 200, 214, 0.12), rgba(96, 108, 124, 0.16));
+      border: 1px solid rgba(210, 224, 240, 0.22);
+      border-radius: 13px;
+      padding: 8px 11px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+    }
+
+    .level-presets {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .preset-btn {
+      flex: 1;
+      appearance: none;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-sub);
+      padding: 6px 4px;
+      border-radius: 10px;
+      font-size: 10.5px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .preset-btn.active {
+      border-color: var(--accent-mint);
+      background: rgba(76, 217, 164, 0.16);
+      color: #dcfff2;
+    }
+
+    .primary-btn {
+      width: 100%;
+      appearance: none;
+      border: none;
+      border-radius: 13px;
+      padding: 11px 16px;
+      font-size: 14px;
+      font-weight: 800;
+      color: #231118;
+      background: linear-gradient(135deg, #ff9bb3 0%, #ffd275 100%);
+      cursor: pointer;
+      box-shadow: 0 8px 22px rgba(255, 138, 168, 0.32);
+    }
+
+    .secondary-btn {
+      width: 100%;
+      margin-top: 7px;
+      appearance: none;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 12px;
+      padding: 8.5px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.07);
+      cursor: pointer;
+    }
+
+    .client-list, .guide-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin: 10px 0 14px;
+    }
+
+    .client-card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      border-radius: 13px;
+      padding: 9px 11px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      cursor: pointer;
+      transition: border-color 0.16s ease, background 0.16s ease;
+    }
+
+    .client-card:hover {
+      background: rgba(255, 255, 255, 0.09);
+      border-color: rgba(255, 155, 179, 0.5);
+    }
+
+    .client-card.active-client {
+      border-color: var(--accent-gold);
+      background: rgba(255, 202, 99, 0.11);
+    }
+
+    .client-meta {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .client-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #fff5f0;
+      margin-bottom: 2px;
+    }
+
+    .client-desc {
+      font-size: 11px;
+      color: var(--text-sub);
+      line-height: 1.38;
+    }
+
+    .client-reward {
+      font-size: 11.5px;
+      font-weight: 800;
+      color: var(--accent-gold);
+      white-space: nowrap;
+    }
+
+    .upgrade-row {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 12px;
+      padding: 9px 11px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .buy-btn {
+      appearance: none;
+      border: none;
+      border-radius: 9px;
+      padding: 6px 10px;
+      font-size: 11px;
+      font-weight: 800;
+      background: var(--accent-gold);
+      color: #23141a;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .buy-btn:disabled {
+      background: rgba(255, 255, 255, 0.12);
+      color: rgba(255, 255, 255, 0.45);
+      cursor: default;
+    }
+
+    .guide-row {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 9px 11px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 12px;
+      line-height: 1.5;
+      color: #eadad5;
+    }
+
+    .guide-row strong {
+      color: #ffd584;
+    }
+
+    /* 25X 战利品微距检视盘画布 */
+    #tray-zoom-canvas {
+      display: block;
+      width: 100%;
+      height: 190px;
+      border-radius: 14px;
+      background: radial-gradient(circle at 45% 38%, #dce4ec 0%, #8f9ead 100%);
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      margin: 10px 0 12px;
+    }
+  </style>
+</head>
+<body>
+  <div id="app-shell">
+    <!-- 顶部状态栏 -->
+    <header class="hud-header">
+      <div class="hud-top-row">
+        <div class="brand-title">
+          <span>🏥 妙手净肤馆</span>
+          <span id="coin-val" class="coin-pill">¥ 0</span>
+        </div>
+        <div class="top-actions">
+          <button id="btn-clinic" class="icon-btn" type="button" title="接诊大厅与器械升级">
+            <span>📋 接诊/升级</span>
+          </button>
+          <button id="btn-plan" class="icon-btn highlight-plan" type="button" title="完整玩法策划案">
+            <span>📐 玩法企划</span>
+          </button>
+          <button id="btn-style-mode" class="icon-btn" type="button" title="切换写实微距肌 / 奶油Q弹肌">
+            <span id="style-mode-label">🔬 写实肌</span>
+          </button>
+          <button id="btn-sound" class="icon-btn" type="button" title="音效开关">
+            <span id="sound-icon">🔊</span>
+          </button>
+          <button id="btn-help" class="icon-btn" type="button" title="操作指南">
+            <span>❓</span>
+          </button>
+          <button id="btn-reset" class="icon-btn" type="button" title="刷新当前关卡">
+            <span>🔄 换脸</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 当前顾客情绪与战利品托盘入口 -->
+      <div class="patient-bar">
+        <div class="patient-info">
+          <div class="patient-avatar-wrap">
+            <div id="patient-avatar" class="patient-avatar">👨‍💻</div>
+            <span id="patient-mood" class="mood-badge">🙂</span>
+          </div>
+          <div class="patient-text-wrap">
+            <div class="patient-name-line">
+              <span id="patient-name">程序员·阿哲</span>
+              <span id="patient-steam-tag" style="font-size:10px;color:#6be2ff;display:none;">♨️毛孔已舒张</span>
+            </div>
+            <div id="patient-quote" class="patient-quote">“连熬两周夜，鼻头全是陈年黑头，轻点挤拜托了…”</div>
+          </div>
+        </div>
+        <div id="btn-tray-inspect" class="tray-trigger-box" title="点击放大检视拔出的黑头战利品弯盘">
+          <div style="font-size:10px;color:#c6b3ad;">🔍 战利品弯盘</div>
+          <div id="trophy-count" style="font-size:12px;font-weight:800;color:#ffe29e;">🥢 0 颗脂栓</div>
+        </div>
+      </div>
+
+      <div class="hud-stats-row">
+        <div class="stat-card">
+          <div class="stat-label">
+            <span>解压爽感分</span>
+            <span id="combo-tag" class="combo-pill">x2</span>
+          </div>
+          <div id="score-val" class="stat-value gold">0</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label">
+            <span>净肤进度</span>
+            <span id="best-score-label">最高 0</span>
+          </div>
+          <div id="progress-val" class="stat-value">0 / 0</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label">
+            <span>疼痛/损伤度</span>
+            <span id="damage-val">0%</span>
+          </div>
+          <div class="damage-bar-track">
+            <div id="damage-fill" class="damage-bar-fill"></div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- 核心微距皮肤画布 -->
+    <main id="viewport-wrap">
+      <div id="hint-banner" class="hint-banner">
+        ♨️ 先用【热喷】蒸出温润水珠软化毛孔，或挤压后用【细胞夹】连根慢拔！
+      </div>
+      <canvas id="skin-canvas"></canvas>
+      <div class="ice-cta-group">
+        <button id="btn-ice-finish" class="ice-finish-cta" type="button">
+          🧊 涂抹冰感积雪草冻膜 · 收毛孔
+        </button>
+        <button id="btn-ice-quick" class="ice-quick-btn" type="button">
+          ⚡ 一键厚敷结算
+        </button>
+      </div>
+      <div class="macro-frame-overlay"></div>
+      <div id="macro-reticle" class="macro-reticle">部位：鼻翼沟与内侧脸颊 · 真实微距</div>
+    </main>
+
+    <!-- 五步沉浸式专业护理工具栏 -->
+    <nav class="toolbar-dock" aria-label="专业清痘五步工具栏">
+      <button id="tool-steam" class="tool-btn" type="button" data-tool="steam">
+        <span id="badge-steam" class="tool-badge ice">荐</span>
+        <span class="tool-icon">♨️</span>
+        <span class="tool-name">热喷软化</span>
+        <span class="tool-desc">凝露开毛孔</span>
+      </button>
+
+      <button id="tool-needle" class="tool-btn" type="button" data-tool="needle">
+        <span id="badge-needle" class="tool-badge">0</span>
+        <span class="tool-icon">📍</span>
+        <span class="tool-name">粉刺针</span>
+        <span class="tool-desc">微距瞄准挑破</span>
+      </button>
+
+      <button id="tool-squeeze" class="tool-btn selected" type="button" data-tool="squeeze">
+        <span class="tool-icon">🤏</span>
+        <span class="tool-name">手指挤压</span>
+        <span class="tool-desc">兜底推脂栓</span>
+      </button>
+
+      <button id="tool-tweezers" class="tool-btn" type="button" data-tool="tweezers">
+        <span id="badge-tweezers" class="tool-badge mint">0</span>
+        <span class="tool-icon">🥢</span>
+        <span class="tool-name">细胞夹</span>
+        <span class="tool-desc">微距慢拔整栓</span>
+      </button>
+
+      <button id="tool-swab" class="tool-btn" type="button" data-tool="swab">
+        <span id="badge-swab" class="tool-badge mint">0</span>
+        <span class="tool-icon">🧼</span>
+        <span class="tool-name">消毒棉签</span>
+        <span class="tool-desc">吸脓擦血珠</span>
+      </button>
+    </nav>
+
+    <!-- 通关结算面板（新增可拖动 Before / After 净肤前后滑动对比照！） -->
+    <div id="result-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="result-title">
+      <div class="modal-card">
+        <div class="modal-header">
+          <div id="result-rank" class="rank-badge">S</div>
+          <h2 id="result-title" class="modal-title">无瑕妙手净肤大师！</h2>
+          <p id="result-subtitle" class="modal-subtitle">冰膜收敛完毕，毛孔细腻隐形，顾客大呼过瘾！</p>
+        </div>
+
+        <!-- 护理前 vs 护理后 交互滑动对比窗 -->
+        <div id="ba-compare-box" class="ba-compare-wrap">
+          <canvas id="compare-canvas"></canvas>
+          <span class="ba-tag left">护理前 Before</span>
+          <span class="ba-tag right">护理后 After ✨</span>
+          <span class="ba-hint">◀ 左右拖动分割线对比净肤效果 ▶</span>
+        </div>
+
+        <div class="trophy-tray-box">
+          <div>
+            <div style="font-weight:800;color:#fff;">🍽️ 战利品弯盘清点</div>
+            <div id="res-trophies" style="font-size:11px;color:#c6b3ad;margin-top:2px;">完整黑头脂栓 0 颗 · 固态白芯脓核 0 颗</div>
+          </div>
+          <div id="res-coins-earned" style="font-size:16px;font-weight:900;color:#ffd980;">+¥220</div>
+        </div>
+
+        <div class="summary-grid">
+          <div class="summary-item">
+            <div class="label">本局爽感分</div>
+            <div id="res-score" class="val" style="color: #ffca63;">0</div>
+          </div>
+          <div class="summary-item">
+            <div class="label">顾客疼痛损伤</div>
+            <div id="res-damage" class="val" style="color: #4cd9a4;">0%</div>
+          </div>
+          <div class="summary-item">
+            <div class="label">清理瑕疵明细</div>
+            <div id="res-breakdown" class="val" style="font-size: 12.5px; margin-top: 5px;">白0 · 黑0 · 肿0</div>
+          </div>
+          <div class="summary-item">
+            <div class="label">无创完美手法</div>
+            <div id="res-perfect" class="val" style="color: #ff9bb3;">0 次</div>
+          </div>
+        </div>
+
+        <div class="level-presets" role="group" aria-label="自由难度档位">
+          <button class="preset-btn active" type="button" data-density="0">顾客专属配方</button>
+          <button class="preset-btn" type="button" data-density="8">标准随机 (8颗)</button>
+          <button class="preset-btn" type="button" data-density="11">重度密集 (11颗)</button>
+        </div>
+
+        <button id="btn-next-face" class="primary-btn" type="button">✨ 接待下一位顾客（下一张脸）</button>
+        <button id="btn-open-clinic-from-res" class="secondary-btn" type="button">🛠️ 前往器械升级 / 自选专场模式</button>
+      </div>
+    </div>
+
+    <!-- 25X 战利品弯盘放大检视弹窗 -->
+    <div id="tray-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="tray-modal-title">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2 id="tray-modal-title" class="modal-title">🔍 25X 战利品不锈钢弯盘检视</h2>
+          <p id="tray-modal-sub" class="modal-subtitle">微距观察本局连根拔出的每一颗油脂栓与固态脓核</p>
+        </div>
+        <canvas id="tray-zoom-canvas"></canvas>
+        <button id="btn-close-tray" class="primary-btn" type="button">继续护理</button>
+      </div>
+    </div>
+
+    <!-- 诊所接诊大厅 & 器械升级弹窗 -->
+    <div id="clinic-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="clinic-title">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2 id="clinic-title" class="modal-title">🏥 接诊挂号台 & 器械升级</h2>
+          <p class="modal-subtitle">选择不同肤质诉求的顾客，或进入纯爽黑头专场</p>
+        </div>
+
+        <div style="font-size:12px;font-weight:800;color:#ffd584;margin-bottom:6px;">🧑‍⚕️ 今日候诊顾客与解压专场</div>
+        <div id="client-list-container" class="client-list"></div>
+
+        <div style="font-size:12px;font-weight:800;color:#6be2ff;margin:10px 0 6px;display:flex;justify-content:space-between;">
+          <span>🛠️ 诊所专业器械升级</span>
+          <span id="shop-coin-label" style="color:#ffd980;">余额 ¥0</span>
+        </div>
+        <div class="client-list" id="upgrade-list-container"></div>
+
+        <button id="btn-close-clinic" class="secondary-btn" type="button">返回当前护理台</button>
+      </div>
+    </div>
+
+    <!-- 完整游戏玩法策划案弹窗 -->
+    <div id="plan-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="plan-title">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2 id="plan-title" class="modal-title">📐 《妙手净肤馆》完整玩法与精工细节</h2>
+          <p class="modal-subtitle">真实生理反馈 × 微距光学放大镜 × 前后对比满足感</p>
+        </div>
+        <div class="guide-list">
+          <div class="guide-row">
+            <strong>一、精工级微距交互细节（全新打磨！）</strong><br />
+            • <strong>2.2X 光学微距瞄准镜</strong>：使用粉刺针或细胞夹按住屏幕时，手指上方自动浮现偏振微距放大镜，彻底解决手机端手指遮挡痛点；<br />
+            • <strong>毛孔粘连牵拉物理</strong>：细胞夹夹住黑头往外拉时，镊尖死死咬合脂栓颈部，毛孔唇缘随拉力真实向外牵拉鼓起，拔出瞬间沿抛物线飞入右上角弯盘并伴随金属清脆落盘声；<br />
+            • <strong>真实蒸汽凝露 + 手刷冰感冻膜</strong>：热喷会在皮肤表面凝结晶莹细小水珠；全脸排空后可亲手用硅胶刷涂抹带微气泡的冰感积雪草冻膜收缩毛孔！
+          </div>
+          <div class="guide-row">
+            <strong>二、高潮多巴胺闭环（Before / After 滑动对比 + 弯盘微距检视）</strong><br />
+            • 点击右上角<strong>「🔍 战利品弯盘」</strong>可随时打开 25X 放大镜欣赏本局拔出的水滴状黑头米粒；<br />
+            • 通关结算内置<strong>可交互拖动分割线的「护理前 vs 护理后」实景对比窗</strong>，成就感拉满！
+          </div>
+        </div>
+        <button id="btn-close-plan" class="primary-btn" type="button">立即体验精工细节！</button>
+      </div>
+    </div>
+
+    <!-- 操作说明弹窗 -->
+    <div id="help-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="help-title">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2 id="help-title" class="modal-title">🔬 五大专业器械微操指南</h2>
+          <p class="modal-subtitle">快捷键：数字键 1 ~ 5 快速切换底部工具</p>
+        </div>
+        <div class="guide-list">
+          <div class="guide-row">
+            <strong>♨️ 1. 热喷软化：</strong>按住滑过鼻翼或痘痘，温热雾气在皮肤上凝结微水珠并蒸开毛孔，降低一半痛感与拔栓阻力！
+          </div>
+          <div class="guide-row">
+            <strong>📍 2. 粉刺针 + 🤏 3. 手指挤压：</strong>按住粉刺针可开启上方 2.2X 瞄准镜精准点破大痘偏心脓尖，再用双指从底座外围往中间兜底推挤。
+          </div>
+          <div class="guide-row">
+            <strong>🥢 4. 超尖细胞夹：</strong>先轻挤让黑头冒头，切换细胞夹夹住脂栓头<strong>匀速往外拉</strong>（注意观察镊旁张力条，切忌猛拽夹断），整根拔出后会飞入右上角不锈钢弯盘！
+          </div>
+          <div class="guide-row">
+            <strong>🧼 5. 消毒棉签 + 🧊 手刷冰膜：</strong>棉签吸净渗液后，点击底部弹出的<strong>涂抹冰感冻膜</strong>按钮，亲手刷满清凉冻膜（或一键厚敷）即可对比护理前后效果！
+          </div>
+        </div>
+        <button id="btn-close-help" class="primary-btn" type="button">明白，开始清痘！</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * ============================================================================
+     * 顶部核心物理、五步护肤 SOP 与精工细节配置常量 (CONFIG)
+     * ============================================================================
+     */
+    const CONFIG = {
+      SKIN: {
+        ELASTICITY: 0.20,
+        PINCH_PATCH_RADIUS: 82,
+        PINCH_PATCH_SLICES: 26,
+        BLANCH_MAX_ALPHA: 0.52,
+        PORE_COUNT_BASE: 620,
+        VELLUS_HAIR_COUNT: 52,
+        MAX_DEW_DROPS: 95             // 热喷在皮肤表面凝结的晶莹微水珠上限
+      },
+      INTERACTION: {
+        TWO_FINGER_CAPTURE_PX: 112,
+        MOUSE_CAPTURE_PX: 84,
+        MOUSE_DRAG_FULL_PX: 48,
+        SWAB_RADIUS_PX: 28,
+        STEAM_RADIUS_PX: 54,
+        ICE_BRUSH_RADIUS_PX: 42,      // 冰感积雪草冻膜硅胶刷涂抹半径
+        TWEEZER_GRAB_PX: 26,
+        TWEEZER_PULL_NEEDED_PX: 32,
+        TWEEZER_SNAP_SPEED_PX: 470,
+        CYST_TOO_NARROW_SPAN_PX: 38,
+        LOUPE_RADIUS_PX: 48,          // 2.2X 偏振微距瞄准放大镜半径
+        LOUPE_ZOOM: 2.2
+      },
+      TYPES: {
+        BLACKHEAD: {
+          id: 'blackhead',
+          name: '黑头粉刺',
+          radiusRange: [11.5, 15],
+          popThreshold: 0.26,
+          extrudeRate: 0.64,
+          piercedBoost: 1.55,
+          steamBoost: 1.45,
+          decayRate: 0.45,
+          wormTotalLenRange: [24, 36],
+          scorePop: 145,
+          scoreTweezeBonus: 85,
+          scoreWipe: 45
+        },
+        WHITEHEAD: {
+          id: 'whitehead',
+          name: '白头粉刺',
+          radiusRange: [16, 21],
+          popThreshold: 0.45,
+          buildRate: 1.50,
+          decayRate: 0.58,
+          residualDrainRate: 1.25,
+          burstParticles: 16,
+          lensSplats: 2,
+          scorePop: 135,
+          scoreWipe: 50
+        },
+        CYST: {
+          id: 'cyst',
+          name: '红肿大痘',
+          radiusRange: [26, 33],
+          popThresholdRaw: 0.96,
+          popThresholdPierced: 0.46,
+          buildRateRaw: 0.32,
+          buildRatePierced: 1.20,
+          decayRate: 0.48,
+          pusDrainRate: 0.60,
+          angleTolerance: 0.68,
+          burstParticles: 15,
+          lensSplats: 3,
+          scorePierce: 60,
+          scorePop: 245,
+          scoreWipe: 75
+        }
+      },
+      PARTICLES: {
+        GRAVITY: 410,
+        DRAG: 0.96,
+        MAX_RESIDUE_ITEMS: 160,
+        LENS_SLIDE_SPEED: 6.5
+      },
+      RULES: {
+        DEFAULT_PIMPLE_COUNT: 8,
+        HARD_SQUEEZE_DAMAGE_PER_SEC: 16.0,
+        SHALLOW_PINCH_DAMAGE_PER_SEC: 8.5,
+        EMPTY_SKIN_DAMAGE_PER_SEC: 11.5,
+        OVER_SQUEEZE_EMPTY_PORE_DPS: 14.5,
+        WRONG_NEEDLE_DAMAGE: 5.0,
+        WRONG_ACTION_SCORE_PENALTY: 25,
+        SWAB_SOOTHE_HEAL: 2.5,
+        HEAL_FADE_SECONDS: 0.90
+      }
+    };
+
+    const P_STATE = {
+      INTACT: 0,
+      RUPTURED: 1,
+      EXTRUDING: 2,
+      OOZING: 3,
+      HEALING: 4,
+      HEALED: 5
+    };
+
+    /**
+     * 5 位鲜活顾客与特色专场
+     */
+    const CLIENTS = [
+      {
+        id: 'coder',
+        avatar: '👨‍💻',
+        name: '程序员·阿哲',
+        zoneId: 'nose_cheek',
+        zoneLabel: '部位：鼻翼沟与内侧脸颊 · 真实微距',
+        quote: '“连熬两周夜，鼻翼全是陈年黑头，旁边还冒了熟痘…”',
+        painQuote: '“嘶——轻点按呀医生！鼻梁骨快压扁啦！”',
+        happyQuote: '“天呐鼻头毛孔全通透了！呼吸都顺畅了！”',
+        painMult: 1.0,
+        bounty: 200,
+        recipe: { blackhead: 5, whitehead: 2, cyst: 1 }
+      },
+      {
+        id: 'student',
+        avatar: '🧑‍🎓',
+        name: '备考高中生·小林',
+        zoneId: 'nose_cheek',
+        zoneLabel: '部位：内侧苹果肌与鼻旁 · 真实微距',
+        quote: '“天天刷题喝奶茶爆了好多白头熟痘，我超怕疼轻点哦…”',
+        painQuote: '“嗷呜好痛！先蒸一下热喷或者别硬掐好皮肤呀！”',
+        happyQuote: '“居然一点都没留红印！手法也太温柔了吧！”',
+        painMult: 1.35,
+        bounty: 250,
+        recipe: { blackhead: 2, whitehead: 5, cyst: 1 }
+      },
+      {
+        id: 'anchor',
+        avatar: '👩‍🎤',
+        name: '带货主播·薇薇',
+        zoneId: 'chin_jaw',
+        zoneLabel: '部位：下巴与唇周三角区 · 真实微距',
+        quote: '“下巴闷了好几颗深层大红痘，明天要上镜千万别挤紫了！”',
+        painQuote: '“喂！深层闷痘要先用粉刺针破口再兜底挤呀！”',
+        happyQuote: '“脓核全拔出来了！敷完冰膜平得能直接素颜开播！”',
+        painMult: 1.1,
+        bounty: 320,
+        recipe: { blackhead: 2, whitehead: 2, cyst: 4 }
+      },
+      {
+        id: 'foodie_vip',
+        avatar: '🌶️',
+        name: '火锅探店王·大鹏',
+        zoneId: 'nose_cheek',
+        zoneLabel: '部位：重油重辣全混合重灾区 · 大师挑战',
+        quote: '“顿顿牛油红锅，黑头群+爆浆白头+三大深层闷痘全齐了！”',
+        painQuote: '“嘶哈！这颗老痘根子深，先针挑再从外圈兜底挤！”',
+        happyQuote: '“神医啊！脸上轻松了二两油，今晚又能炫火锅了！”',
+        painMult: 0.95,
+        bounty: 460,
+        recipe: { blackhead: 5, whitehead: 3, cyst: 3 }
+      },
+      {
+        id: 'strawberry_nose',
+        avatar: '🍓',
+        name: '【纯爽专场】陈年草莓鼻',
+        zoneId: 'nose_tip',
+        zoneLabel: '部位：鼻头重度皮脂黑头带 · 纯享解压专场',
+        quote: '“零痛感纯享沙盒！整整12颗鼻头大黑头，用细胞夹拔到爽！”',
+        painQuote: '“放开手脚尽情拔黑头吧！”',
+        happyQuote: '“整盘黑头米粒排得整整齐齐，强迫症一本满足！”',
+        painMult: 0.20,
+        bounty: 280,
+        recipe: { blackhead: 12, whitehead: 0, cyst: 0 }
+      }
+    ];
+
+    const UPGRADES = [
+      {
+        key: 'steamer',
+        icon: '♨️',
+        name: '纳米草本热喷仪 Lv.2',
+        desc: '热敷打开毛孔速度翻倍，软化后拔栓阻力再降 25%',
+        cost: 220
+      },
+      {
+        key: 'tweezers',
+        icon: '🥢',
+        name: '瑞士钛合金超尖细胞夹',
+        desc: '夹拔黑头不断根速度上限 +70%，拔栓爽感分 +30%',
+        cost: 300
+      },
+      {
+        key: 'iceprobe',
+        icon: '🧊',
+        name: '蓝光冰导修护棉头',
+        desc: '棉签擦拭速度 +45%，每次净肤额外修复 4% 皮肤红肿',
+        cost: 360
+      }
+    ];
+
+    /**
+     * ============================================================================
+     * Web Audio API 精工近场 ASMR 合成引擎（新增金属落盘清脆声、拉栓摩擦声、冰膜水润声）
+     * ============================================================================
+     */
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.muted = false;
+        this.tensionOsc = null;
+        this.tensionGain = null;
+        this.noiseBuffer = null;
+        this.lastWipeSoundTime = 0;
+        this.lastWarnSoundTime = 0;
+        this.lastOozeTickTime = 0;
+        this.lastSteamTime = 0;
+        this.lastGelTime = 0;
+      }
+
+      unlock() {
+        if (this.muted) return;
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (!AudioCtx) return;
+          this.ctx = new AudioCtx();
+          this._buildNoiseBuffer();
+          this._setupTensionSynth();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      _buildNoiseBuffer() {
+        if (!this.ctx) return;
+        const sr = this.ctx.sampleRate;
+        const len = Math.floor(sr * 1.5);
+        const buf = this.ctx.createBuffer(1, len, sr);
+        const data = buf.getChannelData(0);
+        let b0 = 0, b1 = 0, b2 = 0;
+        for (let i = 0; i < len; i++) {
+          const white = Math.random() * 2 - 1;
+          b0 = 0.99765 * b0 + white * 0.0990460;
+          b1 = 0.96300 * b1 + white * 0.2965164;
+          b2 = 0.57000 * b2 + white * 1.0526913;
+          data[i] = (b0 + b1 + b2 + white * 0.1848) * 0.18;
+        }
+        this.noiseBuffer = buf;
+      }
+
+      _setupTensionSynth() {
+        if (!this.ctx) return;
+        this.tensionOsc = this.ctx.createOscillator();
+        this.tensionGain = this.ctx.createGain();
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 195;
+
+        this.tensionOsc.type = 'triangle';
+        this.tensionOsc.frequency.value = 58;
+        this.tensionGain.gain.value = 0.0001;
+
+        this.tensionOsc.connect(filter);
+        filter.connect(this.tensionGain);
+        this.tensionGain.connect(this.ctx.destination);
+        this.tensionOsc.start();
+      }
+
+      setTension(level) {
+        if (!this.ctx || !this.tensionGain || this.muted) {
+          if (this.tensionGain && this.ctx) {
+            this.tensionGain.gain.setTargetAtTime(0.0001, this.ctx.currentTime, 0.05);
+          }
+          return;
+        }
+        const now = this.ctx.currentTime;
+        const clamped = Math.max(0, Math.min(1, level));
+        const targetGain = clamped > 0.04 ? 0.012 + clamped * 0.072 : 0.0001;
+        const targetFreq = 55 + clamped * 82;
+        this.tensionOsc.frequency.setTargetAtTime(targetFreq, now, 0.04);
+        this.tensionGain.gain.setTargetAtTime(targetGain, now, 0.04);
+      }
+
+      playSteam() {
+        if (this.muted) return;
+        this.unlock();
+        if (!this.ctx || !this.noiseBuffer) return;
+        const now = this.ctx.currentTime;
+        if (now - this.lastSteamTime < 0.09) return;
+        this.lastSteamTime = now;
+
+        const src = this.ctx.createBufferSource();
+        src.buffer = this.noiseBuffer;
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(2400 + Math.random() * 400, now);
+        filter.Q.value = 0.9;
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.085, now + 0.03);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+        src.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+        src.start(now, Math.random() * 0.5, 0.13);
+      }
+
+      playIceGelSpread() {
+        if (this.muted) return;
+        this.unlock();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        if (now - this.lastGelTime < 0.095) return;
+        this.lastGelTime = now;
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(920 + Math.random() * 450, now);
+        osc.frequency.exponentialRampToValueAtTime(1480, now + 0.07);
+        gain.gain.setValueAtTime(0.055, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.085);
+      }
+
+      playTweezerClamp() {
+        if (this.muted) return;
+        this.unlock();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(3200, now);
+        osc.frequency.exponentialRampToValueAtTime(1400, now + 0.025);
+        gain.gain.setValueAtTime(0.14, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.035);
+      }
+
+      // 战利品脂栓落入不锈钢弯盘的清脆微距金属轻响
+      playTrayClink() {
+        if (this.muted) return;
+        this.unlock();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        [2680, 4120].forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.015);
+          gain.gain.setValueAtTime(0.075, now + idx * 0.015);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + idx * 0.015);
+          osc.stop(now + 0.15);
+        });
+      }
+
+      playPop(kind = 'whitehead') {
+        if (this.muted) return;
+        this.unlock();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        if (kind === 'whitehead') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(980, now);
+          osc.frequency.exponentialRampToValueAtTime(175, now + 0.062);
+          gain.gain.setValueAtTime(0.32, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.072);
+        } else if (kind === 'blackhead' || kind === 'tweeze_pluck') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(kind === 'tweeze_pluck' ? 310 : 240, now);
+          osc.frequency.exponentialRampToValueAtTime(kind === 'tweeze_pluck' ? 680 : 480, now + 0.042);
+          osc.frequency.exponentialRampToValueAtTime(185, now + 0.095);
+          gain.gain.setValueAtTime(0.26, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.105);
+        } else if (kind === 'core_plug') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(520, now);
+          osc.frequency.exponentialRampToValueAtTime(95, now + 0.125);
+          gain.gain.setValueAtTime(0.40, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.135);
+        } else {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(380, now);
+          osc.frequency.exponentialRampToValueAtTime(110, now + 0.10);
+          gain.gain.setValueAtTime(0.28, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.11);
+        }
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.15);
+
+        if (this.noiseBuffer && kind !== 'blackhead' && kind !== 'tweeze_pluck') {
+          const nSrc = this.ctx.createBufferSource();
+          nSrc.buffer = this.noiseBuffer;
+          const nFilter = this.ctx.createBiquadFilter();
+          nFilter.type = 'bandpass';
+          nFilter.frequency.setValueAtTime(kind === 'whitehead' ? 1600 : 980, now);
+          nFilter.Q.value = 2.6;
+
+          const nGain = this.ctx.createGain();
+          nGain.gain.setValueAtTime(0.25, now);
+          nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.065);
+
+          nSrc.connect(nFilter);
+          nFilter.connect(nGain);
+          nGain.connect(this.ctx.destination);
+          nSrc.start(now, Math.random() * 0.5, 0.08);
+        }
+      }
+
+      playViscousOoze() {
+        if (this.muted || !this.ctx || !this.noiseBuffer) return;
+        const now = this.ctx.currentTime;
+        if (now - this.lastOozeTickTime < 0.14) return;
+        this.lastOozeTickTime = now;
+
+        const src = this.ctx.createBufferSource();
+        src.buffer = this.noiseBuffer;
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(680 + Math.random() * 260, now);
+        filter.Q.value = 3.2;
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.11, now + 0.03);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.11);
+
+        src.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+        src.start(now, Math.random() * 0.5, 0.12);
+      }
+
+      playPierce() {
+        if (this.muted) return;
+        this.unlock();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(2100, now);
+        osc.frequency.exponentialRampToValueAtTime(680, now + 0.038);
+        gain.gain.setValueAtTime(0.16, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.042);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.048);
+      }
+
+      playWipe() {
+        if (this.muted) return;
+        this.unlock();
+        if (!this.ctx || !this.noiseBuffer) return;
+        const now = this.ctx.currentTime;
+        if (now - this.lastWipeSoundTime < 0.085) return;
+        this.lastWipeSoundTime = now;
+
+        const src = this.ctx.createBufferSource();
+        src.buffer = this.noiseBuffer;
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(1650 + Math.random() * 350, now);
+        filter.Q.value = 1.6;
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.13, now + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+        src.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+        src.start(now, Math.random() * 0.6, 0.09);
+      }
+
+      playCleanChime(isIceFinale = false) {
+        if (this.muted) return;
+        this.unlock();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const notes = isIceFinale ? [523.25, 659.25, 783.99, 1046.5, 1318.5] : [587.33, 783.99, 1046.5];
+        notes.forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          const t = now + idx * 0.06;
+          osc.frequency.setValueAtTime(freq, t);
+          gain.gain.setValueAtTime(0.11, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t);
+          osc.stop(t + 0.30);
+        });
+      }
+
+      playWarnHurt() {
+        if (this.muted) return;
+        this.unlock();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        if (now - this.lastWarnSoundTime < 0.34) return;
+        this.lastWarnSoundTime = now;
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(118, now);
+        osc.frequency.linearRampToValueAtTime(64, now + 0.12);
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 220;
+
+        gain.gain.setValueAtTime(0.13, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.14);
+      }
+    }
+
+    function triggerHaptic(pattern) {
+      try {
+        if (navigator && typeof navigator.vibrate === 'function') {
+          navigator.vibrate(pattern);
+        }
+      } catch (_) {}
+    }
+
+    /**
+     * ============================================================================
+     * 全局画布、快照对比与状态管理
+     * ============================================================================
+     */
+    const sound = new SoundEngine();
+
+    const canvas = document.getElementById('skin-canvas');
+    const ctx = canvas.getContext('2d');
+    const viewportWrap = document.getElementById('viewport-wrap');
+
+    const compareCanvas = document.getElementById('compare-canvas');
+    const compareCtx = compareCanvas.getContext('2d');
+    const trayZoomCanvas = document.getElementById('tray-zoom-canvas');
+    const trayZoomCtx = trayZoomCanvas.getContext('2d');
+
+    const beforeSnap = document.createElement('canvas');
+    const afterSnap = document.createElement('canvas');
+
+    const scoreValEl = document.getElementById('score-val');
+    const coinValEl = document.getElementById('coin-val');
+    const comboTagEl = document.getElementById('combo-tag');
+    const progressValEl = document.getElementById('progress-val');
+    const bestScoreLabelEl = document.getElementById('best-score-label');
+    const damageValEl = document.getElementById('damage-val');
+    const damageFillEl = document.getElementById('damage-fill');
+    const hintBannerEl = document.getElementById('hint-banner');
+    const reticleEl = document.getElementById('macro-reticle');
+
+    const patientAvatarEl = document.getElementById('patient-avatar');
+    const patientMoodEl = document.getElementById('patient-mood');
+    const patientNameEl = document.getElementById('patient-name');
+    const patientQuoteEl = document.getElementById('patient-quote');
+    const patientSteamTagEl = document.getElementById('patient-steam-tag');
+    const trophyCountEl = document.getElementById('trophy-count');
+    const iceFinishBtnEl = document.getElementById('btn-ice-finish');
+    const iceQuickBtnEl = document.getElementById('btn-ice-quick');
+
+    const badgeSteamEl = document.getElementById('badge-steam');
+    const badgeNeedleEl = document.getElementById('badge-needle');
+    const badgeTweezersEl = document.getElementById('badge-tweezers');
+    const badgeSwabEl = document.getElementById('badge-swab');
+
+    const resultModalEl = document.getElementById('result-modal');
+    const trayModalEl = document.getElementById('tray-modal');
+    const clinicModalEl = document.getElementById('clinic-modal');
+    const planModalEl = document.getElementById('plan-modal');
+    const helpModalEl = document.getElementById('help-modal');
+
+    const skinLayer = document.createElement('canvas');
+    const skinCtx = skinLayer.getContext('2d');
+
+    const state = {
+      width: 390,
+      height: 640,
+      dpr: 1,
+      styleMode: 'realistic',
+      currentTool: 'squeeze', // 'steam' | 'needle' | 'squeeze' | 'tweezers' | 'swab' | 'ice_brush'
+      targetDensity: 0,
+      faceSeed: Math.random() * 10000,
+      clientIndex: 0,
+
+      coins: 0,
+      upgrades: { steamer: false, tweezers: false, iceprobe: false },
+
+      score: 0,
+      bestScore: 0,
+      combo: 0,
+      perfectOps: 0,
+      damage: 0,
+      trophiesPlucked: 0,
+      coreSeedsCollected: 0,
+
+      // 冰感冻膜涂抹与一键波纹状态
+      iceBrushingMode: false,
+      iceGelBlobs: [],        // 玩家亲手刷在脸上的晶莹微气泡积雪草冻膜轨迹
+      iceCoverage: 0,
+      iceWaveProgress: 0,
+      iceFinishing: false,
+      settled: false,
+      paused: false,
+
+      beforeCaptured: false,
+      compareSplit: 0.5,      // 结算面板护理前/护理后分割比例 0.08~0.92
+
+      pimples: [],
+      flyingParticles: [],
+      flyingTrophies: [],     // 拔出的脂栓沿抛物线飞入右上角弯盘的动画实体！
+      steamPuffs: [],
+      dewDrops: [],           // 热喷在皮肤表面凝结的晶莹微水珠！
+      trophyTrayItems: [],
+      surfaceResidues: [],
+      lensSplatters: [],
+      bruises: [],
+      floatingTexts: [],
+
+      swabStain: { pus: 0, blood: 0, sebum: 0 },
+      cameraShake: 0,
+      trayPulse: 0,
+
+      tweezers: {
+        clampedPimple: null,
+        grabStartX: 0,
+        grabStartY: 0,
+        curTipX: 0,
+        curTipY: 0,
+        pullDist: 0,
+        pullRatio: 0,
+        dangerRatio: 0,
+        lastX: 0,
+        lastY: 0
+      },
+
+      pointer: {
+        active: false,
+        mode: 'none',
+        x: 0,
+        y: 0,
+        hoverX: -999,
+        hoverY: -999,
+        p1: { x: 0, y: 0 },
+        p2: { x: 0, y: 0 },
+        smoothP1: { x: 0, y: 0 },
+        smoothP2: { x: 0, y: 0 },
+        anchorX: 0,
+        anchorY: 0,
+        initSpan: 96,
+        curSpan: 96,
+        squeezeForce: 0,
+        rawForce: 0,
+        axisAngle: 0,
+        initAxisCos: 1,
+        initAxisSin: 0,
+        lockedPimple: null
+      }
+    };
+
+    try {
+      const savedBest = localStorage.getItem('pimple_pop_best_score');
+      if (savedBest) state.bestScore = parseInt(savedBest, 10) || 0;
+      const savedCoins = localStorage.getItem('pimple_clinic_coins');
+      if (savedCoins) state.coins = parseInt(savedCoins, 10) || 0;
+      const savedUpg = localStorage.getItem('pimple_clinic_upgrades');
+      if (savedUpg) Object.assign(state.upgrades, JSON.parse(savedUpg));
+    } catch (_) {}
+
+    function persistSaveData() {
+      if (state.score > state.bestScore) {
+        state.bestScore = Math.round(state.score);
+      }
+      try {
+        localStorage.setItem('pimple_pop_best_score', String(state.bestScore));
+        localStorage.setItem('pimple_clinic_coins', String(state.coins));
+        localStorage.setItem('pimple_clinic_upgrades', JSON.stringify(state.upgrades));
+      } catch (_) {}
+      bestScoreLabelEl.textContent = `最高 ${state.bestScore}`;
+      coinValEl.textContent = `¥ ${state.coins}`;
+    }
+
+    function currentClient() {
+      return CLIENTS[state.clientIndex % CLIENTS.length];
+    }
+
+    function setPatientMood(emoji) {
+      patientMoodEl.textContent = emoji;
+    }
+
+    function seededRand(seed) {
+      const s = Math.sin(seed * 12.9898 + 78.233) * 43758.5453123;
+      return s - Math.floor(s);
+    }
+
+    function beginOrganicPath(targetCtx, cx, cy, rxBase, ryBase, shape, irregularity = 1, rotOffset = 0) {
+      const steps = 28;
+      const cosR = Math.cos(shape.rot + rotOffset);
+      const sinR = Math.sin(shape.rot + rotOffset);
+      targetCtx.beginPath();
+      for (let i = 0; i <= steps; i++) {
+        const theta = (i / steps) * Math.PI * 2;
+        const mod = 1
+          + Math.sin(theta * 2 + shape.p1) * (0.068 * irregularity * shape.a1)
+          + Math.cos(theta * 3 + shape.p2) * (0.048 * irregularity * shape.a2)
+          + Math.sin(theta * 5 + shape.p3) * (0.022 * irregularity);
+        const lx = Math.cos(theta) * rxBase * mod;
+        const ly = Math.sin(theta) * ryBase * mod;
+        const px = cx + lx * cosR - ly * sinR;
+        const py = cy + lx * sinR + ly * cosR;
+        if (i === 0) targetCtx.moveTo(px, py);
+        else targetCtx.lineTo(px, py);
+      }
+      targetCtx.closePath();
+    }
+
+    function getSebaceousZoneWeight(nx, ny) {
+      const zone = currentClient().zoneId;
+      if (zone === 'nose_cheek') {
+        return Math.max(0, Math.min(1, 1.18 - nx * 1.85));
+      }
+      if (zone === 'nose_tip') {
+        const d = Math.hypot((nx - 0.5) * 1.25, (ny - 0.50) * 1.1);
+        return Math.max(0, Math.min(1, 1.15 - d * 1.65));
+      }
+      const d = Math.hypot((nx - 0.5) * 1.4, (ny - 0.54) * 1.3);
+      return Math.max(0, Math.min(1, 1.0 - d * 1.55));
+    }
+
+    /**
+     * ============================================================================
+     * 1. 面部微距皮肤基底渲染
+     * ============================================================================
+     */
+    function renderSkinTexture() {
+      const w = state.width;
+      const h = state.height;
+      const dpr = state.dpr;
+      skinLayer.width = Math.max(1, Math.floor(w * dpr));
+      skinLayer.height = Math.max(1, Math.floor(h * dpr));
+      skinCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const isCreamy = state.styleMode === 'creamy';
+      const seedBase = state.faceSeed;
+      const client = currentClient();
+      reticleEl.textContent = client.zoneLabel;
+
+      const shift = Math.floor((seededRand(seedBase + 1) - 0.5) * 10);
+      const baseGrad = skinCtx.createRadialGradient(
+        w * 0.45, h * 0.36, w * 0.05,
+        w * 0.50, h * 0.52, Math.max(w, h) * 0.82
+      );
+      if (isCreamy) {
+        baseGrad.addColorStop(0, '#ffede4');
+        baseGrad.addColorStop(0.5, '#f9d8c8');
+        baseGrad.addColorStop(1, '#e6b49e');
+      } else {
+        baseGrad.addColorStop(0, `rgb(${246 + shift}, ${206 + shift}, ${180 + shift})`);
+        baseGrad.addColorStop(0.46, `rgb(${235 + shift}, ${190 + shift}, ${163 + shift})`);
+        baseGrad.addColorStop(0.82, `rgb(${217 + shift}, ${168 + shift}, ${140 + shift})`);
+        baseGrad.addColorStop(1, `rgb(${194 + shift}, ${144 + shift}, ${117 + shift})`);
+      }
+      skinCtx.fillStyle = baseGrad;
+      skinCtx.fillRect(0, 0, w, h);
+
+      skinCtx.save();
+      if (client.zoneId === 'nose_cheek') {
+        const noseWingHL = skinCtx.createRadialGradient(w * 0.18, h * 0.45, 4, w * 0.20, h * 0.46, w * 0.34);
+        noseWingHL.addColorStop(0, 'rgba(255, 248, 240, 0.22)');
+        noseWingHL.addColorStop(1, 'rgba(255, 248, 240, 0)');
+        skinCtx.fillStyle = noseWingHL;
+        skinCtx.fillRect(0, 0, w, h);
+
+        skinCtx.strokeStyle = isCreamy ? 'rgba(188, 118, 104, 0.22)' : 'rgba(152, 76, 62, 0.30)';
+        skinCtx.lineWidth = 18;
+        skinCtx.filter = 'blur(8px)';
+        skinCtx.beginPath();
+        skinCtx.moveTo(w * 0.30, -20);
+        skinCtx.bezierCurveTo(w * 0.42, h * 0.34, w * 0.38, h * 0.68, w * 0.18, h * 0.92);
+        skinCtx.stroke();
+        skinCtx.filter = 'none';
+      } else if (client.zoneId === 'nose_tip') {
+        const tipHL = skinCtx.createRadialGradient(w * 0.5, h * 0.46, 8, w * 0.5, h * 0.48, w * 0.45);
+        tipHL.addColorStop(0, 'rgba(255, 250, 242, 0.28)');
+        tipHL.addColorStop(0.58, 'rgba(255, 242, 230, 0.08)');
+        tipHL.addColorStop(1, 'rgba(135, 78, 58, 0.22)');
+        skinCtx.fillStyle = tipHL;
+        skinCtx.fillRect(0, 0, w, h);
+      } else {
+        const chinShadow = skinCtx.createLinearGradient(0, h * 0.06, 0, h * 0.34);
+        chinShadow.addColorStop(0, 'rgba(150, 88, 68, 0.20)');
+        chinShadow.addColorStop(0.5, 'rgba(145, 82, 64, 0.10)');
+        chinShadow.addColorStop(1, 'rgba(255, 244, 232, 0)');
+        skinCtx.fillStyle = chinShadow;
+        skinCtx.fillRect(0, 0, w, h);
+
+        const chinDome = skinCtx.createRadialGradient(w * 0.5, h * 0.56, 8, w * 0.5, h * 0.58, w * 0.44);
+        chinDome.addColorStop(0, 'rgba(255, 248, 240, 0.20)');
+        chinDome.addColorStop(1, 'rgba(255, 248, 240, 0)');
+        skinCtx.fillStyle = chinDome;
+        skinCtx.fillRect(0, 0, w, h);
+      }
+      skinCtx.restore();
+
+      const blotchCount = isCreamy ? 6 : 15;
+      for (let i = 0; i < blotchCount; i++) {
+        const bx = seededRand(seedBase + 15 + i * 3.7) * w;
+        const by = seededRand(seedBase + 16 + i * 3.7) * h;
+        const br = 35 + seededRand(seedBase + 17 + i * 3.7) * 80;
+        const bGrad = skinCtx.createRadialGradient(bx, by, 0, bx, by, br);
+        bGrad.addColorStop(0, isCreamy ? 'rgba(255, 148, 158, 0.08)' : 'rgba(205, 84, 78, 0.085)');
+        bGrad.addColorStop(1, 'rgba(205, 84, 78, 0)');
+        skinCtx.fillStyle = bGrad;
+        skinCtx.fillRect(0, 0, w, h);
+      }
+
+      const tile = 150;
+      const noiseCanvas = document.createElement('canvas');
+      noiseCanvas.width = tile;
+      noiseCanvas.height = tile;
+      const nCtx = noiseCanvas.getContext('2d');
+      const imgData = nCtx.createImageData(tile, tile);
+      const px = imgData.data;
+      const noiseAlpha = isCreamy ? 9 : 18;
+      for (let i = 0; i < px.length; i += 4) {
+        const idx = i >> 2;
+        const v = seededRand(seedBase + idx * 0.31) * 0.6 + seededRand(seedBase + idx * 1.13 + 9) * 0.4;
+        if (v > 0.52) {
+          px[i] = 255; px[i + 1] = 238; px[i + 2] = 224;
+          px[i + 3] = Math.floor((v - 0.52) * 2.08 * noiseAlpha);
+        } else if (v < 0.48) {
+          px[i] = 132; px[i + 1] = 76; px[i + 2] = 58;
+          px[i + 3] = Math.floor((0.48 - v) * 2.08 * noiseAlpha);
+        }
+      }
+      nCtx.putImageData(imgData, 0, 0);
+      const pat = skinCtx.createPattern(noiseCanvas, 'repeat');
+      if (pat) {
+        skinCtx.fillStyle = pat;
+        skinCtx.fillRect(0, 0, w, h);
+      }
+
+      if (!isCreamy) {
+        skinCtx.save();
+        skinCtx.lineWidth = 0.6;
+        for (let i = 0; i < 200; i++) {
+          const lx = seededRand(seedBase + 300 + i * 2.1) * w;
+          const ly = seededRand(seedBase + 301 + i * 2.1) * h;
+          const tWeight = getSebaceousZoneWeight(lx / w, ly / h);
+          const len = 10 + seededRand(seedBase + 302 + i) * 18;
+          const ang = (i % 2 === 0 ? 0.52 : -0.48) + (seededRand(seedBase + 400 + i) - 0.5) * 0.4;
+          skinCtx.strokeStyle = `rgba(142, 82, 64, ${0.095 * (1 - tWeight * 0.55)})`;
+          skinCtx.beginPath();
+          skinCtx.moveTo(lx, ly);
+          skinCtx.quadraticCurveTo(
+            lx + Math.cos(ang) * len * 0.5,
+            ly + Math.sin(ang) * len * 0.5 + 1.4,
+            lx + Math.cos(ang) * len,
+            ly + Math.sin(ang) * len
+          );
+          skinCtx.stroke();
+        }
+        skinCtx.restore();
+      }
+
+      const areaScale = (w * h) / (390 * 640);
+      const poreCount = Math.floor(CONFIG.SKIN.PORE_COUNT_BASE * Math.max(0.8, areaScale) * (isCreamy ? 0.55 : 1));
+      for (let i = 0; i < poreCount; i++) {
+        const pxX = seededRand(seedBase + 1000 + i * 2.3) * w;
+        const pxY = seededRand(seedBase + 1001 + i * 2.3) * h;
+        const sebW = getSebaceousZoneWeight(pxX / w, pxY / h);
+        const pr = (0.72 + sebW * 0.95) + seededRand(seedBase + 3000 + i) * (0.65 + sebW * 1.05);
+        const stretch = 1.08 + (1 - sebW) * 0.28;
+        const rot = 0.45 + (seededRand(seedBase + 3500 + i) - 0.5) * 0.35;
+
+        skinCtx.fillStyle = isCreamy
+          ? 'rgba(168, 106, 90, 0.18)'
+          : `rgba(108, 54, 40, ${0.20 + sebW * 0.18})`;
+        skinCtx.beginPath();
+        skinCtx.ellipse(pxX, pxY, pr * stretch, pr, rot, 0, Math.PI * 2);
+        skinCtx.fill();
+
+        if (!isCreamy && sebW > 0.35 && seededRand(seedBase + 4200 + i) < 0.48) {
+          const isOxidizedTiny = seededRand(seedBase + 4600 + i) < 0.28;
+          skinCtx.fillStyle = isOxidizedTiny
+            ? 'rgba(86, 54, 38, 0.38)'
+            : 'rgba(232, 204, 156, 0.42)';
+          skinCtx.beginPath();
+          skinCtx.arc(pxX, pxY, pr * 0.58, 0, Math.PI * 2);
+          skinCtx.fill();
+        }
+
+        skinCtx.fillStyle = `rgba(255, 246, 236, ${0.18 + sebW * 0.16})`;
+        skinCtx.beginPath();
+        skinCtx.arc(pxX + pr * 0.38, pxY + pr * 0.40, pr * 0.48, 0, Math.PI * 2);
+        skinCtx.fill();
+      }
+
+      if (!isCreamy) {
+        skinCtx.save();
+        const hairCount = Math.floor(CONFIG.SKIN.VELLUS_HAIR_COUNT * Math.max(0.75, areaScale));
+        for (let i = 0; i < hairCount; i++) {
+          const hx = seededRand(seedBase + 6100 + i * 2) * w;
+          const hy = seededRand(seedBase + 6101 + i * 2) * h;
+          if (getSebaceousZoneWeight(hx / w, hy / h) > 0.72) continue;
+          const hLen = 5.5 + seededRand(seedBase + 6300 + i) * 8.5;
+          const hAng = 0.58 + (seededRand(seedBase + 6500 + i) - 0.5) * 0.55;
+          const ex = hx + Math.cos(hAng) * hLen;
+          const ey = hy + Math.sin(hAng) * hLen;
+
+          const hGrad = skinCtx.createLinearGradient(hx, hy, ex, ey);
+          hGrad.addColorStop(0, 'rgba(78, 44, 32, 0.24)');
+          hGrad.addColorStop(1, 'rgba(255, 240, 225, 0.03)');
+          skinCtx.strokeStyle = hGrad;
+          skinCtx.lineWidth = 0.6;
+          skinCtx.beginPath();
+          skinCtx.moveTo(hx, hy);
+          skinCtx.quadraticCurveTo((hx + ex) * 0.5 + 1.2, (hy + ey) * 0.5 - 1.0, ex, ey);
+          skinCtx.stroke();
+        }
+        skinCtx.restore();
+      }
+    }
+
+    /**
+     * ============================================================================
+     * 2. 生成关卡并捕获「护理前 Before」微距快照
+     * ============================================================================
+     */
+    function generateLevel(overrideDensity = 0) {
+      state.faceSeed = Math.random() * 99999;
+      state.pimples = [];
+      state.flyingParticles = [];
+      state.flyingTrophies = [];
+      state.steamPuffs = [];
+      state.dewDrops = [];
+      state.iceGelBlobs = [];
+      state.trophyTrayItems = [];
+      state.surfaceResidues = [];
+      state.lensSplatters = [];
+      state.bruises = [];
+      state.floatingTexts = [];
+      state.swabStain = { pus: 0, blood: 0, sebum: 0 };
+
+      state.score = 0;
+      state.combo = 0;
+      state.perfectOps = 0;
+      state.damage = 0;
+      state.trophiesPlucked = 0;
+      state.coreSeedsCollected = 0;
+      state.iceBrushingMode = false;
+      state.iceCoverage = 0;
+      state.iceWaveProgress = 0;
+      state.iceFinishing = false;
+      state.beforeCaptured = false;
+      state.settled = false;
+      state.pointer.active = false;
+      state.pointer.squeezeForce = 0;
+      state.pointer.lockedPimple = null;
+      state.tweezers.clampedPimple = null;
+      sound.setTension(0);
+
+      const client = currentClient();
+      patientAvatarEl.textContent = client.avatar;
+      setPatientMood('😟');
+      patientNameEl.textContent = client.name;
+      patientQuoteEl.textContent = client.quote;
+      patientQuoteEl.style.color = '#c6b3ad';
+      patientSteamTagEl.style.display = 'none';
+      iceFinishBtnEl.classList.remove('show');
+      iceQuickBtnEl.classList.remove('show');
+      trophyCountEl.textContent = '🥢 0 颗脂栓';
+
+      renderSkinTexture();
+
+      const typePool = [];
+      if (overrideDensity > 0) {
+        typePool.push('blackhead', 'blackhead', 'whitehead', 'cyst');
+        while (typePool.length < overrideDensity) {
+          const roll = Math.random();
+          if (roll < 0.42) typePool.push('blackhead');
+          else if (roll < 0.76) typePool.push('whitehead');
+          else typePool.push('cyst');
+        }
+      } else {
+        for (let i = 0; i < client.recipe.blackhead; i++) typePool.push('blackhead');
+        for (let i = 0; i < client.recipe.whitehead; i++) typePool.push('whitehead');
+        for (let i = 0; i < client.recipe.cyst; i++) typePool.push('cyst');
+      }
+
+      const marginX = 52;
+      const marginTop = 66;
+      const marginBottom = 58;
+      const usableW = Math.max(140, state.width - marginX * 2);
+      const usableH = Math.max(200, state.height - marginTop - marginBottom);
+
+      typePool.forEach((typeKey, idx) => {
+        const cfg = typeKey === 'whitehead'
+          ? CONFIG.TYPES.WHITEHEAD
+          : typeKey === 'blackhead'
+            ? CONFIG.TYPES.BLACKHEAD
+            : CONFIG.TYPES.CYST;
+
+        const r = cfg.radiusRange[0] + Math.random() * (cfg.radiusRange[1] - cfg.radiusRange[0]);
+        let px = state.width * 0.5;
+        let py = state.height * 0.5;
+
+        for (let attempt = 0; attempt < 130; attempt++) {
+          const cx = marginX + Math.random() * usableW;
+          const cy = marginTop + Math.random() * usableH;
+          if (cx > state.width - 108 && cy < 108) continue;
+
+          const sebW = getSebaceousZoneWeight(cx / state.width, cy / state.height);
+          if (typeKey === 'blackhead' && sebW < 0.35 && attempt < 80) continue;
+          if (typeKey === 'cyst' && sebW > 0.78 && attempt < 60) continue;
+
+          let ok = true;
+          for (const other of state.pimples) {
+            const spacingFactor = (typeKey === 'blackhead' && other.type === 'blackhead') ? 1.55 : 2.1;
+            const minDist = (r + other.radius) * spacingFactor + 7;
+            if (Math.hypot(cx - other.x, cy - other.y) < minDist) {
+              ok = false;
+              break;
+            }
+          }
+          if (ok) {
+            px = cx;
+            py = cy;
+            break;
+          }
+        }
+
+        const targetAngle = (Math.random() - 0.5) * Math.PI * 0.85;
+        const shape = {
+          p1: Math.random() * Math.PI * 2,
+          p2: Math.random() * Math.PI * 2,
+          p3: Math.random() * Math.PI * 2,
+          a1: 0.65 + Math.random() * 0.65,
+          a2: 0.6 + Math.random() * 0.65,
+          rot: typeKey === 'cyst' ? targetAngle : Math.random() * Math.PI * 2
+        };
+
+        const wormTotalLen = CONFIG.TYPES.BLACKHEAD.wormTotalLenRange[0]
+          + Math.random() * (CONFIG.TYPES.BLACKHEAD.wormTotalLenRange[1] - CONFIG.TYPES.BLACKHEAD.wormTotalLenRange[0]);
+
+        state.pimples.push({
+          id: idx + 1,
+          type: typeKey,
+          cfg,
+          x: px,
+          y: py,
+          nx: px / state.width,
+          ny: py / state.height,
+          radius: r,
+          shape,
+          state: P_STATE.INTACT,
+
+          steamed: 0,
+          pressure: 0,
+          swellVisual: 0,
+          pierced: false,
+          targetAngle,
+          headOffsetX: typeKey === 'cyst' ? Math.cos(targetAngle) * 2.2 : 0,
+          headOffsetY: typeKey === 'cyst' ? Math.sin(targetAngle) * 2.2 : 0,
+          angleMatched: true,
+          hardSqueezeWarned: false,
+          traumaLevel: 0,
+
+          // 细胞夹牵拉毛孔口弹性位移
+          tentOffsetX: 0,
+          tentOffsetY: 0,
+
+          extrudeProgress: 0,
+          snappedCap: false,
+          wormTotalLen,
+          wormSeed: Math.random() * Math.PI * 2,
+          wormCurlDir: Math.random() > 0.5 ? 1 : -1,
+
+          pusRemaining: 1.0,
+          surfacePusMound: 0,
+          oozeEmitAccum: 0,
+          ruptureTimer: 0,
+
+          bloodDropSize: 0,
+          serousDropSize: 0,
+          wipeProgress: 0,
+          healProgress: 0,
+          iced: false
+        });
+      });
+
+      updateHUD();
+      setHint('♨️ 第1步推荐用【热喷软化】蒸出凝露开毛孔，或挤压后用【细胞夹】微距拔栓！', 'normal');
+      resultModalEl.classList.remove('open');
+    }
+
+    /**
+     * 截取画布核心病灶区用于结算 Before / After 滑动对比窗
+     */
+    function captureFaceSnapshot(targetCanvas) {
+      const cw = 360;
+      const ch = 130;
+      targetCanvas.width = cw;
+      targetCanvas.height = ch;
+      const tCtx = targetCanvas.getContext('2d');
+
+      // 计算所有痘痘中心点，裁取最具代表性的微距横幅区域
+      let sumY = state.height * 0.5;
+      if (state.pimples.length > 0) {
+        sumY = state.pimples.reduce((acc, p) => acc + p.y, 0) / state.pimples.length;
+      }
+      const cropH = Math.min(state.height * 0.52, (state.width * ch) / cw);
+      const cropY = Math.max(40, Math.min(state.height - cropH - 20, sumY - cropH * 0.5));
+
+      tCtx.drawImage(
+        canvas,
+        0, cropY * state.dpr,
+        canvas.width, cropH * state.dpr,
+        0, 0,
+        cw, ch
+      );
+    }
+
+    /**
+     * 渲染结算弹窗里的 Before / After 实时拖动分割对比画布
+     */
+    function renderBeforeAfterComparison() {
+      const rect = compareCanvas.getBoundingClientRect();
+      const w = Math.max(260, Math.floor(rect.width || 340));
+      const h = Math.max(110, Math.floor(rect.height || 126));
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      compareCanvas.width = Math.floor(w * dpr);
+      compareCanvas.height = Math.floor(h * dpr);
+      compareCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const splitX = w * state.compareSplit;
+
+      // 底层绘制 After（净肤冰敷后清爽毛孔）
+      compareCtx.drawImage(afterSnap, 0, 0, w, h);
+
+      // 左侧裁剪绘制 Before（护理前满脸黑头红肿痘）
+      compareCtx.save();
+      compareCtx.beginPath();
+      compareCtx.rect(0, 0, splitX, h);
+      compareCtx.clip();
+      compareCtx.drawImage(beforeSnap, 0, 0, w, h);
+      compareCtx.restore();
+
+      // 分割白线与圆形双向拉手
+      compareCtx.strokeStyle = '#ffffff';
+      compareCtx.lineWidth = 2.2;
+      compareCtx.beginPath();
+      compareCtx.moveTo(splitX, 0);
+      compareCtx.lineTo(splitX, h);
+      compareCtx.stroke();
+
+      compareCtx.fillStyle = 'rgba(22, 18, 26, 0.88)';
+      compareCtx.beginPath();
+      compareCtx.arc(splitX, h * 0.5, 13, 0, Math.PI * 2);
+      compareCtx.fill();
+      compareCtx.strokeStyle = '#ffd980';
+      compareCtx.lineWidth = 1.8;
+      compareCtx.stroke();
+
+      compareCtx.fillStyle = '#ffffff';
+      compareCtx.font = '700 10px sans-serif';
+      compareCtx.textAlign = 'center';
+      compareCtx.textBaseline = 'middle';
+      compareCtx.fillText('⇄', splitX, h * 0.5 + 0.5);
+    }
+
+    /**
+     * ============================================================================
+     * 3. 提示、战利品抛物线入盘动画与 HUD 更新
+     * ============================================================================
+     */
+    function setHint(text, level = 'normal') {
+      hintBannerEl.textContent = text;
+      hintBannerEl.classList.remove('warn', 'good');
+      if (level === 'warn') hintBannerEl.classList.add('warn');
+      if (level === 'good') hintBannerEl.classList.add('good');
+    }
+
+    function spawnFloatingText(x, y, text, color = '#ffe082') {
+      state.floatingTexts.push({
+        x,
+        y,
+        vy: -38,
+        text,
+        color,
+        life: 1.08,
+        maxLife: 1.08
+      });
+    }
+
+    function addScore(points, x, y, label) {
+      state.combo += 1;
+      const mult = state.combo >= 6 ? 1.5 : state.combo >= 3 ? 1.25 : 1;
+      const gained = Math.round(points * mult);
+      state.score = Math.max(0, state.score + gained);
+      persistSaveData();
+      if (label) {
+        const suffix = mult > 1 ? ` x${mult}` : '';
+        spawnFloatingText(x, y - 18, `${label} +${gained}${suffix}`, mult > 1 ? '#ff9eb5' : '#ffe082');
+      }
+      updateHUD();
+    }
+
+    function addDamage(amount, x, y, reason) {
+      if (amount <= 0) return;
+      const client = currentClient();
+      const scaled = amount * client.painMult;
+      state.damage = Math.min(100, state.damage + scaled);
+      state.combo = 0;
+
+      setPatientMood('😣');
+      patientQuoteEl.textContent = client.painQuote;
+      patientQuoteEl.style.color = '#ff9aa8';
+
+      if (typeof x === 'number' && typeof y === 'number') {
+        const existing = state.bruises.find((b) => Math.hypot(b.x - x, b.y - y) < 26);
+        if (existing) {
+          existing.alpha = Math.min(0.48, existing.alpha + scaled * 0.014);
+        } else if (state.bruises.length < 24) {
+          state.bruises.push({
+            x,
+            y,
+            r: 16 + Math.random() * 12,
+            alpha: Math.min(0.42, 0.08 + scaled * 0.014)
+          });
+        }
+      }
+      if (reason) setHint(reason, 'warn');
+      updateHUD();
+    }
+
+    /**
+     * 发射拔出的脂栓/脓核沿抛物线飞入右上角不锈钢战利品弯盘！
+     */
+    function launchTrophyToDish(startX, startY, kind = 'blackhead', wormLen = 28) {
+      const targetX = state.width - 54 + (Math.random() - 0.5) * 26;
+      const targetY = 66 + (Math.random() - 0.5) * 10;
+      state.flyingTrophies.push({
+        kind,
+        sx: startX,
+        sy: startY,
+        tx: targetX,
+        ty: targetY,
+        progress: 0,
+        duration: 0.44,
+        wormLen,
+        rot: (Math.random() - 0.5) * 0.9
+      });
+    }
+
+    function finalizeTrophyInTray(kind = 'blackhead', wormLen = 28) {
+      if (kind === 'blackhead') state.trophiesPlucked += 1;
+      else state.coreSeedsCollected += 1;
+
+      state.trayPulse = 1.0;
+      sound.playTrayClink();
+      setPatientMood('🤩');
+
+      if (state.trophyTrayItems.length < 20) {
+        state.trophyTrayItems.push({
+          kind,
+          wormLen,
+          ox: (state.trophyTrayItems.length % 6) * 10.5 + (Math.random() - 0.5) * 2.5,
+          oy: Math.floor(state.trophyTrayItems.length / 6) * 9.5 + (Math.random() - 0.5) * 2,
+          rot: (Math.random() - 0.5) * 0.65
+        });
+      }
+      trophyCountEl.textContent = `🥢 ${state.trophiesPlucked + state.coreSeedsCollected} 颗脂栓`;
+    }
+
+    function updateHUD() {
+      scoreValEl.textContent = String(Math.round(state.score));
+      persistSaveData();
+
+      if (state.combo >= 2) {
+        comboTagEl.textContent = `${state.combo}连击`;
+        comboTagEl.classList.add('show');
+      } else {
+        comboTagEl.classList.remove('show');
+      }
+
+      const healedCount = state.pimples.filter(
+        (p) => p.state === P_STATE.HEALED || p.state === P_STATE.HEALING
+      ).length;
+      progressValEl.textContent = `${healedCount} / ${state.pimples.length}`;
+
+      const dmgRounded = Math.round(state.damage);
+      damageValEl.textContent = `${dmgRounded}%`;
+      damageFillEl.style.width = `${dmgRounded}%`;
+      damageValEl.style.color = dmgRounded < 25 ? '#4cd9a4' : dmgRounded < 55 ? '#ffca63' : '#ff5c70';
+
+      const unsteamedCount = state.pimples.filter((p) => p.state === P_STATE.INTACT && p.steamed < 0.6).length;
+      badgeSteamEl.classList.toggle('show', !state.iceBrushingMode && unsteamedCount >= Math.ceil(state.pimples.length * 0.6));
+
+      const needNeedleCount = state.pimples.filter(
+        (p) => p.type === 'cyst' && !p.pierced && p.state === P_STATE.INTACT
+      ).length;
+      if (needNeedleCount > 0 && !state.iceBrushingMode) {
+        badgeNeedleEl.textContent = String(needNeedleCount);
+        badgeNeedleEl.classList.add('show');
+      } else {
+        badgeNeedleEl.classList.remove('show');
+      }
+
+      const pluckableCount = state.pimples.filter(
+        (p) => p.state === P_STATE.EXTRUDING && (
+          (p.type === 'blackhead' && p.extrudeProgress >= 0.22) ||
+          (p.type !== 'blackhead' && p.pusRemaining <= 0.45)
+        )
+      ).length;
+      if (pluckableCount > 0 && !state.iceBrushingMode) {
+        badgeTweezersEl.textContent = String(pluckableCount);
+        badgeTweezersEl.classList.add('show');
+      } else {
+        badgeTweezersEl.classList.remove('show');
+      }
+
+      const needSwabCount = state.pimples.filter((p) => p.state === P_STATE.OOZING).length
+        + (state.lensSplatters.length > 0 ? 1 : 0);
+      if (needSwabCount > 0 && !state.iceBrushingMode) {
+        badgeSwabEl.textContent = String(needSwabCount);
+        badgeSwabEl.classList.add('show');
+      } else {
+        badgeSwabEl.classList.remove('show');
+      }
+
+      const allCleaned = state.pimples.length > 0 && state.pimples.every(
+        (p) => p.state === P_STATE.HEALING || p.state === P_STATE.HEALED
+      );
+      if (allCleaned && !state.iceFinishing && !state.settled) {
+        if (!state.iceBrushingMode) {
+          iceFinishBtnEl.classList.add('show');
+          iceQuickBtnEl.classList.add('show');
+          setPatientMood('🥰');
+          patientQuoteEl.textContent = currentClient().happyQuote;
+          patientQuoteEl.style.color = '#9effdf';
+          setHint('🧊 全脸毛孔已清空！点击下方按钮亲手刷上【冰感积雪草冻膜】收细毛孔！', 'good');
+        }
+      }
+    }
+
+    /**
+     * ============================================================================
+     * 4. 真实物理曲线与挤出物计算
+     * ============================================================================
+     */
+    function computeRealisticBlackheadCurve(p, progress, originX = 0, originY = 0, pullTarget = null) {
+      const extrudedLen = Math.max(2.5, p.wormTotalLen * progress);
+      const stepPx = 1.6;
+      const count = Math.max(3, Math.ceil(extrudedLen / stepPx) + 1);
+      const pts = [];
+
+      let cx = originX;
+      let cy = originY;
+      // 若正被细胞夹夹住拉扯，曲线朝镊尖方向自然拉直绷紧！
+      let targetDir = -Math.PI * 0.5 + p.wormCurlDir * 0.22;
+      if (pullTarget) {
+        targetDir = Math.atan2(pullTarget.y - originY, pullTarget.x - originX);
+      }
+      let dir = targetDir;
+
+      for (let i = 0; i < count; i++) {
+        const distFromRoot = (i / (count - 1)) * extrudedLen;
+        const distFromTip = extrudedLen - distFromRoot;
+        pts.push({ x: cx, y: cy, distFromRoot, distFromTip, hasDarkCap: !p.snappedCap });
+
+        if (!pullTarget) {
+          const bend = p.wormCurlDir * (0.055 + (distFromRoot / 28) * 0.085)
+            + Math.sin(distFromTip * 0.35 + p.wormSeed) * 0.045;
+          dir += bend;
+        }
+        cx += Math.cos(dir) * (extrudedLen / (count - 1));
+        cy += Math.sin(dir) * (extrudedLen / (count - 1));
+      }
+      return pts;
+    }
+
+    function dropExtractedBlackheadOnSkin(p) {
+      const pts = computeRealisticBlackheadCurve(
+        p,
+        1.0,
+        p.x + p.wormCurlDir * 4.5,
+        p.y + 1.5
+      );
+      state.surfaceResidues.push({
+        kind: 'worm',
+        pimpleId: p.id,
+        wormLen: p.wormTotalLen,
+        x: p.x + p.wormCurlDir * 9,
+        y: p.y - 4,
+        r: 16,
+        pts,
+        thickness: Math.max(2.1, p.radius * 0.21),
+        alpha: 0.99
+      });
+    }
+
+    function emitPopSquirt(p, intensity = 1.0) {
+      const isCreamy = state.styleMode === 'creamy';
+      const count = p.type === 'whitehead' ? 14 : 11;
+      const ejectAngle = state.pointer.axisAngle - Math.PI * 0.5;
+
+      for (let i = 0; i < count; i++) {
+        const spread = (Math.random() - 0.5) * 1.15;
+        const angle = ejectAngle + spread;
+        const speed = (95 + Math.random() * 210) * intensity;
+        const size = 1.8 + Math.random() * 2.8;
+
+        state.flyingParticles.push({
+          x: p.x + p.headOffsetX,
+          y: p.y + p.headOffsetY,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - (35 + Math.random() * 55),
+          r: size,
+          color: isCreamy ? '#fff4c4' : (Math.random() > 0.35 ? '#fcf3cd' : '#eed892'),
+          flightTime: 0,
+          landTime: 0.14 + Math.random() * 0.22
+        });
+      }
+
+      const splatCount = p.type === 'whitehead' ? 2 : 1;
+      for (let s = 0; s < splatCount; s++) {
+        const sx = Math.max(30, Math.min(state.width - 30, p.x + (Math.random() - 0.5) * 130));
+        const sy = Math.max(48, Math.min(state.height - 40, p.y - 16 + (Math.random() - 0.5) * 120));
+        state.lensSplatters.push({
+          x: sx,
+          y: sy,
+          r: 5.5 + Math.random() * 8.5,
+          alpha: 0.82,
+          color: isCreamy ? '#fff3c4' : '#f9ecc2',
+          subDrops: [
+            { dx: (Math.random() - 0.5) * 14, dy: (Math.random() - 0.5) * 14, rr: 1.8 + Math.random() * 2.4 }
+          ]
+        });
+      }
+    }
+
+    function emitSolidSebaceousCorePlug(p) {
+      const ang = state.pointer.axisAngle - Math.PI * 0.5 + (Math.random() - 0.5) * 0.6;
+      const dist = p.type === 'cyst' ? 7.5 : 4.5;
+      const rx = p.x + Math.cos(ang) * dist;
+      const ry = p.y + Math.sin(ang) * dist;
+      state.surfaceResidues.push({
+        kind: 'core_seed',
+        x: rx,
+        y: ry,
+        r: p.type === 'cyst' ? 4.6 : 3.1,
+        rot: ang,
+        alpha: 0.99
+      });
+      launchTrophyToDish(rx, ry, 'seed', p.type === 'cyst' ? 26 : 18);
+    }
+
+    function enterOozingStage(p, pluckedCleanly = false) {
+      p.state = P_STATE.OOZING;
+      p.pressure = 0;
+      p.wipeProgress = 0;
+      p.tentOffsetX = 0;
+      p.tentOffsetY = 0;
+
+      if (p.type === 'blackhead') {
+        p.bloodDropSize = p.traumaLevel > 0.5 ? 1.4 : 0;
+        p.serousDropSize = 0;
+        if (pluckedCleanly) {
+          p.state = P_STATE.HEALING;
+          p.healProgress = 0;
+          setHint('🥢 水滴状脂囊连根拔出并飞入右上角弯盘！可点右上角弯盘 25X 放大检视', 'good');
+        } else {
+          setHint('✨ 黑头脂栓已顶出！可用【细胞夹】夹入弯盘或用【消毒棉签】擦走', 'good');
+        }
+      } else if (p.type === 'whitehead') {
+        p.bloodDropSize = 1.8 + p.traumaLevel * 1.4;
+        p.serousDropSize = 3.0;
+        setHint('💧 白芯已清出，见到清亮组织液就停手！换【消毒棉签】擦拭收口', 'good');
+      } else {
+        p.bloodDropSize = 4.0 + p.traumaLevel * 1.6;
+        p.serousDropSize = 3.6;
+        setHint('🩸 深层固态脓核已拔除！快换【消毒棉签】吸净渗血与浓脓', 'good');
+      }
+      updateHUD();
+    }
+
+    /**
+     * ============================================================================
+     * 5. 工具交互处理（含微水珠凝结、细胞夹毛孔牵拉、手刷冰膜）
+     * ============================================================================
+     */
+    function getCanvasPoint(clientX, clientY) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: ((clientX - rect.left) / Math.max(1, rect.width)) * state.width,
+        y: ((clientY - rect.top) / Math.max(1, rect.height)) * state.height
+      };
+    }
+
+    // 工具 1：♨️ 热喷（生成云雾 + 在皮肤表面真实凝结细密晶莹小水珠！）
+    function handleSteamSpray(pt, dt = 0.03) {
+      sound.playSteam();
+      setPatientMood('😌');
+      const speedMult = state.upgrades.steamer ? 2.0 : 1.0;
+
+      for (let i = 0; i < 2; i++) {
+        state.steamPuffs.push({
+          x: pt.x + (Math.random() - 0.5) * 26,
+          y: pt.y + (Math.random() - 0.5) * 26,
+          vx: (Math.random() - 0.5) * 18,
+          vy: -22 - Math.random() * 20,
+          r: 14 + Math.random() * 16,
+          life: 0.65,
+          maxLife: 0.65
+        });
+      }
+
+      // 在喷雾区皮肤上凝结真实微距水珠 (Micro-Dewdrops)
+      if (Math.random() < 0.65 && state.dewDrops.length < CONFIG.SKIN.MAX_DEW_DROPS) {
+        const ang = Math.random() * Math.PI * 2;
+        const dist = Math.random() * CONFIG.INTERACTION.STEAM_RADIUS_PX * 0.85;
+        const dx = pt.x + Math.cos(ang) * dist;
+        const dy = pt.y + Math.sin(ang) * dist;
+        if (dx > 18 && dx < state.width - 18 && dy > 24 && dy < state.height - 24) {
+          state.dewDrops.push({
+            x: dx,
+            y: dy,
+            r: 1.1 + Math.random() * 1.9,
+            alpha: 0.85
+          });
+        }
+      }
+
+      let newlyOpened = false;
+      for (const p of state.pimples) {
+        if (p.state === P_STATE.HEALED) continue;
+        if (Math.hypot(pt.x - p.x, pt.y - p.y) < CONFIG.INTERACTION.STEAM_RADIUS_PX + p.radius) {
+          const before = p.steamed;
+          p.steamed = Math.min(1, p.steamed + dt * 1.15 * speedMult);
+          if (before < 0.75 && p.steamed >= 0.75) {
+            newlyOpened = true;
+            spawnFloatingText(p.x, p.y - 14, '♨️毛孔舒张', '#8cebff');
+          }
+        }
+      }
+
+      if (newlyOpened) {
+        const openedCount = state.pimples.filter((p) => p.steamed >= 0.75).length;
+        if (openedCount >= Math.ceil(state.pimples.length * 0.5)) {
+          patientSteamTagEl.style.display = 'inline';
+          patientQuoteEl.textContent = '“暖呼呼的热喷雾好舒服呀，毛孔全都张开了～”';
+          patientQuoteEl.style.color = '#b8f4ff';
+          setHint('✨ 毛孔已蒸出温润水露！现在去挤痘或用【细胞夹】拔黑头丝滑无痛！', 'good');
+        }
+        updateHUD();
+      }
+    }
+
+    // 涂抹收尾冰感积雪草冻膜刷 (`ice_brush`)
+    function handleIceBrushPaint(pt) {
+      sound.playIceGelSpread();
+      setPatientMood('🥰');
+
+      // 记录水润冰感凝胶笔触（带细小气泡）
+      if (
+        state.iceGelBlobs.length === 0 ||
+        Math.hypot(
+          pt.x - state.iceGelBlobs[state.iceGelBlobs.length - 1].x,
+          pt.y - state.iceGelBlobs[state.iceGelBlobs.length - 1].y
+        ) > 12
+      ) {
+        state.iceGelBlobs.push({
+          x: pt.x,
+          y: pt.y,
+          r: CONFIG.INTERACTION.ICE_BRUSH_RADIUS_PX * (0.85 + Math.random() * 0.25),
+          bx: (Math.random() - 0.5) * 18,
+          by: (Math.random() - 0.5) * 18
+        });
+      }
+
+      // 冻膜覆盖到的毛孔彻底平复收缩，红斑瞬间褪去
+      for (let i = state.bruises.length - 1; i >= 0; i--) {
+        if (Math.hypot(pt.x - state.bruises[i].x, pt.y - state.bruises[i].y) < 55) {
+          state.bruises.splice(i, 1);
+        }
+      }
+
+      let icedCount = 0;
+      for (const p of state.pimples) {
+        if (Math.hypot(pt.x - p.x, pt.y - p.y) < CONFIG.INTERACTION.ICE_BRUSH_RADIUS_PX + 16) {
+          if (!p.iced) {
+            p.iced = true;
+            p.state = P_STATE.HEALED;
+            triggerHaptic(10);
+            spawnFloatingText(p.x, p.y - 12, '🧊毛孔隐形', '#9effdf');
+          }
+        }
+        if (p.iced) icedCount += 1;
+      }
+
+      state.iceCoverage = icedCount / Math.max(1, state.pimples.length);
+      if (icedCount >= state.pimples.length && !state.iceFinishing) {
+        triggerIceMaskFinale();
+      }
+    }
+
+    function handleNeedleTap(pt) {
+      sound.unlock();
+      let hit = null;
+      let minDist = Infinity;
+      for (const p of state.pimples) {
+        if (p.state === P_STATE.HEALED) continue;
+        const d = Math.hypot(pt.x - p.x, pt.y - p.y);
+        if (d <= p.radius * 1.5 && d < minDist) {
+          minDist = d;
+          hit = p;
+        }
+      }
+
+      if (!hit) {
+        sound.playWarnHurt();
+        triggerHaptic(20);
+        addDamage(CONFIG.RULES.WRONG_NEEDLE_DAMAGE, pt.x, pt.y, '⚠️ 别扎健康皮肤！按住屏幕可看上方 2.2X 瞄准镜对准脓点');
+        return;
+      }
+
+      if (hit.type === 'blackhead' && hit.state === P_STATE.EXTRUDING && hit.extrudeProgress >= 0.5) {
+        hit.extrudeProgress = 1;
+        sound.playPop('blackhead');
+        triggerHaptic(16);
+        launchTrophyToDish(hit.x, hit.y, 'blackhead', hit.wormTotalLen);
+        state.perfectOps += 1;
+        addScore(CONFIG.TYPES.BLACKHEAD.scorePop, hit.x, hit.y, '针尖挑出脂栓');
+        enterOozingStage(hit, true);
+        return;
+      }
+
+      if (hit.state !== P_STATE.INTACT) {
+        sound.playWarnHurt();
+        hit.traumaLevel = Math.min(1, hit.traumaLevel + 0.4);
+        addDamage(CONFIG.RULES.WRONG_NEEDLE_DAMAGE * 0.7, hit.x, hit.y, '⚠️ 已破口处无需再扎针，快换挤压、细胞夹或棉签！');
+        return;
+      }
+
+      if (hit.pierced) {
+        setHint('📍 微口已开！切换【手指挤压】从底座两侧往中间推挤吧', 'normal');
+        return;
+      }
+
+      hit.pierced = true;
+      sound.playPierce();
+      triggerHaptic(14);
+
+      if (hit.type === 'cyst') {
+        state.perfectOps += 1;
+        hit.surfacePusMound = 2.5;
+        addScore(CONFIG.TYPES.CYST.scorePierce, hit.x, hit.y, '精准破口');
+        setHint('✨ 脓尖已挑开！换【手指挤压】放在红肿底座外围往中间兜底推挤', 'good');
+      } else if (hit.type === 'blackhead') {
+        addScore(30, hit.x, hit.y, '挑松黑头');
+        setHint('✨ 黑头硬塞已挑松！轻挤冒头后可用【细胞夹】整根拔入弯盘！', 'good');
+      } else {
+        hit.surfacePusMound = 1.9;
+        spawnFloatingText(hit.x, hit.y - 16, '挑开薄皮', '#a8f0d4');
+      }
+      updateHUD();
+    }
+
+    function startTweezerGrab(pt) {
+      sound.unlock();
+      // 1) 夹取掉在脸上的黑头脂栓或固态白芯飞入弯盘
+      for (let i = state.surfaceResidues.length - 1; i >= 0; i--) {
+        const res = state.surfaceResidues[i];
+        if ((res.kind === 'worm' || res.kind === 'core_seed') && Math.hypot(pt.x - res.x, pt.y - res.y) < 25) {
+          sound.playTweezerClamp();
+          triggerHaptic(14);
+          const linkedId = res.pimpleId;
+          const rx = res.x;
+          const ry = res.y;
+          const wLen = res.wormLen || 24;
+          const kind = res.kind === 'worm' ? 'blackhead' : 'seed';
+          state.surfaceResidues.splice(i, 1);
+          launchTrophyToDish(rx, ry, kind, wLen);
+          addScore(45, rx, ry, '夹入弯盘');
+          if (linkedId) {
+            const owner = state.pimples.find((pm) => pm.id === linkedId);
+            if (owner && owner.state === P_STATE.OOZING && owner.bloodDropSize <= 0.1) {
+              owner.state = P_STATE.HEALING;
+              owner.healProgress = 0;
+            }
+          }
+          updateHUD();
+          return;
+        }
+      }
+
+      // 2) 查找冒头黑头或白芯
+      let target = null;
+      let minD = CONFIG.INTERACTION.TWEEZER_GRAB_PX;
+      for (const p of state.pimples) {
+        if (p.state === P_STATE.HEALED || p.state === P_STATE.HEALING) continue;
+        let tipX = p.x;
+        let tipY = p.y;
+        if (p.type === 'blackhead' && p.state === P_STATE.EXTRUDING && p.extrudeProgress > 0.1) {
+          const curve = computeRealisticBlackheadCurve(p, p.extrudeProgress, p.x, p.y);
+          const tip = curve[curve.length - 1];
+          tipX = tip.x;
+          tipY = tip.y;
+        }
+        const d = Math.min(Math.hypot(pt.x - p.x, pt.y - p.y), Math.hypot(pt.x - tipX, pt.y - tipY));
+        if (d < minD) {
+          minD = d;
+          target = p;
+        }
+      }
+
+      if (!target) {
+        setHint('🥢 先用【手指挤压】让黑头冒出一小截，再用细胞夹借助上方放大镜夹住慢拔！', 'normal');
+        return;
+      }
+
+      if (target.state === P_STATE.INTACT) {
+        if (target.type === 'blackhead' && (target.steamed >= 0.75 || target.pierced)) {
+          target.state = P_STATE.EXTRUDING;
+          target.extrudeProgress = 0.22;
+        } else {
+          setHint('🤏 这颗还没冒头夹不住哦！先用【手指挤压】挤出一小截（或先热喷软化）再来夹拔', 'warn');
+          return;
+        }
+      }
+
+      if (target.state === P_STATE.EXTRUDING) {
+        if (target.type === 'blackhead' && target.extrudeProgress < 0.16) {
+          setHint('🤏 黑头才刚松动一点点，再挤高一点点就能用细胞夹牢牢夹住了！', 'normal');
+          return;
+        }
+        sound.playTweezerClamp();
+        triggerHaptic(15);
+        state.tweezers.clampedPimple = target;
+        state.tweezers.grabStartX = pt.x;
+        state.tweezers.grabStartY = pt.y;
+        state.tweezers.curTipX = pt.x;
+        state.tweezers.curTipY = pt.y;
+        state.tweezers.lastX = pt.x;
+        state.tweezers.lastY = pt.y;
+        state.tweezers.pullDist = 0;
+        state.tweezers.pullRatio = 0;
+        state.tweezers.dangerRatio = 0;
+        setHint('🥢 已咬合脂栓颈部！观察放大镜，匀速往外拉即可连根拔入弯盘！', 'good');
+      }
+    }
+
+    function updateTweezerPull(pt, dt) {
+      const tw = state.tweezers;
+      const p = tw.clampedPimple;
+      if (!p) return;
+
+      const stepDist = Math.hypot(pt.x - tw.lastX, pt.y - tw.lastY);
+      const speed = stepDist / Math.max(0.008, dt);
+      tw.lastX = pt.x;
+      tw.lastY = pt.y;
+      tw.curTipX = pt.x;
+      tw.curTipY = pt.y;
+
+      const maxSafeSpeed = CONFIG.INTERACTION.TWEEZER_SNAP_SPEED_PX * (state.upgrades.tweezers ? 1.7 : 1.0);
+      tw.dangerRatio = Math.min(1, speed / maxSafeSpeed);
+
+      if (p.type === 'blackhead' && speed > maxSafeSpeed && !p.snappedCap && p.extrudeProgress < 0.85) {
+        p.snappedCap = true;
+        p.extrudeProgress = Math.max(0.12, p.extrudeProgress - 0.15);
+        p.tentOffsetX = 0;
+        p.tentOffsetY = 0;
+        tw.clampedPimple = null;
+        sound.playWarnHurt();
+        triggerHaptic([20, 30]);
+        setHint('😱 拽太快把黑头帽夹断了！底下还剩半截白脂根，慢一点拉或用手挤出来吧', 'warn');
+        return;
+      }
+
+      const pullVecX = pt.x - p.x;
+      const pullVecY = pt.y - p.y;
+      const pullVecLen = Math.hypot(pullVecX, pullVecY) || 1;
+      // 真实细节：毛孔口被粘稠脂栓向外弹性牵拉鼓起 2~4.5px！
+      tw.pullDist = Math.hypot(pt.x - tw.grabStartX, pt.y - tw.grabStartY);
+      tw.pullRatio = Math.min(1, tw.pullDist / CONFIG.INTERACTION.TWEEZER_PULL_NEEDED_PX);
+
+      p.tentOffsetX = (pullVecX / pullVecLen) * tw.pullRatio * 4.2;
+      p.tentOffsetY = (pullVecY / pullVecLen) * tw.pullRatio * 4.2;
+
+      if (p.type === 'blackhead') {
+        p.extrudeProgress = Math.min(1, Math.max(p.extrudeProgress, 0.25 + tw.pullRatio * 0.75));
+      }
+
+      if (tw.pullRatio >= 1) {
+        tw.clampedPimple = null;
+        p.tentOffsetX = 0;
+        p.tentOffsetY = 0;
+        sound.playPop('tweeze_pluck');
+        triggerHaptic([20, 18, 38]);
+        state.perfectOps += 1;
+
+        const upgMult = state.upgrades.tweezers ? 1.3 : 1.0;
+        if (p.type === 'blackhead') {
+          launchTrophyToDish(pt.x, pt.y, 'blackhead', p.wormTotalLen);
+          const pts = Math.round((CONFIG.TYPES.BLACKHEAD.scorePop + CONFIG.TYPES.BLACKHEAD.scoreTweezeBonus) * upgMult);
+          addScore(pts, p.x, p.y, '🥢连根拔出完整脂栓');
+          enterOozingStage(p, true);
+        } else {
+          launchTrophyToDish(pt.x, pt.y, 'seed', 24);
+          p.pusRemaining = 0;
+          const pts = Math.round((p.cfg.scorePop + 70) * upgMult);
+          addScore(pts, p.x, p.y, '🥢拔出固态深层脓核');
+          enterOozingStage(p, false);
+        }
+      }
+    }
+
+    function handleSwabWipe(pt) {
+      sound.unlock();
+      let wipedAnything = false;
+      const swabR = CONFIG.INTERACTION.SWAB_RADIUS_PX;
+      const wipeBoost = state.upgrades.iceprobe ? 1.45 : 1.0;
+
+      // 擦除热喷凝结的水珠
+      for (let i = state.dewDrops.length - 1; i >= 0; i--) {
+        if (Math.hypot(pt.x - state.dewDrops[i].x, pt.y - state.dewDrops[i].y) < swabR) {
+          state.dewDrops.splice(i, 1);
+          wipedAnything = true;
+        }
+      }
+
+      for (let i = state.lensSplatters.length - 1; i >= 0; i--) {
+        const sp = state.lensSplatters[i];
+        if (Math.hypot(pt.x - sp.x, pt.y - sp.y) < swabR + sp.r) {
+          sp.alpha -= 0.28 * wipeBoost;
+          state.swabStain.pus = Math.min(1, state.swabStain.pus + 0.08);
+          wipedAnything = true;
+          if (sp.alpha <= 0.05) {
+            state.lensSplatters.splice(i, 1);
+            addScore(15, sp.x, sp.y, '擦亮镜片');
+          }
+        }
+      }
+
+      for (let i = state.surfaceResidues.length - 1; i >= 0; i--) {
+        const res = state.surfaceResidues[i];
+        if (Math.hypot(pt.x - res.x, pt.y - res.y) < swabR + res.r) {
+          res.alpha -= 0.34 * wipeBoost;
+          if (res.kind === 'worm') state.swabStain.sebum = Math.min(1, state.swabStain.sebum + 0.16);
+          else state.swabStain.pus = Math.min(1, state.swabStain.pus + 0.10);
+          wipedAnything = true;
+
+          if (res.alpha <= 0.08) {
+            const linkedId = res.pimpleId;
+            if (res.kind === 'worm') launchTrophyToDish(res.x, res.y, 'blackhead', res.wormLen || 24);
+            state.surfaceResidues.splice(i, 1);
+            if (linkedId) {
+              const owner = state.pimples.find((pm) => pm.id === linkedId);
+              if (owner && owner.state === P_STATE.OOZING && owner.bloodDropSize <= 0.1) {
+                owner.state = P_STATE.HEALING;
+                owner.healProgress = 0;
+                const healAmt = CONFIG.RULES.SWAB_SOOTHE_HEAL + (state.upgrades.iceprobe ? 3.5 : 0);
+                state.damage = Math.max(0, state.damage - healAmt);
+                sound.playCleanChime();
+                triggerHaptic(12);
+                addScore(owner.cfg.scoreWipe, owner.x, owner.y, '毛孔净澈');
+              }
+            }
+          }
+        }
+      }
+
+      for (let i = state.bruises.length - 1; i >= 0; i--) {
+        const b = state.bruises[i];
+        if (Math.hypot(pt.x - b.x, pt.y - b.y) < swabR + b.r * 0.6) {
+          b.alpha -= 0.035 * wipeBoost;
+          wipedAnything = true;
+          if (b.alpha <= 0.02) state.bruises.splice(i, 1);
+        }
+      }
+
+      for (const p of state.pimples) {
+        const dist = Math.hypot(pt.x - p.x, pt.y - p.y);
+        if (dist >= swabR + p.radius) continue;
+
+        if (p.state === P_STATE.EXTRUDING) {
+          if (p.surfacePusMound > 0.2) {
+            p.surfacePusMound = Math.max(0, p.surfacePusMound - 0.5);
+            state.swabStain.pus = Math.min(1, state.swabStain.pus + 0.12);
+            wipedAnything = true;
+            setHint('🤏 表面浮脓已擦掉，继续挤或用【细胞夹】把底下的白芯/脂栓拔出来吧！', 'normal');
+          }
+          continue;
+        }
+
+        if (p.state === P_STATE.OOZING) {
+          p.wipeProgress = Math.min(1, p.wipeProgress + 0.22 * wipeBoost);
+          if (p.surfacePusMound > 0) {
+            p.surfacePusMound = Math.max(0, p.surfacePusMound - 0.6);
+            state.swabStain.pus = Math.min(1, state.swabStain.pus + 0.12);
+          }
+          if (p.bloodDropSize > 0) {
+            state.swabStain.blood = Math.min(1, state.swabStain.blood + 0.14);
+          }
+          wipedAnything = true;
+
+          if (p.wipeProgress >= 1) {
+            p.state = P_STATE.HEALING;
+            p.healProgress = 0;
+            p.surfacePusMound = 0;
+            state.surfaceResidues = state.surfaceResidues.filter(
+              (r) => Math.hypot(r.x - p.x, r.y - p.y) > p.radius * 2.2
+            );
+            const healAmt = CONFIG.RULES.SWAB_SOOTHE_HEAL + (state.upgrades.iceprobe ? 3.5 : 0);
+            state.damage = Math.max(0, state.damage - healAmt);
+            sound.playCleanChime();
+            triggerHaptic(12);
+            addScore(p.cfg.scoreWipe, p.x, p.y, '无菌收敛');
+          }
+        }
+      }
+
+      if (wipedAnything) {
+        sound.playWipe();
+        updateHUD();
+      }
+    }
+
+    function findNearestSqueezeTarget(x, y, maxDist) {
+      let best = null;
+      let minD = maxDist;
+      for (const p of state.pimples) {
+        if (p.state === P_STATE.HEALED || p.state === P_STATE.HEALING) continue;
+        const d = Math.hypot(x - p.x, y - p.y);
+        if (d < minD) {
+          minD = d;
+          best = p;
+        }
+      }
+      return best;
+    }
+
+    function bindCanvasInteractions() {
+      canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+      canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        if (state.settled || state.paused || state.iceFinishing) return;
+        sound.unlock();
+
+        const touches = e.touches;
+        if (touches.length === 0) return;
+        const pt = getCanvasPoint(touches[0].clientX, touches[0].clientY);
+
+        // 点击画布右上角战利品弯盘也可直接弹出 25X 检视窗
+        if (state.trophyTrayItems.length > 0 && pt.x > state.width - 96 && pt.y < 92) {
+          openTrayInspectModal();
+          return;
+        }
+
+        if (state.currentTool === 'ice_brush') {
+          state.pointer.active = true;
+          state.pointer.mode = 'ice_brush';
+          state.pointer.x = pt.x;
+          state.pointer.y = pt.y;
+          handleIceBrushPaint(pt);
+          return;
+        }
+        if (state.currentTool === 'needle') {
+          state.pointer.active = true;
+          state.pointer.mode = 'needle';
+          state.pointer.x = pt.x;
+          state.pointer.y = pt.y;
+          setHint('🔍 移动准星对准大痘浅黄脓尖（或半截黑头），松手即可精准挑破！', 'good');
+          return;
+        }
+        if (state.currentTool === 'steam') {
+          state.pointer.active = true;
+          state.pointer.mode = 'steam';
+          state.pointer.x = pt.x;
+          state.pointer.y = pt.y;
+          handleSteamSpray(pt, 0.04);
+          return;
+        }
+        if (state.currentTool === 'tweezers') {
+          state.pointer.active = true;
+          state.pointer.mode = 'tweezers';
+          state.pointer.x = pt.x;
+          state.pointer.y = pt.y;
+          startTweezerGrab(pt);
+          return;
+        }
+        if (state.currentTool === 'swab') {
+          state.pointer.active = true;
+          state.pointer.mode = 'swab';
+          state.pointer.x = pt.x;
+          state.pointer.y = pt.y;
+          handleSwabWipe(pt);
+          return;
+        }
+
+        if (touches.length >= 2) {
+          const t1 = getCanvasPoint(touches[0].clientX, touches[0].clientY);
+          const t2 = getCanvasPoint(touches[1].clientX, touches[1].clientY);
+          const midX = (t1.x + t2.x) * 0.5;
+          const midY = (t1.y + t2.y) * 0.5;
+          const span = Math.hypot(t2.x - t1.x, t2.y - t1.y);
+
+          state.pointer.active = true;
+          state.pointer.mode = 'two-finger';
+          state.pointer.p1 = t1;
+          state.pointer.p2 = t2;
+          state.pointer.smoothP1 = { ...t1 };
+          state.pointer.smoothP2 = { ...t2 };
+          state.pointer.anchorX = midX;
+          state.pointer.anchorY = midY;
+          state.pointer.initSpan = Math.max(50, span);
+          state.pointer.curSpan = span;
+          state.pointer.axisAngle = Math.atan2(t2.y - t1.y, t2.x - t1.x);
+          state.pointer.lockedPimple = findNearestSqueezeTarget(
+            midX, midY, CONFIG.INTERACTION.TWO_FINGER_CAPTURE_PX
+          );
+          state.pointer.rawForce = 0.08;
+        } else if (touches.length === 1) {
+          startMirrorPinch(pt);
+        }
+      }, { passive: false });
+
+      canvas.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (!state.pointer.active || state.settled || state.paused || state.iceFinishing) return;
+        const touches = e.touches;
+        if (touches.length === 0) return;
+        const pt = getCanvasPoint(touches[0].clientX, touches[0].clientY);
+
+        if (state.currentTool === 'ice_brush') {
+          state.pointer.x = pt.x;
+          state.pointer.y = pt.y;
+          handleIceBrushPaint(pt);
+          return;
+        }
+        if (state.currentTool === 'needle') {
+          state.pointer.x = pt.x;
+          state.pointer.y = pt.y;
+          return;
+        }
+        if (state.currentTool === 'steam') {
+          state.pointer.x = pt.x;
+          state.pointer.y = pt.y;
+          handleSteamSpray(pt, 0.035);
+          return;
+        }
+        if (state.currentTool === 'tweezers') {
+          state.pointer.x = pt.x;
+          state.pointer.y = pt.y;
+          updateTweezerPull(pt, 0.025);
+          return;
+        }
+        if (state.currentTool === 'swab') {
+          state.pointer.x = pt.x;
+          state.pointer.y = pt.y;
+          handleSwabWipe(pt);
+          return;
+        }
+
+        if (state.currentTool === 'squeeze') {
+          if (touches.length >= 2) {
+            const t1 = getCanvasPoint(touches[0].clientX, touches[0].clientY);
+            const t2 = getCanvasPoint(touches[1].clientX, touches[1].clientY);
+            if (state.pointer.mode !== 'two-finger') {
+              state.pointer.mode = 'two-finger';
+              state.pointer.initSpan = Math.max(54, Math.hypot(t2.x - t1.x, t2.y - t1.y));
+              state.pointer.smoothP1 = { ...t1 };
+              state.pointer.smoothP2 = { ...t2 };
+            }
+            const midX = (t1.x + t2.x) * 0.5;
+            const midY = (t1.y + t2.y) * 0.5;
+            const span = Math.hypot(t2.x - t1.x, t2.y - t1.y);
+
+            state.pointer.p1 = t1;
+            state.pointer.p2 = t2;
+            state.pointer.anchorX = midX;
+            state.pointer.anchorY = midY;
+            state.pointer.curSpan = span;
+            state.pointer.axisAngle = Math.atan2(t2.y - t1.y, t2.x - t1.x);
+            state.pointer.lockedPimple = findNearestSqueezeTarget(
+              midX, midY, CONFIG.INTERACTION.TWO_FINGER_CAPTURE_PX
+            );
+
+            const shrink = Math.max(0, state.pointer.initSpan - span);
+            const closenessBonus = span < 66 ? (66 - span) / 46 : 0;
+            state.pointer.rawForce = Math.min(1.22, shrink / 42 + closenessBonus * 0.48);
+          } else if (touches.length === 1 && state.pointer.mode === 'mirror-pinch') {
+            updateMirrorPinch(pt);
+          }
+        }
+      }, { passive: false });
+
+      const endTouch = (e) => {
+        e.preventDefault();
+        if (state.pointer.mode === 'needle' && e.changedTouches && e.changedTouches.length > 0) {
+          const pt = getCanvasPoint(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+          handleNeedleTap(pt);
+        }
+        if (e.touches.length === 0 || (e.touches.length === 1 && state.pointer.mode === 'two-finger')) {
+          releasePointer();
+        }
+      };
+      canvas.addEventListener('touchend', endTouch, { passive: false });
+      canvas.addEventListener('touchcancel', endTouch, { passive: false });
+
+      canvas.addEventListener('mousedown', (e) => {
+        if (e.button !== 0 || state.settled || state.paused || state.iceFinishing) return;
+        sound.unlock();
+        const pt = getCanvasPoint(e.clientX, e.clientY);
+        state.pointer.hoverX = pt.x;
+        state.pointer.hoverY = pt.y;
+
+        if (state.trophyTrayItems.length > 0 && pt.x > state.width - 96 && pt.y < 92) {
+          openTrayInspectModal();
+          return;
+        }
+
+        if (state.currentTool === 'ice_brush') {
+          state.pointer.active = true;
+          state.pointer.mode = 'ice_brush';
+          state.pointer.x = pt.x;
+          state.pointer.y = pt.y;
+          handleIceBrushPaint(pt);
+          return;
+        }
+        if (state.currentTool === 'needle') {
+          state.pointer.active = true;
+          state.pointer.mode = 'needle';
+          state.pointer.x = pt.x;
+          state.pointer.y = pt.y;
+          setHint('🔍 移动准星对准大痘浅黄脓尖（或半截黑头），松手即可精准挑破！', 'good');
+          return;
+        }
+        if (state.currentTool === 'steam') {
+          state.pointer.active = true;
+          state.pointer.mode = 'steam';
+          state.pointer.x = pt.x;
+          state.pointer.y = pt.y;
+          handleSteamSpray(pt, 0.04);
+          return;
+        }
+        if (state.currentTool === 'tweezers') {
+          state.pointer.active = true;
+          state.pointer.mode = 'tweezers';
+          state.pointer.x = pt.x;
+          state.pointer.y = pt.y;
+          startTweezerGrab(pt);
+          return;
+        }
+        if (state.currentTool === 'swab') {
+          state.pointer.active = true;
+          state.pointer.mode = 'swab';
+          state.pointer.x = pt.x;
+          state.pointer.y = pt.y;
+          handleSwabWipe(pt);
+          return;
+        }
+        startMirrorPinch(pt);
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        const pt = getCanvasPoint(e.clientX, e.clientY);
+        state.pointer.hoverX = pt.x;
+        state.pointer.hoverY = pt.y;
+
+        if (!state.pointer.active || state.settled || state.paused || state.iceFinishing) return;
+        if (state.currentTool === 'ice_brush' && state.pointer.mode === 'ice_brush') {
+          state.pointer.x = pt.x;
+          state.pointer.y = pt.y;
+          handleIceBrushPaint(pt);
+        } else if (state.currentTool === 'needle' && state.pointer.mode === 'needle') {
+          state.pointer.x = pt.x;
+          state.pointer.y = pt.y;
+        } else if (state.currentTool === 'steam' && state.pointer.mode === 'steam') {
+          state.pointer.x = pt.x;
+          state.pointer.y = pt.y;
+          handleSteamSpray(pt, 0.03);
+        } else if (state.currentTool === 'tweezers' && state.pointer.mode === 'tweezers') {
+          state.pointer.x = pt.x;
+          state.pointer.y = pt.y;
+          updateTweezerPull(pt, 0.02);
+        } else if (state.currentTool === 'swab' && state.pointer.mode === 'swab') {
+          state.pointer.x = pt.x;
+          state.pointer.y = pt.y;
+          handleSwabWipe(pt);
+        } else if (state.currentTool === 'squeeze' && state.pointer.mode === 'mirror-pinch') {
+          updateMirrorPinch(pt);
+        }
+      });
+
+      window.addEventListener('mouseup', () => {
+        if (state.pointer.active) {
+          if (state.pointer.mode === 'needle' && !state.settled && !state.paused) {
+            handleNeedleTap({ x: state.pointer.x, y: state.pointer.y });
+          }
+          releasePointer();
+        }
+      });
+
+      // 结算面板 Before / After 对比分割线交互绑定
+      const baBox = document.getElementById('ba-compare-box');
+      let draggingBA = false;
+      const updateBASplit = (clientX) => {
+        const r = baBox.getBoundingClientRect();
+        const ratio = (clientX - r.left) / Math.max(1, r.width);
+        state.compareSplit = Math.max(0.06, Math.min(0.94, ratio));
+        renderBeforeAfterComparison();
+      };
+      baBox.addEventListener('mousedown', (e) => {
+        draggingBA = true;
+        updateBASplit(e.clientX);
+      });
+      window.addEventListener('mousemove', (e) => {
+        if (draggingBA) updateBASplit(e.clientX);
+      });
+      window.addEventListener('mouseup', () => {
+        draggingBA = false;
+      });
+      baBox.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        draggingBA = true;
+        if (e.touches[0]) updateBASplit(e.touches[0].clientX);
+      }, { passive: false });
+      baBox.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (draggingBA && e.touches[0]) updateBASplit(e.touches[0].clientX);
+      }, { passive: false });
+      baBox.addEventListener('touchend', () => {
+        draggingBA = false;
+      });
+    }
+
+    function startMirrorPinch(pt) {
+      const target = findNearestSqueezeTarget(pt.x, pt.y, CONFIG.INTERACTION.MOUSE_CAPTURE_PX);
+      const cx = target ? target.x : pt.x;
+      const cy = target ? target.y : pt.y;
+
+      let dx = pt.x - cx;
+      let dy = pt.y - cy;
+      let dist = Math.hypot(dx, dy);
+
+      if (dist < 14) {
+        const defaultAng = target ? target.targetAngle : 0;
+        dist = target && target.type === 'cyst' ? 48 : 38;
+        dx = Math.cos(defaultAng) * dist;
+        dy = Math.sin(defaultAng) * dist;
+      }
+
+      const ang = Math.atan2(dy, dx);
+      const startHalf = Math.max(26, Math.min(68, dist));
+      const p1 = { x: cx + Math.cos(ang) * startHalf, y: cy + Math.sin(ang) * startHalf };
+      const p2 = { x: cx - Math.cos(ang) * startHalf, y: cy - Math.sin(ang) * startHalf };
+
+      state.pointer.active = true;
+      state.pointer.mode = 'mirror-pinch';
+      state.pointer.lockedPimple = target;
+      state.pointer.anchorX = cx;
+      state.pointer.anchorY = cy;
+      state.pointer.initSpan = startHalf * 2;
+      state.pointer.curSpan = startHalf * 2;
+      state.pointer.axisAngle = ang;
+      state.pointer.initAxisCos = Math.cos(ang);
+      state.pointer.initAxisSin = Math.sin(ang);
+      state.pointer.p1 = p1;
+      state.pointer.p2 = p2;
+      state.pointer.smoothP1 = { ...p1 };
+      state.pointer.smoothP2 = { ...p2 };
+      state.pointer.rawForce = 0.14;
+    }
+
+    function updateMirrorPinch(pt) {
+      const ptr = state.pointer;
+      const cx = ptr.anchorX;
+      const cy = ptr.anchorY;
+      const dx = pt.x - cx;
+      const dy = pt.y - cy;
+
+      const radialDist = Math.hypot(dx, dy);
+      const signedProj = dx * ptr.initAxisCos + dy * ptr.initAxisSin;
+
+      if (radialDist > 20 && signedProj > 12) {
+        const newAng = Math.atan2(dy, dx);
+        ptr.axisAngle = newAng;
+        ptr.initAxisCos = Math.cos(newAng);
+        ptr.initAxisSin = Math.sin(newAng);
+      }
+
+      const minHalfSpan = ptr.lockedPimple && ptr.lockedPimple.type === 'cyst' ? 18 : 13;
+      const halfSpan = Math.max(minHalfSpan, Math.min(70, signedProj));
+      const ang = ptr.axisAngle;
+
+      ptr.p1 = { x: cx + Math.cos(ang) * halfSpan, y: cy + Math.sin(ang) * halfSpan };
+      ptr.p2 = { x: cx - Math.cos(ang) * halfSpan, y: cy - Math.sin(ang) * halfSpan };
+      ptr.curSpan = halfSpan * 2;
+
+      const startHalf = ptr.initSpan * 0.5;
+      const pushedIn = Math.max(0, startHalf - signedProj);
+      ptr.rawForce = Math.min(1.22, 0.15 + pushedIn / (CONFIG.INTERACTION.MOUSE_DRAG_FULL_PX * 0.55));
+    }
+
+    function releasePointer() {
+      if (state.tweezers.clampedPimple) {
+        state.tweezers.clampedPimple.tentOffsetX = 0;
+        state.tweezers.clampedPimple.tentOffsetY = 0;
+      }
+      state.pointer.active = false;
+      state.pointer.mode = 'none';
+      state.pointer.rawForce = 0;
+      state.pointer.lockedPimple = null;
+      state.tweezers.clampedPimple = null;
+      sound.setTension(0);
+    }
+
+    function getAxisAngleDiff(a, b) {
+      let diff = Math.abs((a - b) % Math.PI);
+      if (diff > Math.PI * 0.5) diff = Math.PI - diff;
+      return Math.abs(diff);
+    }
+
+    function enterIceBrushingStage() {
+      state.iceBrushingMode = true;
+      state.currentTool = 'ice_brush';
+      document.querySelectorAll('.tool-btn').forEach((b) => b.classList.remove('selected'));
+      iceFinishBtnEl.classList.remove('show');
+      iceQuickBtnEl.classList.add('show');
+      viewportWrap.style.cursor = 'pointer';
+      setHint('🧊 按住拖动硅胶刷，在所有刚清完的毛孔上涂抹冰感积雪草冻膜！（或点右下角一键厚敷）', 'good');
+    }
+
+    function triggerIceMaskFinale() {
+      if (state.iceFinishing || state.settled) return;
+      state.iceFinishing = true;
+      state.iceBrushingMode = false;
+      iceFinishBtnEl.classList.remove('show');
+      iceQuickBtnEl.classList.remove('show');
+      releasePointer();
+      sound.playCleanChime(true);
+      triggerHaptic([18, 25, 35]);
+
+      state.bruises = [];
+      state.surfaceResidues = [];
+      state.lensSplatters = [];
+      state.dewDrops = [];
+      for (const p of state.pimples) {
+        p.state = P_STATE.HEALED;
+        p.iced = true;
+      }
+      state.damage = Math.max(0, state.damage - 6);
+      updateHUD();
+    }
+
+    /**
+     * ============================================================================
+     * 6. 物理帧步进更新
+     * ============================================================================
+     */
+    function updateSimulation(dt) {
+      if (state.paused) return;
+
+      if (state.cameraShake > 0) {
+        state.cameraShake = Math.max(0, state.cameraShake - dt * 30);
+      }
+      if (state.trayPulse > 0) {
+        state.trayPulse = Math.max(0, state.trayPulse - dt * 3.5);
+      }
+
+      // 更新飞向右上角战利品不锈钢弯盘的脂栓抛物线
+      for (let i = state.flyingTrophies.length - 1; i >= 0; i--) {
+        const ft = state.flyingTrophies[i];
+        ft.progress += dt / ft.duration;
+        if (ft.progress >= 1) {
+          finalizeTrophyInTray(ft.kind, ft.wormLen);
+          state.flyingTrophies.splice(i, 1);
+        }
+      }
+
+      // 收尾冰感冻膜铺展 -> 捕获清爽净肤 After 快照并弹出结算对比屏
+      if (state.iceFinishing && !state.settled) {
+        state.iceWaveProgress = Math.min(1, state.iceWaveProgress + dt * 1.25);
+        if (state.iceWaveProgress >= 1) {
+          state.settled = true;
+          state.iceGelBlobs = [];
+          renderScene(true); // 渲染一帧无冻膜无UI杂物的纯净毛孔图供 After 对比！
+          captureFaceSnapshot(afterSnap);
+          openSettlementModal();
+        }
+      }
+
+      const ptr = state.pointer;
+      if (ptr.active && ptr.mode === 'steam') {
+        handleSteamSpray({ x: ptr.x, y: ptr.y }, dt * 0.45);
+      }
+
+      // 热喷凝露微水珠缓慢自然蒸发
+      for (let i = state.dewDrops.length - 1; i >= 0; i--) {
+        state.dewDrops[i].alpha -= dt * 0.035;
+        if (state.dewDrops[i].alpha <= 0.05) state.dewDrops.splice(i, 1);
+      }
+
+      if (ptr.active && (ptr.mode === 'two-finger' || ptr.mode === 'mirror-pinch')) {
+        ptr.squeezeForce += (ptr.rawForce - ptr.squeezeForce) * CONFIG.SKIN.ELASTICITY * 1.5;
+        ptr.smoothP1.x += (ptr.p1.x - ptr.smoothP1.x) * 0.34;
+        ptr.smoothP1.y += (ptr.p1.y - ptr.smoothP1.y) * 0.34;
+        ptr.smoothP2.x += (ptr.p2.x - ptr.smoothP2.x) * 0.34;
+        ptr.smoothP2.y += (ptr.p2.y - ptr.smoothP2.y) * 0.34;
+      } else {
+        ptr.squeezeForce *= (1 - Math.min(0.92, dt * 11));
+        if (ptr.squeezeForce < 0.005) ptr.squeezeForce = 0;
+      }
+
+      let activeTensionAudio = 0;
+      if (ptr.active && (ptr.mode === 'two-finger' || ptr.mode === 'mirror-pinch') && ptr.squeezeForce > 0.12) {
+        const target = ptr.lockedPimple;
+        if (!target) {
+          if (ptr.squeezeForce > 0.42) {
+            addDamage(
+              CONFIG.RULES.EMPTY_SKIN_DAMAGE_PER_SEC * dt * ptr.squeezeForce,
+              ptr.anchorX,
+              ptr.anchorY,
+              '⚠️ 掐到顾客好皮肤啦！对准瑕疵两侧再发力哦'
+            );
+            sound.playWarnHurt();
+          }
+        } else if (target.state === P_STATE.OOZING) {
+          if (ptr.squeezeForce > 0.40) {
+            target.traumaLevel = Math.min(1, target.traumaLevel + dt * 0.8);
+            target.bloodDropSize = Math.min(6.8, Math.max(1.5, target.bloodDropSize) + dt * 1.9);
+            addDamage(
+              CONFIG.RULES.OVER_SQUEEZE_EMPTY_PORE_DPS * dt,
+              target.x,
+              target.y,
+              '⚠️ 已经排空见组织液了！继续死挤会出血留印，快换【消毒棉签】！'
+            );
+            sound.playWarnHurt();
+          }
+        } else if (target.state === P_STATE.INTACT) {
+          applySqueezeToIntact(target, ptr.squeezeForce, ptr.axisAngle, ptr.initSpan, dt);
+          activeTensionAudio = Math.max(ptr.squeezeForce * 0.6, target.pressure);
+        } else if (target.state === P_STATE.EXTRUDING) {
+          applySqueezeToExtruding(target, ptr.squeezeForce, ptr.axisAngle, dt);
+          activeTensionAudio = ptr.squeezeForce * 0.68;
+        }
+      }
+      sound.setTension(activeTensionAudio);
+
+      for (const p of state.pimples) {
+        const isBeingSqueezed = ptr.active && ptr.lockedPimple === p && ptr.squeezeForce > 0.12;
+        if (!isBeingSqueezed && p.state === P_STATE.INTACT) {
+          p.pressure = Math.max(0, p.pressure - p.cfg.decayRate * dt);
+        }
+        p.swellVisual += (p.pressure - p.swellVisual) * CONFIG.SKIN.ELASTICITY;
+
+        if (p.state === P_STATE.RUPTURED) {
+          p.ruptureTimer -= dt;
+          if (p.ruptureTimer <= 0) p.state = P_STATE.EXTRUDING;
+        }
+
+        if (p.state === P_STATE.HEALING) {
+          p.healProgress = Math.min(1, p.healProgress + dt / CONFIG.RULES.HEAL_FADE_SECONDS);
+          if (p.healProgress >= 1) {
+            p.state = P_STATE.HEALED;
+            updateHUD();
+          }
+        }
+      }
+
+      for (let i = state.steamPuffs.length - 1; i >= 0; i--) {
+        const sp = state.steamPuffs[i];
+        sp.life -= dt;
+        sp.x += sp.vx * dt;
+        sp.y += sp.vy * dt;
+        sp.r += 16 * dt;
+        if (sp.life <= 0) state.steamPuffs.splice(i, 1);
+      }
+
+      for (let i = state.flyingParticles.length - 1; i >= 0; i--) {
+        const fp = state.flyingParticles[i];
+        fp.flightTime += dt;
+        fp.vx *= CONFIG.PARTICLES.DRAG;
+        fp.vy = fp.vy * CONFIG.PARTICLES.DRAG + CONFIG.PARTICLES.GRAVITY * dt;
+        fp.x += fp.vx * dt;
+        fp.y += fp.vy * dt;
+
+        if (fp.flightTime >= fp.landTime) {
+          if (
+            fp.x > 10 && fp.x < state.width - 10 &&
+            fp.y > 10 && fp.y < state.height - 10 &&
+            state.surfaceResidues.length < CONFIG.PARTICLES.MAX_RESIDUE_ITEMS
+          ) {
+            state.surfaceResidues.push({
+              kind: 'blob',
+              x: fp.x,
+              y: fp.y,
+              r: fp.r * 1.15,
+              color: fp.color,
+              alpha: 0.96
+            });
+          }
+          state.flyingParticles.splice(i, 1);
+        }
+      }
+
+      for (const sp of state.lensSplatters) {
+        sp.y += CONFIG.PARTICLES.LENS_SLIDE_SPEED * dt * (sp.r / 12);
+      }
+
+      for (let i = state.floatingTexts.length - 1; i >= 0; i--) {
+        const ft = state.floatingTexts[i];
+        ft.life -= dt;
+        ft.y += ft.vy * dt;
+        ft.vy *= 0.94;
+        if (ft.life <= 0) state.floatingTexts.splice(i, 1);
+      }
+    }
+
+    function applySqueezeToIntact(p, force, axisAngle, initSpan, dt) {
+      const steamEase = p.steamed >= 0.75 ? (state.upgrades.steamer ? 1.65 : 1.40) : 1.0;
+      const painRelief = p.steamed >= 0.75 ? 0.5 : 1.0;
+
+      if (p.type === 'cyst') {
+        const angDiff = getAxisAngleDiff(axisAngle, p.targetAngle);
+        p.angleMatched = angDiff <= CONFIG.TYPES.CYST.angleTolerance;
+
+        if (!p.pierced) {
+          p.pressure = Math.min(0.86, p.pressure + force * CONFIG.TYPES.CYST.buildRateRaw * dt);
+          p.traumaLevel = Math.min(1, p.traumaLevel + dt * 0.35);
+          addDamage(
+            CONFIG.RULES.HARD_SQUEEZE_DAMAGE_PER_SEC * painRelief * dt * force,
+            p.x,
+            p.y,
+            '🚨 深层红肿痘还没破口！硬挤超痛还会变紫，先用【粉刺针】挑破偏心脓尖！'
+          );
+          sound.playWarnHurt();
+          if (!p.hardSqueezeWarned && force > 0.58) {
+            p.hardSqueezeWarned = true;
+            state.score = Math.max(0, state.score - CONFIG.RULES.WRONG_ACTION_SCORE_PENALTY);
+            spawnFloatingText(p.x, p.y - 22, `未熟硬挤 -${CONFIG.RULES.WRONG_ACTION_SCORE_PENALTY}`, '#ff6b7a');
+            triggerHaptic([20, 40, 20]);
+            updateHUD();
+          }
+          return;
+        }
+
+        if (initSpan < CONFIG.INTERACTION.CYST_TOO_NARROW_SPAN_PX) {
+          addDamage(
+            CONFIG.RULES.SHALLOW_PINCH_DAMAGE_PER_SEC * painRelief * dt * force,
+            p.x,
+            p.y,
+            '📐 下指太窄只掐到了表皮！请从红肿包外围宽一点往中间兜底推挤'
+          );
+          return;
+        }
+
+        if (!p.angleMatched) {
+          p.pressure = Math.min(0.75, p.pressure + force * 0.28 * dt);
+          addDamage(
+            CONFIG.RULES.SHALLOW_PINCH_DAMAGE_PER_SEC * painRelief * dt * force,
+            p.x,
+            p.y,
+            '📐 顺着红肿椭圆长轴方向（白色微弧提示侧）夹挤才能兜出脓核！'
+          );
+          return;
+        }
+
+        p.pressure += force * CONFIG.TYPES.CYST.buildRatePierced * steamEase * dt;
+        if (p.pressure >= CONFIG.TYPES.CYST.popThresholdPierced) {
+          rupturePimple(p, force);
+        }
+        return;
+      }
+
+      if (p.type === 'whitehead') {
+        const boost = (p.pierced ? 1.35 : 1.0) * steamEase;
+        p.pressure += force * CONFIG.TYPES.WHITEHEAD.buildRate * boost * dt;
+        if (p.pressure >= CONFIG.TYPES.WHITEHEAD.popThreshold) {
+          rupturePimple(p, force);
+        }
+        return;
+      }
+
+      if (p.type === 'blackhead') {
+        const boost = (p.pierced ? CONFIG.TYPES.BLACKHEAD.piercedBoost : 1.0) * steamEase;
+        p.pressure += force * 1.40 * boost * dt;
+        if (p.pressure >= CONFIG.TYPES.BLACKHEAD.popThreshold) {
+          rupturePimple(p, force);
+        }
+      }
+    }
+
+    function rupturePimple(p, force) {
+      p.state = P_STATE.RUPTURED;
+      p.ruptureTimer = 0.03;
+      p.pressure = 1;
+
+      if (p.type === 'whitehead') {
+        p.pusRemaining = 0.36;
+        p.surfacePusMound = 4.6;
+        state.cameraShake = 5.5;
+        sound.playPop('whitehead');
+        triggerHaptic(32);
+        emitPopSquirt(p, Math.min(1.2, 0.75 + force * 0.4));
+        setHint('💥 破口出脓！继续挤（或换【细胞夹】）把底下那颗固态白芯取出来！', 'good');
+      } else if (p.type === 'blackhead') {
+        p.extrudeProgress = 0.24;
+        triggerHaptic(14);
+        setHint('🥢 黑头已冒头！切换【细胞夹】借助放大镜稳速拔出可得高分，或继续挤到底！', 'good');
+      } else if (p.type === 'cyst') {
+        p.pusRemaining = 0.82;
+        p.surfacePusMound = 5.8;
+        state.cameraShake = 6.5;
+        sound.playPop('cyst');
+        triggerHaptic([35, 20, 40]);
+        emitPopSquirt(p, 0.85);
+        setHint('🌋 浓脓涌出中！保持兜底推挤，把最深处的【固态脓栓核】挤蹦出来！', 'good');
+      }
+      updateHUD();
+    }
+
+    function applySqueezeToExtruding(p, force, axisAngle, dt) {
+      const steamEase = p.steamed >= 0.75 ? (state.upgrades.steamer ? 1.55 : 1.35) : 1.0;
+
+      if (p.type === 'blackhead') {
+        const boost = (p.pierced ? CONFIG.TYPES.BLACKHEAD.piercedBoost : 1.0) * steamEase;
+        p.extrudeProgress = Math.min(
+          1,
+          p.extrudeProgress + force * CONFIG.TYPES.BLACKHEAD.extrudeRate * boost * dt
+        );
+        p.pressure = Math.min(1, 0.35 + force * 0.45);
+
+        if (p.extrudeProgress >= 1) {
+          sound.playPop('blackhead');
+          triggerHaptic([18, 16, 26]);
+          dropExtractedBlackheadOnSkin(p);
+          if (!p.hardSqueezeWarned) state.perfectOps += 1;
+          addScore(CONFIG.TYPES.BLACKHEAD.scorePop, p.x, p.y, '挤出整条黑头');
+          enterOozingStage(p, false);
+        }
+        return;
+      }
+
+      if (p.type === 'whitehead') {
+        p.pusRemaining = Math.max(0, p.pusRemaining - force * CONFIG.TYPES.WHITEHEAD.residualDrainRate * steamEase * dt);
+        p.surfacePusMound = Math.min(6.4, p.surfacePusMound + force * 3.2 * dt);
+        sound.playViscousOoze();
+
+        if (p.pusRemaining <= 0) {
+          sound.playPop('blackhead');
+          triggerHaptic(22);
+          emitSolidSebaceousCorePlug(p);
+          if (!p.hardSqueezeWarned) state.perfectOps += 1;
+          addScore(CONFIG.TYPES.WHITEHEAD.scorePop, p.x, p.y, '挤出白米粒芯');
+          enterOozingStage(p, false);
+        }
+        return;
+      }
+
+      if (p.type === 'cyst') {
+        const angDiff = getAxisAngleDiff(axisAngle, p.targetAngle);
+        p.angleMatched = angDiff <= CONFIG.TYPES.CYST.angleTolerance * 1.25;
+        if (!p.angleMatched) {
+          setHint('📐 顺着红肿长轴方向兜底夹挤，才能把深层脓栓核顶出来！', 'warn');
+          return;
+        }
+
+        const prevRem = p.pusRemaining;
+        p.pusRemaining = Math.max(0, p.pusRemaining - force * CONFIG.TYPES.CYST.pusDrainRate * steamEase * dt);
+        p.surfacePusMound = Math.min(8.2, p.surfacePusMound + force * 3.8 * dt);
+        p.oozeEmitAccum += force * dt;
+        sound.playViscousOoze();
+
+        if (p.oozeEmitAccum > 0.28 && state.surfaceResidues.length < CONFIG.PARTICLES.MAX_RESIDUE_ITEMS) {
+          p.oozeEmitAccum = 0;
+          const ejectA = axisAngle - Math.PI * 0.5 + (Math.random() - 0.5) * 0.9;
+          const d = 4 + (1 - p.pusRemaining) * 11;
+          state.surfaceResidues.push({
+            kind: 'viscous_glob',
+            x: p.x + Math.cos(ejectA) * d,
+            y: p.y + Math.sin(ejectA) * d,
+            r: 4.2 + Math.random() * 2.4,
+            stretch: 1.28 + Math.random() * 0.35,
+            rot: ejectA,
+            color: '#f0d889',
+            alpha: 0.98
+          });
+        }
+
+        if (prevRem > 0 && p.pusRemaining <= 0) {
+          state.cameraShake = 9.5;
+          sound.playPop('core_plug');
+          triggerHaptic([45, 25, 65]);
+          emitSolidSebaceousCorePlug(p);
+          emitPopSquirt(p, 0.95);
+          if (!p.hardSqueezeWarned) state.perfectOps += 1;
+          addScore(CONFIG.TYPES.CYST.scorePop, p.x, p.y, '深层脓核蹦出');
+          enterOozingStage(p, false);
+        }
+      }
+    }
+
+    /**
+     * ============================================================================
+     * 7. 精工渲染管线（含微水珠凝露、手刷气泡冰膜、抛物线战利品、2.2X 光学放大镜）
+     * ============================================================================
+     */
+    function renderScene(cleanForSnapshot = false) {
+      const w = state.width;
+      const h = state.height;
+      const isCreamy = state.styleMode === 'creamy';
+
+      ctx.save();
+      if (!cleanForSnapshot && state.cameraShake > 0.2) {
+        ctx.translate(
+          (Math.random() - 0.5) * state.cameraShake,
+          (Math.random() - 0.5) * state.cameraShake
+        );
+      }
+
+      // 1) 微距面部皮肤基底
+      ctx.drawImage(skinLayer, 0, 0, w, h);
+
+      // 2) 双指挤压像素级无缝皮肤变形
+      const ptr = state.pointer;
+      if (!cleanForSnapshot && ptr.squeezeForce > 0.02 && (ptr.mode === 'two-finger' || ptr.mode === 'mirror-pinch')) {
+        renderRealPinchedSkinMesh(ptr);
+      }
+
+      // 3) 淤血斑
+      for (const b of state.bruises) {
+        const bg = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
+        bg.addColorStop(0, `rgba(176, 32, 42, ${b.alpha})`);
+        bg.addColorStop(0.6, `rgba(192, 52, 58, ${b.alpha * 0.38})`);
+        bg.addColorStop(1, 'rgba(192, 52, 58, 0)');
+        ctx.fillStyle = bg;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // 4) 所有瑕疵渲染
+      for (const p of state.pimples) {
+        renderPimple(p, isCreamy);
+      }
+
+      // 首帧自动抓取“护理前 Before”原始皮肤快照！
+      if (!state.beforeCaptured && state.pimples.length > 0) {
+        state.beforeCaptured = true;
+        ctx.restore();
+        captureFaceSnapshot(beforeSnap);
+        ctx.save();
+      }
+
+      if (cleanForSnapshot) {
+        ctx.restore();
+        return;
+      }
+
+      // 5) 热喷在皮肤表面凝结的晶莹微水珠 (Micro-Dewdrops)
+      for (const dw of state.dewDrops) {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, dw.alpha);
+        ctx.fillStyle = 'rgba(118, 62, 46, 0.20)';
+        ctx.beginPath();
+        ctx.arc(dw.x + 0.5, dw.y + 0.8, dw.r, 0, Math.PI * 2);
+        ctx.fill();
+
+        const dg = ctx.createRadialGradient(dw.x + dw.r * 0.25, dw.y + dw.r * 0.25, 0.1, dw.x, dw.y, dw.r);
+        dg.addColorStop(0, 'rgba(255, 255, 255, 0.72)');
+        dg.addColorStop(0.7, 'rgba(225, 248, 255, 0.30)');
+        dg.addColorStop(1, 'rgba(180, 225, 240, 0.12)');
+        ctx.fillStyle = dg;
+        ctx.beginPath();
+        ctx.arc(dw.x, dw.y, dw.r, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(dw.x - dw.r * 0.32, dw.y - dw.r * 0.32, dw.r * 0.32, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // 6) 玩家亲手涂抹的晶莹微气泡积雪草冻膜涂层
+      renderIceGelLayer();
+
+      // 7) 皮肤残留物渲染
+      renderSurfaceResidues(isCreamy);
+
+      // 8) 飞溅微脓滴
+      for (const fp of state.flyingParticles) {
+        ctx.save();
+        const speedAngle = Math.atan2(fp.vy, fp.vx);
+        const stretch = Math.min(2.1, 1 + Math.hypot(fp.vx, fp.vy) / 260);
+        ctx.translate(fp.x, fp.y);
+        ctx.rotate(speedAngle);
+        ctx.fillStyle = fp.color;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, fp.r * stretch, fp.r * 0.84, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // 9) 草本热喷蒸汽云雾
+      for (const sp of state.steamPuffs) {
+        ctx.save();
+        const a = Math.max(0, (sp.life / sp.maxLife) * 0.34);
+        const sg = ctx.createRadialGradient(sp.x, sp.y, 2, sp.x, sp.y, sp.r);
+        sg.addColorStop(0, `rgba(235, 250, 255, ${a})`);
+        sg.addColorStop(1, 'rgba(235, 250, 255, 0)');
+        ctx.fillStyle = sg;
+        ctx.beginPath();
+        ctx.arc(sp.x, sp.y, sp.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // 10) 先渲染双手与器械（不含顶层UI），以便 2.2X 光学微距放大镜实时捕获器械针尖与毛孔的精准咬合画面！
+      renderRealisticHandsAndTools();
+
+      // 11) 当按住精密器械（粉刺针 / 细胞夹）时，在手指上方绘制 2.2X 偏振微距光学放大镜 (Optical Loupe)！
+      if (ptr.active && (ptr.mode === 'needle' || ptr.mode === 'tweezers')) {
+        renderPrecisionMagnifierLoupe(ptr.x, ptr.y);
+      }
+
+      // 12) 右上角医用不锈钢战利品弯盘 + 正在飞入弯盘的抛物线脂栓动画！
+      renderTrophyDishAndFlyingPlugs(w);
+
+      // 13) 收尾全屏冰感清凉水波
+      if (state.iceFinishing) {
+        renderIceMaskWave(w, h);
+      }
+
+      ctx.restore();
+
+      renderLensSplatters();
+
+      for (const ft of state.floatingTexts) {
+        ctx.save();
+        const alpha = Math.min(1, ft.life / (ft.maxLife * 0.45));
+        ctx.globalAlpha = Math.max(0, alpha);
+        ctx.font = '800 13px -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = 'rgba(22, 12, 16, 0.85)';
+        ctx.strokeText(ft.text, ft.x, ft.y);
+        ctx.fillStyle = ft.color;
+        ctx.fillText(ft.text, ft.x, ft.y);
+        ctx.restore();
+      }
+    }
+
+    /**
+     * 渲染亲手涂抹在皮肤上的水润微气泡冰感积雪草冻膜
+     */
+    function renderIceGelLayer() {
+      if (state.iceGelBlobs.length === 0) return;
+      ctx.save();
+      for (const g of state.iceGelBlobs) {
+        const grad = ctx.createRadialGradient(g.x - g.r * 0.25, g.y - g.r * 0.25, 2, g.x, g.y, g.r);
+        grad.addColorStop(0, 'rgba(210, 252, 255, 0.36)');
+        grad.addColorStop(0.7, 'rgba(116, 232, 248, 0.26)');
+        grad.addColorStop(1, 'rgba(92, 212, 238, 0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(g.x, g.y, g.r, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 冻膜内悬浮的晶莹微氧气泡与边缘水润高光
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.arc(g.x + g.bx, g.y + g.by, 2.2, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.38)';
+        ctx.beginPath();
+        ctx.ellipse(g.x - g.r * 0.3, g.y - g.r * 0.35, g.r * 0.28, g.r * 0.12, -0.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    /**
+     * 2.2X 偏振微距光学瞄准放大镜（解决触屏手指遮挡痛点，提供手术级精准视觉！）
+     */
+    function renderPrecisionMagnifierLoupe(focusX, focusY) {
+      const R = CONFIG.INTERACTION.LOUPE_RADIUS_PX;
+      const zoom = CONFIG.INTERACTION.LOUPE_ZOOM;
+      const dpr = state.dpr;
+
+      // 默认悬浮在触点正上方 76px；若靠近顶部边缘则自动切换到下方或侧方
+      let lx = Math.max(R + 12, Math.min(state.width - R - 12, focusX));
+      let ly = focusY - 78;
+      if (ly < R + 48) {
+        ly = focusY + 78;
+      }
+
+      const srcW = (R * 2) / zoom;
+      const srcH = (R * 2) / zoom;
+      const sx = Math.max(0, Math.min(canvas.width - srcW * dpr, (focusX - srcW * 0.5) * dpr));
+      const sy = Math.max(0, Math.min(canvas.height - srcH * dpr, (focusY - srcH * 0.5) * dpr));
+
+      ctx.save();
+      // 镜框外投影
+      ctx.fillStyle = 'rgba(10, 6, 12, 0.50)';
+      ctx.beginPath();
+      ctx.arc(lx, ly + 4, R + 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 裁剪圆形放大视窗，直接采样主画布已渲染的真实微距画面！
+      ctx.beginPath();
+      ctx.arc(lx, ly, R, 0, Math.PI * 2);
+      ctx.clip();
+
+      ctx.drawImage(
+        canvas,
+        sx, sy, srcW * dpr, srcH * dpr,
+        lx - R, ly - R, R * 2, R * 2
+      );
+
+      // 医用十字光学微刻度准星
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
+      ctx.lineWidth = 0.9;
+      ctx.beginPath();
+      ctx.moveTo(lx - 10, ly);
+      ctx.lineTo(lx - 3, ly);
+      ctx.moveTo(lx + 3, ly);
+      ctx.lineTo(lx + 10, ly);
+      ctx.moveTo(lx, ly - 10);
+      ctx.lineTo(lx, ly - 3);
+      ctx.moveTo(lx, ly + 3);
+      ctx.lineTo(lx, ly + 10);
+      ctx.stroke();
+
+      // 环形 LED 冷光补光镜面内反光
+      const glassG = ctx.createLinearGradient(lx - R, ly - R, lx + R, ly + R);
+      glassG.addColorStop(0, 'rgba(255, 255, 255, 0.24)');
+      glassG.addColorStop(0.4, 'rgba(255, 255, 255, 0)');
+      glassG.addColorStop(1, 'rgba(107, 226, 255, 0.14)');
+      ctx.fillStyle = glassG;
+      ctx.fillRect(lx - R, ly - R, R * 2, R * 2);
+      ctx.restore();
+
+      // 金属拉丝镜圈外框
+      ctx.save();
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 3.2;
+      ctx.beginPath();
+      ctx.arc(lx, ly, R, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.arc(lx, ly, R + 2, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    /**
+     * 绘制右上角不锈钢战利品弯盘 + 正在抛物线飞入弯盘的完整黑头脂栓！
+     */
+    function renderTrophyDishAndFlyingPlugs(w) {
+      const hasAny = state.trophyTrayItems.length > 0 || state.flyingTrophies.length > 0;
+      if (!hasAny) return;
+
+      const trayX = w - 54;
+      const trayY = 66;
+      const scalePop = 1 + state.trayPulse * 0.12;
+
+      ctx.save();
+      ctx.translate(trayX, trayY);
+      ctx.scale(scalePop, scalePop);
+
+      ctx.fillStyle = 'rgba(20, 10, 12, 0.36)';
+      ctx.beginPath();
+      ctx.ellipse(2, 3, 41, 22, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      const dishG = ctx.createLinearGradient(-38, -20, 38, 20);
+      dishG.addColorStop(0, 'rgba(240, 246, 252, 0.92)');
+      dishG.addColorStop(0.5, 'rgba(164, 178, 194, 0.90)');
+      dishG.addColorStop(1, 'rgba(222, 232, 242, 0.92)');
+      ctx.fillStyle = dishG;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 40, 21, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.82)';
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+
+      ctx.fillStyle = 'rgba(122, 136, 152, 0.48)';
+      ctx.beginPath();
+      ctx.ellipse(0, 1, 34, 16, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      for (const item of state.trophyTrayItems) {
+        ctx.save();
+        ctx.translate(-25 + item.ox, -7 + item.oy);
+        ctx.rotate(item.rot);
+        if (item.kind === 'blackhead') {
+          ctx.fillStyle = '#f5e49c';
+          ctx.beginPath();
+          ctx.ellipse(0, 1.6, 2.2, 4.5, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#241108';
+          ctx.beginPath();
+          ctx.arc(0, -2.6, 1.75, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.fillStyle = '#fff6c8';
+          ctx.beginPath();
+          ctx.ellipse(0, 0, 2.4, 3.6, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+      ctx.restore();
+
+      // 绘制正在沿高抛弧线飞向不锈钢弯盘的刚拔出脂栓！
+      for (const ft of state.flyingTrophies) {
+        const t = Math.min(1, ft.progress);
+        const ease = 1 - Math.pow(1 - t, 2);
+        const fx = ft.sx + (ft.tx - ft.sx) * ease;
+        const fy = ft.sy + (ft.ty - ft.sy) * ease - Math.sin(t * Math.PI) * 58;
+        const sc = 1 + Math.sin(t * Math.PI) * 0.45;
+
+        ctx.save();
+        ctx.translate(fx, fy);
+        ctx.rotate(ft.rot + t * 2.4);
+        ctx.scale(sc, sc);
+
+        if (ft.kind === 'blackhead') {
+          ctx.fillStyle = '#f5e49c';
+          ctx.beginPath();
+          ctx.ellipse(0, 2.2, 2.8, 6.2, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#241108';
+          ctx.beginPath();
+          ctx.arc(0, -3.6, 2.3, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.fillStyle = '#fff4be';
+          ctx.beginPath();
+          ctx.ellipse(0, 0, 3.2, 4.8, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+    }
+
+    function renderIceMaskWave(w, h) {
+      const p = state.iceWaveProgress;
+      const maxR = Math.hypot(w, h);
+      const curR = p * maxR;
+      ctx.save();
+      const iceG = ctx.createRadialGradient(w * 0.5, h * 0.5, curR * 0.1, w * 0.5, h * 0.5, curR);
+      iceG.addColorStop(0, `rgba(180, 246, 255, ${0.18 * (1 - p * 0.4)})`);
+      iceG.addColorStop(0.75, `rgba(105, 226, 248, ${0.34 * (1 - p * 0.3)})`);
+      iceG.addColorStop(1, 'rgba(105, 226, 248, 0)');
+      ctx.fillStyle = iceG;
+      ctx.beginPath();
+      ctx.arc(w * 0.5, h * 0.5, curR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function renderRealPinchedSkinMesh(ptr) {
+      const f = Math.min(1, ptr.squeezeForce);
+      const p1 = ptr.smoothP1;
+      const p2 = ptr.smoothP2;
+      const midX = (p1.x + p2.x) * 0.5;
+      const midY = (p1.y + p2.y) * 0.5;
+      const ang = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+      const R = CONFIG.SKIN.PINCH_PATCH_RADIUS;
+
+      ctx.save();
+      ctx.translate(midX, midY);
+      ctx.rotate(ang);
+
+      ctx.beginPath();
+      ctx.ellipse(0, 0, R, R * 0.84, 0, 0, Math.PI * 2);
+      ctx.clip();
+
+      const slices = CONFIG.SKIN.PINCH_PATCH_SLICES;
+      const stripW = (R * 2) / slices;
+      const cosA = Math.cos(ang);
+      const sinA = Math.sin(ang);
+
+      for (let i = 0; i < slices; i++) {
+        const u = (i + 0.5) / slices * 2 - 1;
+        const falloff = Math.max(0, 1 - u * u);
+        const dstX = -R + i * stripW;
+        const srcU = u + u * f * 0.38 * falloff;
+        const sampleWorldX = midX + cosA * (srcU * R);
+        const sampleWorldY = midY + sinA * (srcU * R);
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(dstX - 0.5, -R, stripW + 1.0, R * 2);
+        ctx.clip();
+
+        const bulge = 1 + f * 0.10 * falloff;
+        const sx = 1 - f * 0.22 * falloff;
+        ctx.translate(dstX + stripW * 0.5, 0);
+        ctx.scale(sx, bulge);
+        ctx.rotate(-ang);
+        ctx.drawImage(
+          skinLayer,
+          0, 0, skinLayer.width, skinLayer.height,
+          -sampleWorldX, -sampleWorldY, state.width, state.height
+        );
+        ctx.restore();
+      }
+
+      const span = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+      const ridgeW = Math.max(14, span * 0.44);
+      const blanchGrad = ctx.createRadialGradient(0, -4, 2, 0, 0, ridgeW * 1.15);
+      blanchGrad.addColorStop(0, `rgba(255, 246, 232, ${f * CONFIG.SKIN.BLANCH_MAX_ALPHA})`);
+      blanchGrad.addColorStop(0.65, `rgba(255, 238, 218, ${f * CONFIG.SKIN.BLANCH_MAX_ALPHA * 0.42})`);
+      blanchGrad.addColorStop(1, 'rgba(255, 238, 218, 0)');
+      ctx.fillStyle = blanchGrad;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, ridgeW, R * 0.68, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      for (const side of [-1, 1]) {
+        const grooveX = side * (span * 0.5 - 3);
+        const gGrad = ctx.createRadialGradient(grooveX, 0, 2, grooveX, 0, 22);
+        gGrad.addColorStop(0, `rgba(116, 54, 38, ${f * 0.34})`);
+        gGrad.addColorStop(1, 'rgba(116, 54, 38, 0)');
+        ctx.fillStyle = gGrad;
+        ctx.beginPath();
+        ctx.ellipse(grooveX, 0, 18, 28, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = `rgba(138, 62, 46, ${f * 0.42})`;
+        ctx.lineWidth = 1.3;
+        ctx.beginPath();
+        ctx.arc(grooveX - side * 5, 0, 16, side > 0 ? Math.PI * 0.68 : -Math.PI * 0.32, side > 0 ? Math.PI * 1.32 : Math.PI * 0.32);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function renderPimple(p, isCreamy) {
+      const ptr = state.pointer;
+      const isTarget = ptr.active && ptr.lockedPimple === p && ptr.squeezeForce > 0.05;
+      const isClampedByTweezer = state.tweezers.clampedPimple === p;
+
+      if (p.state === P_STATE.HEALED) {
+        ctx.save();
+        if (p.type !== 'blackhead' && !p.iced) {
+          const calmG = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius * 0.55);
+          calmG.addColorStop(0, 'rgba(204, 112, 104, 0.08)');
+          calmG.addColorStop(1, 'rgba(204, 112, 104, 0)');
+          ctx.fillStyle = calmG;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius * 0.55, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        // 敷过冰膜后毛孔更紧致隐形
+        const finalPoreR = p.iced ? 0.95 : 1.35;
+        ctx.fillStyle = isCreamy ? 'rgba(165, 105, 88, 0.15)' : 'rgba(105, 52, 38, 0.22)';
+        ctx.beginPath();
+        ctx.ellipse(p.x, p.y, finalPoreR, finalPoreR * 0.8, p.shape.rot, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        return;
+      }
+
+      ctx.save();
+      // 叠加细胞夹往外拉扯时的真实毛孔粘连位移！
+      ctx.translate(p.x + p.tentOffsetX, p.y + p.tentOffsetY);
+
+      const healFade = p.state === P_STATE.HEALING ? (1 - p.healProgress * 0.88) : 1;
+
+      // 细胞夹拉扯时毛孔周围一圈受牵拉泛白皮丘
+      if (isClampedByTweezer && state.tweezers.pullRatio > 0.05) {
+        const tentG = ctx.createRadialGradient(0, 0, 1, 0, 0, p.radius * 1.15);
+        tentG.addColorStop(0, `rgba(255, 245, 232, ${state.tweezers.pullRatio * 0.48})`);
+        tentG.addColorStop(1, 'rgba(255, 245, 232, 0)');
+        ctx.fillStyle = tentG;
+        ctx.beginPath();
+        ctx.arc(0, 0, p.radius * 1.15, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      let compressX = 1;
+      let bulgeY = 1;
+      const deformAng = isTarget ? ptr.axisAngle : 0;
+      if (isTarget) {
+        const sf = Math.min(1, ptr.squeezeForce);
+        compressX = 1 - sf * 0.18;
+        bulgeY = 1 + sf * 0.20;
+      }
+
+      ctx.save();
+      ctx.rotate(deformAng);
+      ctx.scale(compressX, bulgeY);
+      ctx.rotate(-deformAng);
+
+      if (p.type === 'blackhead') {
+        renderRealBlackhead(p, isCreamy, healFade);
+      } else if (p.type === 'whitehead') {
+        renderRealWhitehead(p, isCreamy, healFade);
+      } else {
+        renderRealCyst(p, isCreamy, healFade);
+      }
+
+      if (p.surfacePusMound > 0.25 && p.state !== P_STATE.HEALING) {
+        const mr = p.surfacePusMound * (p.state === P_STATE.OOZING ? (1 - p.wipeProgress) : 1);
+        if (mr > 0.3) {
+          renderViscousPusDollop(p.headOffsetX, p.headOffsetY - 0.8, mr, isCreamy);
+        }
+      }
+
+      if (p.state === P_STATE.OOZING || p.state === P_STATE.HEALING) {
+        renderEmptiedPoreState(p, isCreamy, healFade);
+      }
+
+      ctx.restore();
+
+      if (p.type === 'blackhead' && p.state === P_STATE.EXTRUDING && p.extrudeProgress > 0.04) {
+        const pullLocal = isClampedByTweezer
+          ? { x: state.tweezers.curTipX - (p.x + p.tentOffsetX), y: state.tweezers.curTipY - (p.y + p.tentOffsetY) }
+          : null;
+        const pts = computeRealisticBlackheadCurve(p, p.extrudeProgress, 0, 0, pullLocal);
+        const thick = Math.max(2.1, p.radius * 0.21);
+        renderRealisticSebumFilament(ctx, pts, thick, isCreamy, 1.5 + p.extrudeProgress * 2.2);
+
+        ctx.save();
+        ctx.strokeStyle = isCreamy ? 'rgba(248, 208, 190, 0.88)' : 'rgba(228, 174, 146, 0.88)';
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.arc(0, 0.7, thick * 1.05, 0.15, Math.PI - 0.15);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      renderSubtleClinicalGuides(p, isTarget);
+      ctx.restore();
+    }
+
+    function renderRealBlackhead(p, isCreamy, healFade) {
+      const r = p.radius;
+      const swell = p.swellVisual;
+
+      if (swell > 0.05 && p.state !== P_STATE.HEALING) {
+        const blanchG = ctx.createRadialGradient(0, 0, r * 0.15, 0, 0, r * 1.15);
+        blanchG.addColorStop(0, `rgba(255, 242, 224, ${swell * 0.42})`);
+        blanchG.addColorStop(0.65, `rgba(218, 152, 128, ${swell * 0.18})`);
+        blanchG.addColorStop(1, 'rgba(218, 152, 128, 0)');
+        ctx.fillStyle = blanchG;
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 1.15, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      if (p.traumaLevel > 0.1) {
+        const trG = ctx.createRadialGradient(0, 0, 1, 0, 0, r * 1.2);
+        trG.addColorStop(0, `rgba(192, 52, 56, ${p.traumaLevel * 0.35 * healFade})`);
+        trG.addColorStop(1, 'rgba(192, 52, 56, 0)');
+        ctx.fillStyle = trG;
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 1.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      if (p.state === P_STATE.OOZING || p.state === P_STATE.HEALING) return;
+
+      const steamDilate = p.steamed >= 0.75 ? 1.15 : 1.0;
+      const poreR = r * (0.34 + swell * 0.07) * steamDilate;
+      const funnelGrad = ctx.createLinearGradient(-poreR, -poreR, poreR, poreR);
+      funnelGrad.addColorStop(0, isCreamy ? 'rgba(132, 72, 56, 0.82)' : 'rgba(64, 28, 18, 0.90)');
+      funnelGrad.addColorStop(1, isCreamy ? 'rgba(255, 228, 212, 0.80)' : 'rgba(236, 186, 158, 0.82)');
+      ctx.fillStyle = funnelGrad;
+      beginOrganicPath(ctx, 0, 0, poreR * 1.32, poreR * 1.18, p.shape, 1.0);
+      ctx.fill();
+
+      ctx.fillStyle = '#140804';
+      beginOrganicPath(ctx, 0, 0, poreR * 1.02, poreR * 0.92, p.shape, 1.05);
+      ctx.fill();
+
+      ctx.strokeStyle = 'rgba(255, 244, 232, 0.50)';
+      ctx.lineWidth = 0.9;
+      ctx.beginPath();
+      ctx.arc(0, 0, poreR * 1.16, 0.15, 1.52);
+      ctx.stroke();
+
+      if (p.state === P_STATE.INTACT || p.state === P_STATE.RUPTURED) {
+        const liftY = -swell * 1.6;
+        const plugR = poreR * 0.88;
+
+        if (swell > 0.15 || p.pierced || p.steamed >= 0.75) {
+          ctx.fillStyle = 'rgba(236, 208, 138, 0.72)';
+          beginOrganicPath(ctx, 0, liftY + 0.3, plugR * 1.04, plugR * 0.94, p.shape, 1.0);
+          ctx.fill();
+        }
+
+        const plugG = ctx.createRadialGradient(-plugR * 0.2, liftY - plugR * 0.2, 0.3, 0, liftY, plugR);
+        plugG.addColorStop(0, isCreamy ? '#68412a' : '#462a19');
+        plugG.addColorStop(0.55, isCreamy ? '#422515' : '#24130a');
+        plugG.addColorStop(1, '#5c3920');
+        ctx.fillStyle = plugG;
+        beginOrganicPath(ctx, 0, liftY, plugR * 0.96, plugR * 0.86, p.shape, 1.15);
+        ctx.fill();
+
+        ctx.fillStyle = 'rgba(255, 238, 218, 0.24)';
+        ctx.beginPath();
+        ctx.arc(-plugR * 0.25, liftY - plugR * 0.25, plugR * 0.26, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function renderRealisticSebumFilament(targetCtx, pts, thickness, isCreamy, shadowOff = 2.2) {
+      if (!pts || pts.length < 3) return;
+      const n = pts.length;
+      const hasDarkCap = pts[0].hasDarkCap !== false;
+      const leftPts = [];
+      const rightPts = [];
+      const hlPts = [];
+
+      for (let i = 0; i < n; i++) {
+        const prev = pts[Math.max(0, i - 1)];
+        const next = pts[Math.min(n - 1, i + 1)];
+        let tx = next.x - prev.x;
+        let ty = next.y - prev.y;
+        const len = Math.hypot(tx, ty) || 1;
+        tx /= len;
+        ty /= len;
+        const nx = -ty;
+        const ny = tx;
+
+        const dTip = pts[i].distFromTip;
+        const dRoot = pts[i].distFromRoot;
+        let w = thickness;
+        if (dRoot < 3.0) w *= (0.82 + (dRoot / 3.0) * 0.18);
+        if (dTip < 3.5) w *= (0.76 + (dTip / 3.5) * 0.24);
+
+        leftPts.push({ x: pts[i].x + nx * w, y: pts[i].y + ny * w });
+        rightPts.push({ x: pts[i].x - nx * w, y: pts[i].y - ny * w });
+        hlPts.push({ x: pts[i].x + nx * w * 0.35, y: pts[i].y + ny * w * 0.35 });
+      }
+
+      const tip = pts[n - 1];
+      const root = pts[0];
+      const tipR = Math.max(1.2, Math.hypot(leftPts[n - 1].x - tip.x, leftPts[n - 1].y - tip.y));
+      const tipStartA = Math.atan2(leftPts[n - 1].y - tip.y, leftPts[n - 1].x - tip.x);
+      const tipEndA = Math.atan2(rightPts[n - 1].y - tip.y, rightPts[n - 1].x - tip.x);
+      const rootR = Math.max(1.2, Math.hypot(leftPts[0].x - root.x, leftPts[0].y - root.y));
+      const rootStartA = Math.atan2(rightPts[0].y - root.y, rightPts[0].x - root.x);
+      const rootEndA = Math.atan2(leftPts[0].y - root.y, leftPts[0].x - root.x);
+
+      const buildPath = () => {
+        targetCtx.beginPath();
+        targetCtx.moveTo(leftPts[0].x, leftPts[0].y);
+        for (let i = 1; i < n; i++) targetCtx.lineTo(leftPts[i].x, leftPts[i].y);
+        targetCtx.arc(tip.x, tip.y, tipR, tipStartA, tipEndA, false);
+        for (let i = n - 1; i >= 0; i--) targetCtx.lineTo(rightPts[i].x, rightPts[i].y);
+        targetCtx.arc(root.x, root.y, rootR, rootStartA, rootEndA, false);
+        targetCtx.closePath();
+      };
+
+      targetCtx.save();
+      targetCtx.translate(shadowOff, shadowOff * 1.2);
+      targetCtx.fillStyle = 'rgba(54, 24, 14, 0.28)';
+      buildPath();
+      targetCtx.fill();
+      targetCtx.restore();
+
+      targetCtx.save();
+      buildPath();
+      targetCtx.clip();
+
+      targetCtx.fillStyle = isCreamy ? '#fff8da' : '#f4e6af';
+      targetCtx.fillRect(-400, -400, 1200, 1200);
+
+      for (let i = 0; i < n - 1; i++) {
+        const pA = pts[i];
+        const pB = pts[i + 1];
+        const dTip = pB.distFromTip;
+        let col = '#f8efc6';
+        if (hasDarkCap && dTip < 2.8) {
+          col = isCreamy ? '#4e2c18' : '#241209';
+        } else if (hasDarkCap && dTip < 5.6) {
+          col = isCreamy ? '#a87042' : '#7d5027';
+        } else if (dTip < 12) {
+          col = isCreamy ? '#f5df92' : '#e6cb78';
+        }
+        targetCtx.strokeStyle = col;
+        targetCtx.lineWidth = thickness * 2.4;
+        targetCtx.lineCap = 'round';
+        targetCtx.beginPath();
+        targetCtx.moveTo(pA.x, pA.y);
+        targetCtx.lineTo(pB.x, pB.y);
+        targetCtx.stroke();
+      }
+
+      targetCtx.strokeStyle = 'rgba(86, 46, 20, 0.30)';
+      targetCtx.lineWidth = 0.9;
+      targetCtx.beginPath();
+      targetCtx.moveTo(rightPts[0].x, rightPts[0].y);
+      for (let i = 1; i < n; i++) targetCtx.lineTo(rightPts[i].x, rightPts[i].y);
+      targetCtx.stroke();
+
+      if (n > 3) {
+        targetCtx.strokeStyle = 'rgba(255, 255, 248, 0.76)';
+        targetCtx.lineWidth = Math.max(0.9, thickness * 0.32);
+        targetCtx.lineCap = 'round';
+        targetCtx.beginPath();
+        targetCtx.moveTo(hlPts[1].x, hlPts[1].y);
+        for (let i = 2; i < n - 1; i++) targetCtx.lineTo(hlPts[i].x, hlPts[i].y);
+        targetCtx.stroke();
+      }
+      targetCtx.restore();
+    }
+
+    function renderRealWhitehead(p, isCreamy, healFade) {
+      const r = p.radius;
+      const swell = p.swellVisual;
+
+      const haloR = r * (1.75 + swell * 0.16);
+      const haloG = ctx.createRadialGradient(0, 0, r * 0.12, 0, 0, haloR);
+      const redA = (isCreamy ? 0.30 : 0.44 + swell * 0.18) * healFade;
+      haloG.addColorStop(0, `rgba(196, 46, 52, ${redA})`);
+      haloG.addColorStop(0.52, `rgba(212, 78, 76, ${redA * 0.52})`);
+      haloG.addColorStop(1, 'rgba(212, 78, 76, 0)');
+      ctx.fillStyle = haloG;
+      beginOrganicPath(ctx, 0, 0, haloR * 1.05, haloR * 0.96, p.shape, 1.1);
+      ctx.fill();
+
+      if (p.state === P_STATE.HEALING) return;
+
+      const domeR = r * (0.96 + swell * 0.12);
+      const shG = ctx.createRadialGradient(2.2, 2.8, r * 0.15, 2.2, 2.8, domeR * 1.12);
+      shG.addColorStop(0, 'rgba(98, 36, 30, 0.26)');
+      shG.addColorStop(1, 'rgba(98, 36, 30, 0)');
+      ctx.fillStyle = shG;
+      beginOrganicPath(ctx, 2.2, 2.8, domeR, domeR * 0.95, p.shape, 0.9);
+      ctx.fill();
+
+      const slopeG = ctx.createRadialGradient(-domeR * 0.28, -domeR * 0.28, domeR * 0.1, 0, 0, domeR);
+      slopeG.addColorStop(0, isCreamy ? 'rgba(255, 166, 168, 0.76)' : `rgba(232, 108, 102, ${0.74 + swell * 0.15})`);
+      slopeG.addColorStop(0.7, isCreamy ? 'rgba(222, 110, 118, 0.52)' : 'rgba(182, 56, 56, 0.60)');
+      slopeG.addColorStop(1, 'rgba(176, 52, 54, 0)');
+      ctx.fillStyle = slopeG;
+      beginOrganicPath(ctx, 0, 0, domeR * 1.04, domeR * 0.96, p.shape, 0.95);
+      ctx.fill();
+
+      if (p.state === P_STATE.OOZING) return;
+
+      const remScale = p.state === P_STATE.EXTRUDING ? (0.55 + p.pusRemaining * 0.45) : 1;
+      const headR = r * (0.44 + swell * 0.16) * remScale;
+      const liftY = -swell * 1.8;
+
+      const ringG = ctx.createRadialGradient(0, liftY, headR * 0.7, 0, liftY, headR * 1.22);
+      ringG.addColorStop(0, 'rgba(168, 28, 36, 0)');
+      ringG.addColorStop(0.68, 'rgba(168, 28, 36, 0.55)');
+      ringG.addColorStop(1, 'rgba(168, 28, 36, 0)');
+      ctx.fillStyle = ringG;
+      beginOrganicPath(ctx, 0, liftY, headR * 1.22, headR * 1.14, p.shape, 1.15);
+      ctx.fill();
+
+      const pusG = ctx.createLinearGradient(-headR * 0.5, liftY - headR, headR * 0.5, liftY + headR);
+      pusG.addColorStop(0, '#fffff6');
+      pusG.addColorStop(0.55, '#f8e9b2');
+      pusG.addColorStop(1, '#dfc070');
+      ctx.fillStyle = pusG;
+      beginOrganicPath(ctx, 0, liftY, headR * 1.04, headR * 0.96, p.shape, 1.25, 0.3);
+      ctx.fill();
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.82)';
+      ctx.lineWidth = 1.3;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.arc(0, liftY, headR * 0.66, Math.PI * 1.08, Math.PI * 1.56);
+      ctx.stroke();
+    }
+
+    function renderRealCyst(p, isCreamy, healFade) {
+      const r = p.radius;
+      const swell = p.swellVisual;
+
+      const haloRx = r * (2.25 + swell * 0.20);
+      const haloRy = r * (1.88 + swell * 0.18);
+      const haloG = ctx.createRadialGradient(0, 0, r * 0.18, 0, 0, haloRx);
+      const redA = (isCreamy ? 0.42 : 0.64 + swell * 0.20 + p.traumaLevel * 0.14) * healFade;
+      haloG.addColorStop(0, `rgba(146, 20, 32, ${redA})`);
+      haloG.addColorStop(0.48, `rgba(188, 44, 52, ${redA * 0.65})`);
+      haloG.addColorStop(0.82, `rgba(206, 78, 76, ${redA * 0.22})`);
+      haloG.addColorStop(1, 'rgba(206, 78, 76, 0)');
+      ctx.fillStyle = haloG;
+      beginOrganicPath(ctx, 0, 0, haloRx, haloRy, p.shape, 0.95);
+      ctx.fill();
+
+      if (p.state === P_STATE.HEALING) return;
+
+      const domeRx = r * (1.16 + swell * 0.14);
+      const domeRy = r * (0.98 + swell * 0.12);
+      const liftY = -swell * 2.4;
+
+      const shG = ctx.createRadialGradient(3.8, 4.6, r * 0.2, 3.8, 4.6, domeRx * 1.18);
+      shG.addColorStop(0, 'rgba(82, 20, 22, 0.34)');
+      shG.addColorStop(1, 'rgba(82, 20, 22, 0)');
+      ctx.fillStyle = shG;
+      beginOrganicPath(ctx, 3.6, 4.4, domeRx, domeRy, p.shape, 0.85);
+      ctx.fill();
+
+      const moundG = ctx.createRadialGradient(-domeRx * 0.26, liftY - domeRy * 0.26, r * 0.08, 0, liftY, domeRx);
+      if (isCreamy) {
+        moundG.addColorStop(0, '#ff9aa8');
+        moundG.addColorStop(0.65, '#df586e');
+        moundG.addColorStop(1, 'rgba(196, 62, 82, 0)');
+      } else {
+        moundG.addColorStop(0, `rgba(226, 80, 82, ${0.86 + swell * 0.10})`);
+        moundG.addColorStop(0.55, `rgba(176, 32, 42, ${0.84 + swell * 0.10})`);
+        moundG.addColorStop(0.86, 'rgba(136, 20, 30, 0.48)');
+        moundG.addColorStop(1, 'rgba(126, 18, 26, 0)');
+      }
+      ctx.fillStyle = moundG;
+      beginOrganicPath(ctx, 0, liftY, domeRx, domeRy, p.shape, 0.9);
+      ctx.fill();
+
+      if (!isCreamy) {
+        for (let i = 0; i < 10; i++) {
+          const a = i * 0.628 + p.shape.p1;
+          const d = r * (0.32 + (i % 3) * 0.20);
+          const px = Math.cos(a) * d;
+          const py = liftY + Math.sin(a) * d * 0.85;
+          ctx.fillStyle = 'rgba(96, 14, 22, 0.30)';
+          ctx.beginPath();
+          ctx.arc(px, py, 1.0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      if (p.state === P_STATE.OOZING) return;
+
+      const hx = p.headOffsetX;
+      const hy = liftY + p.headOffsetY;
+      const coreR = r * (0.28 + swell * 0.12);
+      const deepG = ctx.createRadialGradient(hx, hy, 0.6, hx, hy, coreR * 1.45);
+      const pusHintAlpha = p.pierced ? 0.85 : (0.34 + swell * 0.42);
+      deepG.addColorStop(0, `rgba(252, 228, 166, ${pusHintAlpha})`);
+      deepG.addColorStop(0.58, `rgba(228, 148, 112, ${pusHintAlpha * 0.52})`);
+      deepG.addColorStop(1, 'rgba(182, 38, 46, 0)');
+      ctx.fillStyle = deepG;
+      ctx.beginPath();
+      ctx.arc(hx, hy, coreR * 1.45, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (p.pierced) {
+        ctx.save();
+        ctx.translate(hx, hy);
+        ctx.rotate(p.targetAngle + Math.PI * 0.5);
+        ctx.strokeStyle = isCreamy ? '#d4425c' : '#680814';
+        ctx.lineWidth = 1.5;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(-2.8, 0);
+        ctx.lineTo(2.8, 0);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      ctx.strokeStyle = `rgba(255, 238, 236, ${0.34 + swell * 0.22})`;
+      ctx.lineWidth = 1.9;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.arc(0, liftY, domeRy * 0.65, Math.PI * 1.08, Math.PI * 1.50);
+      ctx.stroke();
+    }
+
+    function renderViscousPusDollop(cx, cy, r, isCreamy) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(78, 34, 24, 0.28)';
+      ctx.beginPath();
+      ctx.arc(cx + 0.9, cy + 1.3, r * 1.04, 0, Math.PI * 2);
+      ctx.fill();
+
+      const g = ctx.createRadialGradient(cx - r * 0.28, cy - r * 0.28, 0.4, cx, cy, r);
+      g.addColorStop(0, '#fffff8');
+      g.addColorStop(0.58, isCreamy ? '#fff0be' : '#f4e09d');
+      g.addColorStop(1, '#cfa95c');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, r * 1.08, r * 0.94, 0.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
+      ctx.beginPath();
+      ctx.ellipse(cx - r * 0.28, cy - r * 0.32, r * 0.34, r * 0.20, -0.45, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function renderEmptiedPoreState(p, isCreamy, healFade) {
+      const r = p.radius;
+      const shrink = p.state === P_STATE.HEALING ? (1 - p.healProgress * 0.68) : 1;
+      const holeR = Math.max(2.0, r * (p.type === 'blackhead' ? 0.33 : 0.22) * shrink);
+      const hx = p.headOffsetX;
+      const hy = p.headOffsetY;
+
+      const wallG = ctx.createLinearGradient(hx - holeR, hy - holeR, hx + holeR, hy + holeR);
+      wallG.addColorStop(0, `rgba(42, 14, 12, ${0.88 * healFade})`);
+      wallG.addColorStop(1, `rgba(232, 174, 148, ${0.72 * healFade})`);
+      ctx.fillStyle = wallG;
+      beginOrganicPath(ctx, hx, hy, holeR * 1.25, holeR * 1.15, p.shape, 1.1);
+      ctx.fill();
+
+      ctx.fillStyle = `rgba(24, 6, 6, ${0.86 * healFade})`;
+      beginOrganicPath(ctx, hx, hy, holeR * 0.92, holeR * 0.85, p.shape, 1.1);
+      ctx.fill();
+
+      if (p.state !== P_STATE.OOZING) return;
+
+      const remain = 1 - p.wipeProgress;
+      const sR = p.serousDropSize * remain;
+      if (sR > 0.4) {
+        const sx = hx + holeR * 0.65 + 1.2;
+        const sy = hy + 1.1;
+        const sG = ctx.createRadialGradient(sx + sR * 0.25, sy + sR * 0.25, 0.2, sx, sy, sR);
+        sG.addColorStop(0, 'rgba(255, 248, 208, 0.84)');
+        sG.addColorStop(0.7, 'rgba(240, 206, 138, 0.55)');
+        sG.addColorStop(1, 'rgba(198, 148, 88, 0.28)');
+        ctx.fillStyle = sG;
+        ctx.beginPath();
+        ctx.arc(sx, sy, sR, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.beginPath();
+        ctx.arc(sx - sR * 0.3, sy - sR * 0.3, sR * 0.28, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      const bR = p.bloodDropSize * remain;
+      if (bR > 0.4) {
+        const bx = hx - 1.0;
+        const by = hy - 0.6;
+        ctx.fillStyle = 'rgba(48, 4, 10, 0.32)';
+        ctx.beginPath();
+        ctx.arc(bx + 0.7, by + 1.0, bR, 0, Math.PI * 2);
+        ctx.fill();
+
+        const bG = ctx.createRadialGradient(bx + bR * 0.26, by + bR * 0.28, 0.2, bx, by, bR);
+        if (isCreamy) {
+          bG.addColorStop(0, '#ffadc0');
+          bG.addColorStop(0.6, '#ff6482');
+          bG.addColorStop(1, '#c63250');
+        } else {
+          bG.addColorStop(0, '#ff384b');
+          bG.addColorStop(0.48, '#b50b1d');
+          bG.addColorStop(1, '#3b0208');
+        }
+        ctx.fillStyle = bG;
+        ctx.beginPath();
+        ctx.arc(bx, by, bR, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+        ctx.beginPath();
+        ctx.ellipse(bx - bR * 0.3, by - bR * 0.32, bR * 0.30, bR * 0.18, -0.55, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function renderSurfaceResidues(isCreamy) {
+      for (const res of state.surfaceResidues) {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, res.alpha);
+
+        if (res.kind === 'worm' && res.pts) {
+          renderRealisticSebumFilament(ctx, res.pts, res.thickness, isCreamy, 1.5);
+          ctx.restore();
+          continue;
+        }
+
+        if (res.kind === 'core_seed') {
+          ctx.translate(res.x, res.y);
+          ctx.rotate(res.rot || 0);
+          const rx = res.r * 1.38;
+          const ry = res.r * 0.82;
+
+          ctx.fillStyle = 'rgba(72, 32, 20, 0.32)';
+          ctx.beginPath();
+          ctx.ellipse(1.1, 1.6, rx, ry, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          const seedG = ctx.createRadialGradient(-rx * 0.25, -ry * 0.25, 0.3, 0, 0, rx);
+          seedG.addColorStop(0, '#fffff2');
+          seedG.addColorStop(0.55, '#ebd284');
+          seedG.addColorStop(1, '#b89242');
+          ctx.fillStyle = seedG;
+          ctx.beginPath();
+          ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+          continue;
+        }
+
+        if (res.kind === 'viscous_glob') {
+          ctx.translate(res.x, res.y);
+          ctx.rotate(res.rot || 0);
+          const rx = res.r * (res.stretch || 1.2);
+          const ry = res.r * 0.86;
+          ctx.fillStyle = 'rgba(80, 36, 24, 0.26)';
+          ctx.beginPath();
+          ctx.ellipse(1.0, 1.5, rx, ry, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          const g = ctx.createRadialGradient(-rx * 0.25, -ry * 0.25, 0.4, 0, 0, rx);
+          g.addColorStop(0, '#fffff6');
+          g.addColorStop(0.6, res.color);
+          g.addColorStop(1, '#d2b064');
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+          continue;
+        }
+
+        ctx.fillStyle = res.color;
+        ctx.beginPath();
+        ctx.arc(res.x, res.y, res.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    function renderSubtleClinicalGuides(p, isTarget) {
+      const r = p.radius;
+      if (
+        p.type === 'cyst' &&
+        p.pierced &&
+        (p.state === P_STATE.INTACT || p.state === P_STATE.EXTRUDING) &&
+        isTarget &&
+        !p.angleMatched
+      ) {
+        const a = p.targetAngle;
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255, 246, 224, 0.68)';
+        ctx.lineWidth = 1.8;
+        ctx.lineCap = 'round';
+        for (const side of [-1, 1]) {
+          const baseA = side > 0 ? a : a + Math.PI;
+          ctx.beginPath();
+          ctx.arc(0, 0, r + 14, baseA - 0.35, baseA + 0.35);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      if (
+        state.currentTool === 'tweezers' &&
+        p.state === P_STATE.EXTRUDING &&
+        ((p.type === 'blackhead' && p.extrudeProgress >= 0.18) || p.pusRemaining <= 0.45)
+      ) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(107, 226, 255, 0.72)';
+        ctx.lineWidth = 1.4;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 0.75 + 6, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
+
+      // 冰膜涂抹阶段：对尚未刷上冰膜的毛孔显示冰蓝微光圈引导
+      if (state.currentTool === 'ice_brush' && !p.iced) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(130, 238, 255, 0.65)';
+        ctx.lineWidth = 1.4;
+        ctx.setLineDash([4, 3]);
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 0.8 + 8, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
+    }
+
+    /**
+     * 绘制双手拇指、双头医用粉刺针、弯头细胞夹、纳米热喷仪枪嘴、硅胶冰膜刷与染污棉签
+     */
+    function renderRealisticHandsAndTools() {
+      const ptr = state.pointer;
+
+      if (ptr.squeezeForce > 0.02 && (ptr.mode === 'two-finger' || ptr.mode === 'mirror-pinch')) {
+        const f = Math.min(1, ptr.squeezeForce);
+        const p1 = ptr.smoothP1;
+        const p2 = ptr.smoothP2;
+        const ang = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+
+        [p1, p2].forEach((pt, idx) => {
+          ctx.save();
+          ctx.translate(pt.x, pt.y);
+          ctx.rotate(ang + (idx === 0 ? Math.PI : 0));
+
+          const dropSh = ctx.createRadialGradient(-28, 5, 6, -28, 5, 48);
+          dropSh.addColorStop(0, `rgba(48, 20, 14, ${0.26 + f * 0.16})`);
+          dropSh.addColorStop(1, 'rgba(48, 20, 14, 0)');
+          ctx.fillStyle = dropSh;
+          ctx.beginPath();
+          ctx.ellipse(-28, 5, 46, 22, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.globalAlpha = 0.90;
+          const fingerGrad = ctx.createLinearGradient(4, -18, -76, 18);
+          fingerGrad.addColorStop(0, '#f3bfa2');
+          fingerGrad.addColorStop(0.45, '#e5aa8b');
+          fingerGrad.addColorStop(1, '#cf8f70');
+          ctx.fillStyle = fingerGrad;
+          ctx.beginPath();
+          ctx.moveTo(2, -13);
+          ctx.quadraticCurveTo(9, 0, 2, 13);
+          ctx.lineTo(-72, 17);
+          ctx.quadraticCurveTo(-82, 0, -72, -17);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.strokeStyle = 'rgba(156, 94, 72, 0.36)';
+          ctx.lineWidth = 1.1;
+          ctx.beginPath();
+          ctx.arc(-48, 0, 14, -0.65, 0.65);
+          ctx.stroke();
+
+          const nailGrad = ctx.createLinearGradient(3, 0, -26, 0);
+          nailGrad.addColorStop(0, '#fffaf2');
+          nailGrad.addColorStop(0.18, `rgba(255, 245, 236, ${0.75 + f * 0.25})`);
+          nailGrad.addColorStop(0.58, f > 0.35 ? '#f29ca3' : '#f4b8b8');
+          nailGrad.addColorStop(1, '#e8a8a6');
+          ctx.fillStyle = nailGrad;
+          ctx.beginPath();
+          ctx.moveTo(1.5, -9.5);
+          ctx.quadraticCurveTo(5.5, 0, 1.5, 9.5);
+          ctx.lineTo(-22, 10.5);
+          ctx.quadraticCurveTo(-27, 0, -22, -10.5);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.fillStyle = 'rgba(255, 248, 244, 0.55)';
+          ctx.beginPath();
+          ctx.arc(-21, 0, 6.5, -0.85, 0.85);
+          ctx.fill();
+
+          ctx.strokeStyle = 'rgba(172, 106, 88, 0.45)';
+          ctx.lineWidth = 0.85;
+          ctx.stroke();
+          ctx.restore();
+        });
+      }
+
+      const hx = ptr.active && ptr.mode !== 'two-finger' && ptr.mode !== 'mirror-pinch'
+        ? ptr.x
+        : ptr.hoverX;
+      const hy = ptr.active && ptr.mode !== 'two-finger' && ptr.mode !== 'mirror-pinch'
+        ? ptr.y
+        : ptr.hoverY;
+      if (hx < 0 || hy < 0 || hx > state.width || hy > state.height) return;
+
+      if (state.currentTool === 'steam') {
+        // 绘制手持纳米热喷仪金属喷嘴与扇形雾束
+        ctx.save();
+        ctx.translate(hx, hy);
+        ctx.strokeStyle = 'rgba(140, 235, 255, 0.45)';
+        ctx.lineWidth = 1.3;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.arc(0, 0, CONFIG.INTERACTION.STEAM_RADIUS_PX * 0.65, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.rotate(Math.PI * 0.25);
+        ctx.fillStyle = state.upgrades.steamer ? '#7dd3fc' : '#e2e8f0';
+        ctx.beginPath();
+        ctx.moveTo(29, -6);
+        ctx.lineTo(65, -6);
+        ctx.quadraticCurveTo(70, -6, 70, -1);
+        ctx.lineTo(70, 1);
+        ctx.quadraticCurveTo(70, 6, 65, 6);
+        ctx.lineTo(29, 6);
+        ctx.quadraticCurveTo(24, 6, 24, 1);
+        ctx.lineTo(24, -1);
+        ctx.quadraticCurveTo(24, -6, 29, -6);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#475569';
+        ctx.beginPath();
+        ctx.arc(24, 0, 4.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      } else if (state.currentTool === 'ice_brush') {
+        // 绘制冰感积雪草硅胶面膜刷
+        ctx.save();
+        ctx.translate(hx, hy);
+        ctx.rotate(Math.PI * 0.24);
+        ctx.fillStyle = 'rgba(120, 236, 255, 0.78)';
+        ctx.beginPath();
+        ctx.moveTo(-6, -12);
+        ctx.quadraticCurveTo(14, -14, 18, -6);
+        ctx.lineTo(18, 6);
+        ctx.quadraticCurveTo(14, 14, -6, 12);
+        ctx.quadraticCurveTo(-12, 0, -6, -12);
+        ctx.fill();
+
+        ctx.fillStyle = '#e2e8f0';
+        ctx.fillRect(18, -4, 52, 8);
+        ctx.restore();
+      } else if (state.currentTool === 'needle') {
+        // 精致防滑滚花纹不锈钢粉刺针
+        ctx.save();
+        ctx.translate(hx, hy);
+        ctx.rotate(-Math.PI * 0.25);
+
+        ctx.strokeStyle = 'rgba(30, 14, 16, 0.28)';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(4, 3);
+        ctx.lineTo(62, 3);
+        ctx.stroke();
+
+        const metalGrad = ctx.createLinearGradient(0, -3.5, 0, 3.5);
+        metalGrad.addColorStop(0, '#ffffff');
+        metalGrad.addColorStop(0.5, '#b8c4d0');
+        metalGrad.addColorStop(1, '#64748b');
+        ctx.fillStyle = metalGrad;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(22, -2.4);
+        ctx.lineTo(72, -3.6);
+        ctx.lineTo(72, 3.6);
+        ctx.lineTo(22, 2.4);
+        ctx.closePath();
+        ctx.fill();
+
+        // 防滑手柄滚花纹理刻线
+        ctx.strokeStyle = 'rgba(71, 85, 105, 0.45)';
+        ctx.lineWidth = 0.8;
+        for (let k = 32; k < 66; k += 5) {
+          ctx.beginPath();
+          ctx.moveTo(k, -3.2);
+          ctx.lineTo(k + 2.5, 3.2);
+          ctx.stroke();
+        }
+        ctx.restore();
+      } else if (state.currentTool === 'tweezers') {
+        const tw = state.tweezers;
+        const isClamped = Boolean(tw.clampedPimple);
+        const gap = isClamped ? 0.5 : 4.2;
+
+        ctx.save();
+        ctx.translate(hx, hy);
+        ctx.rotate(-Math.PI * 0.28);
+
+        const isGold = state.upgrades.tweezers;
+        const bladeColorTop = isGold ? '#ffe79e' : '#f8fafc';
+        const bladeColorBot = isGold ? '#c99738' : '#94a3b8';
+
+        ctx.strokeStyle = bladeColorTop;
+        ctx.lineWidth = 2.6;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(0, -gap);
+        ctx.quadraticCurveTo(22, -gap - 3.5, 72, -7);
+        ctx.stroke();
+
+        ctx.strokeStyle = bladeColorBot;
+        ctx.lineWidth = 2.6;
+        ctx.beginPath();
+        ctx.moveTo(0, gap);
+        ctx.quadraticCurveTo(22, gap + 3.5, 72, 7);
+        ctx.stroke();
+        ctx.restore();
+
+        if (isClamped) {
+          ctx.save();
+          const barW = 50;
+          const bx = hx - barW * 0.5;
+          const by = hy + 20;
+          ctx.fillStyle = 'rgba(18, 14, 20, 0.85)';
+          ctx.fillRect(bx - 1, by - 1, barW + 2, 7);
+          ctx.fillStyle = tw.dangerRatio > 0.78 ? '#ff5c70' : '#4cd9a4';
+          ctx.fillRect(bx, by, barW * tw.pullRatio, 5);
+          ctx.restore();
+        }
+      } else if (state.currentTool === 'swab') {
+        ctx.save();
+        ctx.translate(hx, hy);
+        ctx.rotate(Math.PI * 0.22);
+
+        ctx.strokeStyle = 'rgba(40, 20, 22, 0.24)';
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.moveTo(14, 3);
+        ctx.lineTo(76, 3);
+        ctx.stroke();
+
+        ctx.strokeStyle = state.upgrades.iceprobe ? '#c8f4ff' : '#edf1f6';
+        ctx.lineWidth = 4.6;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(12, 0);
+        ctx.lineTo(76, 0);
+        ctx.stroke();
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.ellipse(3, 0, 16, 10.8, 0, 0, Math.PI * 2);
+        ctx.clip();
+
+        const cottonGrad = ctx.createRadialGradient(-3, -4, 2, 2, 0, 18);
+        cottonGrad.addColorStop(0, '#ffffff');
+        cottonGrad.addColorStop(0.7, state.upgrades.iceprobe ? '#e2f9ff' : '#f1f5f9');
+        cottonGrad.addColorStop(1, '#cbd5e1');
+        ctx.fillStyle = cottonGrad;
+        ctx.fillRect(-20, -15, 45, 30);
+
+        if (state.swabStain.pus > 0.02) {
+          const pg = ctx.createRadialGradient(-4, 1, 1, -4, 1, 11);
+          pg.addColorStop(0, `rgba(232, 202, 112, ${Math.min(0.88, state.swabStain.pus)})`);
+          pg.addColorStop(1, 'rgba(232, 202, 112, 0)');
+          ctx.fillStyle = pg;
+          ctx.fillRect(-20, -15, 30, 30);
+        }
+        if (state.swabStain.sebum > 0.02) {
+          const sg = ctx.createRadialGradient(-6, -2, 0.5, -6, -2, 7.5);
+          sg.addColorStop(0, `rgba(118, 76, 38, ${Math.min(0.85, state.swabStain.sebum)})`);
+          sg.addColorStop(1, 'rgba(118, 76, 38, 0)');
+          ctx.fillStyle = sg;
+          ctx.fillRect(-20, -15, 25, 25);
+        }
+        if (state.swabStain.blood > 0.02) {
+          const bg = ctx.createRadialGradient(-7, 2, 0.8, -7, 2, 9.5);
+          bg.addColorStop(0, `rgba(186, 26, 38, ${Math.min(0.88, state.swabStain.blood)})`);
+          bg.addColorStop(0.65, `rgba(224, 92, 102, ${Math.min(0.55, state.swabStain.blood * 0.6)})`);
+          bg.addColorStop(1, 'rgba(224, 92, 102, 0)');
+          ctx.fillStyle = bg;
+          ctx.fillRect(-20, -15, 28, 28);
+        }
+        ctx.restore();
+        ctx.restore();
+      }
+    }
+
+    function renderLensSplatters() {
+      for (const sp of state.lensSplatters) {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, sp.alpha * 0.76);
+
+        const g = ctx.createRadialGradient(sp.x - sp.r * 0.2, sp.y - sp.r * 0.2, 1, sp.x, sp.y, sp.r * 1.25);
+        g.addColorStop(0, '#fffdf2');
+        g.addColorStop(0.65, sp.color);
+        g.addColorStop(1, 'rgba(245, 226, 172, 0)');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(sp.x, sp.y, sp.r * 1.25, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.72)';
+        ctx.beginPath();
+        ctx.ellipse(sp.x - sp.r * 0.28, sp.y - sp.r * 0.3, sp.r * 0.30, sp.r * 0.16, -0.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        for (const sub of sp.subDrops) {
+          ctx.fillStyle = sp.color;
+          ctx.beginPath();
+          ctx.arc(sp.x + sub.dx, sp.y + sub.dy, sub.rr, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+    }
+
+    /**
+     * ============================================================================
+     * 8. 25X 战利品弯盘微距放大检视弹窗、诊所商店与结算面板
+     * ============================================================================
+     */
+    function openTrayInspectModal() {
+      state.paused = true;
+      releasePointer();
+      trayModalEl.classList.add('open');
+
+      requestAnimationFrame(() => {
+        const rect = trayZoomCanvas.getBoundingClientRect();
+        const w = Math.max(280, Math.floor(rect.width || 350));
+        const h = Math.max(160, Math.floor(rect.height || 190));
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        trayZoomCanvas.width = Math.floor(w * dpr);
+        trayZoomCanvas.height = Math.floor(h * dpr);
+        trayZoomCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        trayZoomCtx.clearRect(0, 0, w, h);
+
+        // 金属拉丝质感背景
+        const bg = trayZoomCtx.createRadialGradient(w * 0.4, h * 0.35, 10, w * 0.5, h * 0.5, w * 0.7);
+        bg.addColorStop(0, '#eef3f8');
+        bg.addColorStop(0.6, '#b8c4d2');
+        bg.addColorStop(1, '#8494a6');
+        trayZoomCtx.fillStyle = bg;
+        trayZoomCtx.fillRect(0, 0, w, h);
+
+        const total = state.trophyTrayItems.length;
+        document.getElementById('tray-modal-sub').textContent = total > 0
+          ? `已收集 ${state.trophiesPlucked} 颗完整水滴状黑头栓 · ${state.coreSeedsCollected} 颗固态白芯脓核`
+          : '弯盘目前还是空的哦，快去用细胞夹拔几颗黑头收集起来吧！';
+
+        if (total === 0) return;
+
+        const cols = 6;
+        const cellW = (w - 36) / cols;
+        state.trophyTrayItems.forEach((item, idx) => {
+          const col = idx % cols;
+          const row = Math.floor(idx / cols);
+          const cx = 24 + col * cellW + cellW * 0.4;
+          const cy = 44 + row * 56;
+
+          trayZoomCtx.save();
+          trayZoomCtx.translate(cx, cy);
+          trayZoomCtx.rotate(item.rot * 0.4);
+
+          // 阴影
+          trayZoomCtx.fillStyle = 'rgba(30, 42, 56, 0.28)';
+          trayZoomCtx.beginPath();
+          trayZoomCtx.ellipse(3, 5, 8, 19, 0, 0, Math.PI * 2);
+          trayZoomCtx.fill();
+
+          if (item.kind === 'blackhead') {
+            // 25X 超微距饱满半透明水滴状油脂囊袋
+            const g = trayZoomCtx.createLinearGradient(0, -18, 0, 18);
+            g.addColorStop(0, '#1f1008');
+            g.addColorStop(0.24, '#7d5027');
+            g.addColorStop(0.55, '#ead07c');
+            g.addColorStop(1, '#fbf3cf');
+            trayZoomCtx.fillStyle = g;
+            trayZoomCtx.beginPath();
+            trayZoomCtx.moveTo(-4.5, -14);
+            trayZoomCtx.quadraticCurveTo(0, -19, 4.5, -14);
+            trayZoomCtx.quadraticCurveTo(8.5, 4, 5.5, 15);
+            trayZoomCtx.quadraticCurveTo(0, 20, -5.5, 15);
+            trayZoomCtx.quadraticCurveTo(-8.5, 4, -4.5, -14);
+            trayZoomCtx.fill();
+
+            // 水润高光条
+            trayZoomCtx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            trayZoomCtx.lineWidth = 1.8;
+            trayZoomCtx.lineCap = 'round';
+            trayZoomCtx.beginPath();
+            trayZoomCtx.moveTo(-2.5, -6);
+            trayZoomCtx.quadraticCurveTo(-4, 5, -2, 13);
+            trayZoomCtx.stroke();
+          } else {
+            // 固态米粒脓核
+            const sg = trayZoomCtx.createRadialGradient(-2, -3, 1, 0, 0, 13);
+            sg.addColorStop(0, '#fffff8');
+            sg.addColorStop(0.6, '#ebd282');
+            sg.addColorStop(1, '#b88f3d');
+            trayZoomCtx.fillStyle = sg;
+            trayZoomCtx.beginPath();
+            trayZoomCtx.ellipse(0, 0, 7.5, 12.5, 0, 0, Math.PI * 2);
+            trayZoomCtx.fill();
+          }
+
+          trayZoomCtx.restore();
+        });
+      });
+    }
+
+    function renderClinicModalContents() {
+      const clientListEl = document.getElementById('client-list-container');
+      const upgradeListEl = document.getElementById('upgrade-list-container');
+      document.getElementById('shop-coin-label').textContent = `余额 ¥${state.coins}`;
+
+      clientListEl.innerHTML = '';
+      CLIENTS.forEach((c, idx) => {
+        const card = document.createElement('div');
+        card.className = 'client-card' + (idx === state.clientIndex % CLIENTS.length ? ' active-client' : '');
+        card.innerHTML = `
+          <div class="patient-avatar">${c.avatar}</div>
+          <div class="client-meta">
+            <div class="client-title">${c.name}</div>
+            <div class="client-desc">${c.quote}</div>
+          </div>
+          <div class="client-reward">诊金 ¥${c.bounty}</div>
+        `;
+        card.addEventListener('click', () => {
+          state.clientIndex = idx;
+          state.targetDensity = 0;
+          clinicModalEl.classList.remove('open');
+          state.paused = false;
+          selectTool('squeeze');
+          generateLevel(0);
+        });
+        clientListEl.appendChild(card);
+      });
+
+      upgradeListEl.innerHTML = '';
+      UPGRADES.forEach((u) => {
+        const owned = Boolean(state.upgrades[u.key]);
+        const canAfford = state.coins >= u.cost;
+        const row = document.createElement('div');
+        row.className = 'upgrade-row';
+        row.innerHTML = `
+          <div class="client-meta">
+            <div class="client-title">${u.icon} ${u.name}</div>
+            <div class="client-desc">${u.desc}</div>
+          </div>
+        `;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'buy-btn';
+        if (owned) {
+          btn.textContent = '已装备';
+          btn.disabled = true;
+        } else {
+          btn.textContent = `¥${u.cost} 升级`;
+          btn.disabled = !canAfford;
+          btn.addEventListener('click', () => {
+            if (state.coins >= u.cost && !state.upgrades[u.key]) {
+              state.coins -= u.cost;
+              state.upgrades[u.key] = true;
+              sound.playCleanChime();
+              persistSaveData();
+              renderClinicModalContents();
+            }
+          });
+        }
+        row.appendChild(btn);
+        upgradeListEl.appendChild(row);
+      });
+    }
+
+    function openSettlementModal() {
+      const dmg = Math.round(state.damage);
+      const client = currentClient();
+      let rank = 'S';
+      let title = `${client.name}：五星好评！`;
+      let subtitle = client.happyQuote;
+      let tipBonus = 80;
+
+      if (dmg <= 14) {
+        rank = 'S';
+      } else if (dmg <= 32) {
+        rank = 'A';
+        title = `${client.name}：非常满意！`;
+        tipBonus = 40;
+      } else if (dmg <= 58) {
+        rank = 'B';
+        title = `${client.name}：稍微有点痛`;
+        subtitle = '“挤得挺干净，就是有几下没热敷硬按有点疼…”';
+        tipBonus = 10;
+      } else {
+        rank = 'C';
+        title = `${client.name}：脸快肿成包啦`;
+        subtitle = '“下次一定记得先热敷、大痘先用粉刺针破口呀！”';
+        tipBonus = 0;
+      }
+
+      const earnedCoins = client.bounty + tipBonus;
+      state.coins += earnedCoins;
+      persistSaveData();
+
+      const wCount = state.pimples.filter((p) => p.type === 'whitehead').length;
+      const bCount = state.pimples.filter((p) => p.type === 'blackhead').length;
+      const cCount = state.pimples.filter((p) => p.type === 'cyst').length;
+
+      document.getElementById('result-rank').textContent = rank;
+      document.getElementById('result-title').textContent = title;
+      document.getElementById('result-subtitle').textContent = subtitle;
+      document.getElementById('res-trophies').textContent =
+        `完整黑头脂栓 ${state.trophiesPlucked} 颗 · 固态白芯脓核 ${state.coreSeedsCollected} 颗`;
+      document.getElementById('res-coins-earned').textContent = `+¥${earnedCoins}`;
+      document.getElementById('res-score').textContent = String(Math.round(state.score));
+
+      const resDmgEl = document.getElementById('res-damage');
+      resDmgEl.textContent = `${dmg}%`;
+      resDmgEl.style.color = dmg <= 20 ? '#4cd9a4' : dmg <= 50 ? '#ffca63' : '#ff5c70';
+
+      document.getElementById('res-breakdown').textContent = `白头${wCount} · 黑头${bCount} · 大痘${cCount}`;
+      document.getElementById('res-perfect').textContent = `${state.perfectOps} 次`;
+
+      state.compareSplit = 0.5;
+      resultModalEl.classList.add('open');
+      requestAnimationFrame(() => {
+        renderBeforeAfterComparison();
+      });
+    }
+
+    function selectTool(toolName) {
+      if (state.iceBrushingMode && toolName !== 'ice_brush') {
+        state.iceBrushingMode = false;
+      }
+
+      if (toolName === 'swab' && state.currentTool === 'swab') {
+        state.swabStain = { pus: 0, blood: 0, sebum: 0 };
+        setHint('🧼 已更换一根全新无菌消毒棉签！', 'good');
+        return;
+      }
+
+      state.currentTool = toolName;
+      releasePointer();
+
+      document.querySelectorAll('.tool-btn').forEach((btn) => {
+        btn.classList.toggle('selected', btn.dataset.tool === toolName);
+      });
+
+      if (toolName === 'steam') {
+        viewportWrap.style.cursor = 'pointer';
+        setHint('♨️ 热喷软化：按住喷洒温热雾气凝结微水露蒸开毛孔，拔栓丝滑无痛！', 'good');
+      } else if (toolName === 'needle') {
+        viewportWrap.style.cursor = 'crosshair';
+        setHint('📍 粉刺针：按住可激活上方 2.2X 光学瞄准镜，精准挑破大痘浅黄脓尖', 'normal');
+      } else if (toolName === 'squeeze') {
+        viewportWrap.style.cursor = 'grab';
+        setHint('🤏 手指挤压：双指在瑕疵两侧向内推挤（黑头挤冒头后可换【细胞夹】慢拔）', 'normal');
+      } else if (toolName === 'tweezers') {
+        viewportWrap.style.cursor = 'crosshair';
+        setHint('🥢 超尖细胞夹：借助 2.2X 放大镜夹住冒头黑头匀速外拉，整根飞入右上角弯盘！', 'good');
+      } else if (toolName === 'swab') {
+        viewportWrap.style.cursor = 'pointer';
+        state.swabStain = { pus: 0, blood: 0, sebum: 0 };
+        setHint('🧼 消毒棉签：擦净排空后的脂栓、组织液与血珠（再点一次可换新棉签）', 'good');
+      }
+    }
+
+    function bindUIControls() {
+      document.getElementById('tool-steam').addEventListener('click', () => selectTool('steam'));
+      document.getElementById('tool-needle').addEventListener('click', () => selectTool('needle'));
+      document.getElementById('tool-squeeze').addEventListener('click', () => selectTool('squeeze'));
+      document.getElementById('tool-tweezers').addEventListener('click', () => selectTool('tweezers'));
+      document.getElementById('tool-swab').addEventListener('click', () => selectTool('swab'));
+
+      window.addEventListener('keydown', (e) => {
+        if (e.key === '1') selectTool('steam');
+        else if (e.key === '2') selectTool('needle');
+        else if (e.key === '3') selectTool('squeeze');
+        else if (e.key === '4') selectTool('tweezers');
+        else if (e.key === '5') selectTool('swab');
+      });
+
+      // 手刷冰膜与一键厚敷按钮
+      iceFinishBtnEl.addEventListener('click', () => {
+        enterIceBrushingStage();
+      });
+      iceQuickBtnEl.addEventListener('click', () => {
+        triggerIceMaskFinale();
+      });
+
+      // 战利品弯盘 25X 微距检视弹窗
+      document.getElementById('btn-tray-inspect').addEventListener('click', openTrayInspectModal);
+      document.getElementById('btn-close-tray').addEventListener('click', () => {
+        trayModalEl.classList.remove('open');
+        state.paused = false;
+      });
+      trayModalEl.addEventListener('click', (e) => {
+        if (e.target === trayModalEl) {
+          trayModalEl.classList.remove('open');
+          state.paused = false;
+        }
+      });
+
+      // 接诊与升级弹窗
+      const openClinic = () => {
+        state.paused = true;
+        releasePointer();
+        renderClinicModalContents();
+        resultModalEl.classList.remove('open');
+        clinicModalEl.classList.add('open');
+      };
+      document.getElementById('btn-clinic').addEventListener('click', openClinic);
+      document.getElementById('btn-open-clinic-from-res').addEventListener('click', openClinic);
+      document.getElementById('btn-close-clinic').addEventListener('click', () => {
+        clinicModalEl.classList.remove('open');
+        state.paused = false;
+      });
+
+      // 玩法企划弹窗
+      document.getElementById('btn-plan').addEventListener('click', () => {
+        state.paused = true;
+        releasePointer();
+        planModalEl.classList.add('open');
+      });
+      document.getElementById('btn-close-plan').addEventListener('click', () => {
+        planModalEl.classList.remove('open');
+        state.paused = false;
+      });
+      planModalEl.addEventListener('click', (e) => {
+        if (e.target === planModalEl) {
+          planModalEl.classList.remove('open');
+          state.paused = false;
+        }
+      });
+
+      const styleBtn = document.getElementById('btn-style-mode');
+      const styleLabel = document.getElementById('style-mode-label');
+      styleBtn.addEventListener('click', () => {
+        state.styleMode = state.styleMode === 'realistic' ? 'creamy' : 'realistic';
+        const isCreamy = state.styleMode === 'creamy';
+        styleLabel.textContent = isCreamy ? '🍑 奶油肌' : '🔬 写实肌';
+        styleBtn.classList.toggle('active-mode', isCreamy);
+        renderSkinTexture();
+      });
+
+      const soundBtn = document.getElementById('btn-sound');
+      const soundIcon = document.getElementById('sound-icon');
+      soundBtn.addEventListener('click', () => {
+        sound.muted = !sound.muted;
+        if (sound.muted) {
+          sound.setTension(0);
+          soundIcon.textContent = '🔇';
+        } else {
+          sound.unlock();
+          soundIcon.textContent = '🔊';
+        }
+      });
+
+      document.getElementById('btn-help').addEventListener('click', () => {
+        state.paused = true;
+        releasePointer();
+        helpModalEl.classList.add('open');
+      });
+      document.getElementById('btn-close-help').addEventListener('click', () => {
+        helpModalEl.classList.remove('open');
+        state.paused = false;
+      });
+      helpModalEl.addEventListener('click', (e) => {
+        if (e.target === helpModalEl) {
+          helpModalEl.classList.remove('open');
+          state.paused = false;
+        }
+      });
+
+      document.getElementById('btn-reset').addEventListener('click', () => {
+        sound.unlock();
+        selectTool('squeeze');
+        generateLevel(state.targetDensity);
+      });
+
+      document.querySelectorAll('.preset-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.preset-btn').forEach((b) => b.classList.remove('active'));
+          btn.classList.add('active');
+          state.targetDensity = parseInt(btn.dataset.density, 10) || 0;
+        });
+      });
+
+      document.getElementById('btn-next-face').addEventListener('click', () => {
+        sound.unlock();
+        state.clientIndex = (state.clientIndex + 1) % CLIENTS.length;
+        selectTool('squeeze');
+        generateLevel(state.targetDensity);
+      });
+    }
+
+    function resizeCanvas() {
+      const rect = viewportWrap.getBoundingClientRect();
+      const newW = Math.max(280, Math.floor(rect.width));
+      const newH = Math.max(320, Math.floor(rect.height));
+      const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+
+      state.width = newW;
+      state.height = newH;
+      state.dpr = dpr;
+
+      canvas.width = Math.floor(newW * dpr);
+      canvas.height = Math.floor(newH * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      for (const p of state.pimples) {
+        p.x = Math.max(42, Math.min(newW - 42, p.nx * newW));
+        p.y = Math.max(54, Math.min(newH - 46, p.ny * newH));
+      }
+
+      renderSkinTexture();
+    }
+
+    let rafId = null;
+    let lastTime = 0;
+
+    function mainLoop(timestamp) {
+      if (!lastTime) lastTime = timestamp;
+      const dt = Math.min(0.05, Math.max(0.001, (timestamp - lastTime) / 1000));
+      lastTime = timestamp;
+
+      updateSimulation(dt);
+      renderScene(false);
+
+      rafId = requestAnimationFrame(mainLoop);
+    }
+
+    window.addEventListener('load', () => {
+      bindUIControls();
+      bindCanvasInteractions();
+      persistSaveData();
+      resizeCanvas();
+      generateLevel(0);
+      selectTool('squeeze');
+
+      window.addEventListener('resize', () => {
+        resizeCanvas();
+        if (resultModalEl.classList.contains('open')) {
+          renderBeforeAfterComparison();
+        }
+      });
+
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(mainLoop);
+    });
+  </script>
+</body>
+</html>
