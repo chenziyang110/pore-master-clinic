@@ -41,7 +41,7 @@ test('keyboard uses normal tool rules to clean a blackhead, whitehead and deep t
   assert.deepEqual(g.runtimeErrors,[]);
 });
 
-test('all eight default targets and ice finishing can be completed with keyboard input', async t=>{
+test('complete keyboard care transitions to eleven fresh targets without stale accessible announcements', async t=>{
   const g=await createGame({seed:7});t.after(g.close);g.frame();g.d.getElementById('skin-canvas').focus();
   const targets=g.state('state.pimples.map(p=>({id:p.id,type:p.type}))');
   for(const p of targets)care(g,p);
@@ -54,6 +54,30 @@ test('all eight default targets and ice finishing can be completed with keyboard
   assert.ok(g.d.getElementById('result-modal').classList.contains('open'));
   assert.ok(g.state('state.coins')>0);
   assert.equal(g.state('state.pimples.every(p=>p.iced)'),true);
+
+  // Follow the actual result controls: the previous eight-target ice status
+  // must not become the accessible name of the next eleven-target treatment.
+  await new Promise(setImmediate);
+  g.d.querySelector('.preset-btn[data-density="11"]').click();
+  g.click('btn-next-face');g.frame();
+  const canvas=g.d.getElementById('skin-canvas');
+  assert.equal(g.state('state.pimples.length'),11);
+  assert.doesNotMatch(canvas.getAttribute('aria-label'),/\/8|已敷膜|已清理/);
+  assert.equal(g.d.getElementById('keyboard-care-status').textContent,'');
+  canvas.focus();key(g,'ArrowRight');
+  assert.match(canvas.getAttribute('aria-label'),/2\/11.*待护理/);
+
+  g.click('btn-help');
+  await new Promise(setImmediate);
+  assert.doesNotMatch(canvas.getAttribute('aria-label'),/键盘辅助 ·/,'leaving keyboard care clears the target-specific name');
+  assert.equal(g.d.getElementById('keyboard-care-status').textContent,'');
+  g.w.dispatchEvent(new g.w.Event('pagehide'));
+  const resumed=await createGame({seed:7,storage:g.storage()});t.after(resumed.close);resumed.frame();
+  const restoredCanvas=resumed.d.getElementById('skin-canvas');
+  assert.doesNotMatch(restoredCanvas.getAttribute('aria-label'),/\/8|已敷膜|已清理/);
+  restoredCanvas.focus();key(resumed,'ArrowRight');
+  assert.match(restoredCanvas.getAttribute('aria-label'),/2\/11.*待护理/);
+  assert.deepEqual(resumed.runtimeErrors,[]);
   assert.deepEqual(g.runtimeErrors,[]);
 });
 

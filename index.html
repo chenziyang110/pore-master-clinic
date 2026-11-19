@@ -1203,6 +1203,7 @@
     sound.canPlay = () => careControl.owned && !state.paused && !state.settled && !document.hidden;
 
     const canvas = document.getElementById('skin-canvas');
+    const defaultCanvasLabel = canvas.getAttribute('aria-label');
     const ctx = canvas.getContext('2d');
     const viewportWrap = document.getElementById('viewport-wrap');
 
@@ -2476,6 +2477,8 @@
       state.bestScore = getCompletedBest() ? getCompletedBest().bestScore : 0;
       state.keyboardCare.active = false;
       state.keyboardCare.key = null;
+      state.keyboardCare.visible = false;
+      state.keyboardCare.hintKey = '';
       state.keyboardCare.target = null;
       state.keyboardCare.index = 0;
       state.faceSeed = Math.random() * 99999;
@@ -3791,7 +3794,12 @@
       const targets = keyboardCareTargets();
       const visible = isKeyboardCareFocused();
       status.hidden = !visible;
-      if (!visible) { state.keyboardCare.hintKey = ''; return; }
+      if (!visible) {
+        state.keyboardCare.hintKey = '';
+        updateText(status, '');
+        if (canvas.getAttribute('aria-label') !== defaultCanvasLabel) canvas.setAttribute('aria-label', defaultCanvasLabel);
+        return;
+      }
       const text = `键盘辅助 · ${state.keyboardCare.index + 1}/${targets.length} · ${keyboardTargetDescription(target)}`;
       updateText(status, text);
       canvas.setAttribute('aria-label', `护理画布。${text}`);
