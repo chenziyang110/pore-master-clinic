@@ -144,11 +144,11 @@
     .ice-finish-cta.show, .ice-quick-btn.show { display: inline-flex; }
     .ice-quick-btn { background: #426454; border-color: #426454; color: #fff; }
     .tool-section { flex-shrink: 0; padding: 16px 24px 18px; }
-    .tool-section-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 5px; }
+    .tool-section-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 27px; margin-bottom: 5px; }
     .active-tool-title { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; }
     .active-tool-title::before { content: ''; width: 3px; height: 11px; background: #829175; }
     .shortcut-note { color: #8a9083; font-size: 9px; }
-    .hint-banner { min-height: 35px; color: #677060; font-size: 12px; line-height: 1.65; margin-bottom: 9px; overflow-wrap: anywhere; }
+    .hint-banner { min-height: 40px; color: #677060; font-size: 12px; line-height: 1.65; margin-bottom: 9px; overflow-wrap: anywhere; }
     .hint-banner.warn { color: #a8554c; }
     .hint-banner.good { color: var(--green); }
     .toolbar-dock { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
@@ -308,10 +308,10 @@
       .scale-marker { bottom: 10px; right: 13px; font-size: 7px; }
       .scale-marker::before { width: 30px; }
       .tool-section { padding: 11px 12px calc(12px + env(safe-area-inset-bottom, 0px)); }
-      .tool-section-head { margin-bottom: 3px; }
+      .tool-section-head { min-height: 25px; margin-bottom: 3px; }
       .active-tool-title { font-size: 11px; }
       .shortcut-note { display: none; }
-      .hint-banner { min-height: 34px; margin-bottom: 7px; font-size: 11px; line-height: 1.55; }
+      .hint-banner { min-height: 35px; margin-bottom: 7px; font-size: 11px; line-height: 1.55; }
       .toolbar-dock { gap: 5px; }
       .tool-btn { min-height: 64px; padding: 6px 2px; gap: 3px; border-radius: 6px; }
       .tool-step { top: 5px; left: 5px; font-size: 7px; }
@@ -424,10 +424,10 @@
       .treatment-heading h2 { font-size: 14px; }
       #btn-style-mode { min-height: 25px; }
       #viewport-wrap { min-height: 270px; }
-      .tool-section { padding-top: 4px; padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px)); }
-      .tool-section-head { min-height: 19px; margin-bottom: 1px; }
+      .tool-section { padding-top: 3px; padding-bottom: calc(3px + env(safe-area-inset-bottom, 0px)); }
+      .tool-section-head { min-height: 22px; margin-bottom: 1px; }
       .next-tool-btn { min-height: 22px; }
-      .hint-banner { min-height: 30px; margin-bottom: 4px; font-size: 10.5px; line-height: 1.5; }
+      .hint-banner { min-height: 32px; margin-bottom: 4px; font-size: 10.5px; line-height: 1.5; }
       .tool-btn { min-height: 54px; gap: 2px; padding-block: 5px; }
       .tool-icon, .tool-icon .icon { width: 22px; height: 22px; }
       .tool-name { font-size: 10.5px; }
