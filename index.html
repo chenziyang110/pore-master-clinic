@@ -774,7 +774,7 @@
         key: 'iceprobe',
         icon: '🧊',
         name: '舒缓护理棉头',
-        desc: '擦拭速度提高 45%，每次清理降低 4% 刺激度',
+        desc: '擦拭速度提高 45%，每处清理缓解 6 个百分点刺激度',
         cost: 360
       }
     ];
@@ -1206,6 +1206,8 @@
       damage: 0,
       trophiesPlucked: 0,
       coreSeedsCollected: 0,
+      collectionLedger: {},
+      collectionSerial: 0,
 
       // 冰感冻膜涂抹与一键波纹状态
       iceBrushingMode: false,
@@ -1217,6 +1219,9 @@
       paused: false,
 
       beforeCaptured: false,
+      initialPimples: [],
+      sceneLayout: null,
+      snapshotBasis: null,
       compareSplit: 0.5,      // 结算面板护理前/护理后分割比例 0.08~0.92
 
       pimples: [],
@@ -1249,6 +1254,8 @@
 
       pointer: {
         active: false,
+        touchId: null,
+        secondTouchId: null,
         mode: 'none',
         x: 0,
         y: 0,
@@ -1281,6 +1288,128 @@
     } catch (_) {}
 
     const savedValueCache = new Map();
+    const SESSION_KEY = 'pimple_clinic_session_v2';
+    const SESSION_FIELDS = [
+      'width', 'height', 'faceSeed', 'styleMode', 'clientIndex', 'targetDensity', 'currentTool',
+      'score', 'combo', 'perfectOps', 'damage', 'trophiesPlucked', 'coreSeedsCollected',
+      'iceBrushingMode', 'iceCoverage', 'iceWaveProgress', 'iceFinishing',
+      'pimples', 'surfaceResidues', 'lensSplatters', 'bruises', 'iceGelBlobs',
+      'trophyTrayItems', 'flyingTrophies', 'dewDrops', 'swabStain',
+      'initialPimples', 'sceneLayout', 'snapshotBasis', 'collectionLedger', 'collectionSerial',
+      'runId', 'runDensity', 'runControlMode', 'controlMode', 'runStats', 'actionSerial', 'resultRecorded', 'practiceGuide'
+    ];
+    let sessionSaveEnabled = false;
+    let sessionSaveTimer = null;
+    let lastSessionJSON = '';
+
+    function saveCurrentSession() {
+      if (sessionSaveTimer) { clearTimeout(sessionSaveTimer); sessionSaveTimer = null; }
+      if (!sessionSaveEnabled || !state.pimples.length) return;
+      try {
+        if (state.settled) {
+          localStorage.removeItem(SESSION_KEY);
+          lastSessionJSON = '';
+          return;
+        }
+        const data = {};
+        for (const key of SESSION_FIELDS) {
+          if (state[key] !== undefined) data[key] = state[key];
+        }
+        // Config is shared immutable data; active pointers and audio never resume.
+        const json = JSON.stringify({ version: 2, data }, (key, value) => key === 'cfg' ? undefined : value);
+        if (json !== lastSessionJSON) {
+          localStorage.setItem(SESSION_KEY, json);
+          lastSessionJSON = json;
+        }
+      } catch (_) { /* Storage can be unavailable; the current game remains playable. */ }
+    }
+
+    function queueSessionSave() {
+      if (!sessionSaveEnabled || sessionSaveTimer) return;
+      sessionSaveTimer = setTimeout(saveCurrentSession, 800);
+    }
+
+    function restoreCurrentSession() {
+      try {
+        const raw = localStorage.getItem(SESSION_KEY);
+        if (!raw || raw.length > 700000) return false;
+        const saved = JSON.parse(raw);
+        const data = saved && saved.version === 2 && saved.data;
+        const finiteTree = (value, depth = 0) => {
+          if (depth > 12) return false;
+          if (typeof value === 'number') return Number.isFinite(value);
+          if (!value || typeof value !== 'object') return typeof value !== 'string' || value.length < 20000;
+          return Object.keys(value).length < 2000 && Object.entries(value).every(([key, child]) => !['__proto__', 'constructor', 'prototype'].includes(key) && finiteTree(child, depth + 1));
+        };
+        if (!data || !finiteTree(data) || !Array.isArray(data.pimples) || !data.pimples.length || data.pimples.length > 40) return false;
+        if (!Number.isInteger(data.clientIndex) || data.clientIndex < 0 || data.clientIndex >= CLIENTS.length) return false;
+        if (!(data.width > 0 && data.height > 0 && data.width < 20000 && data.height < 20000)) return false;
+        const pimpleNumbers = ['x', 'y', 'nx', 'ny', 'radius', 'steamed', 'pressure', 'swellVisual', 'targetAngle',
+          'headOffsetX', 'headOffsetY', 'traumaLevel', 'tentOffsetX', 'tentOffsetY', 'extrudeProgress',
+          'wormTotalLen', 'wormSeed', 'wormCurlDir', 'pusRemaining', 'surfacePusMound', 'oozeEmitAccum',
+          'ruptureTimer', 'bloodDropSize', 'serousDropSize', 'wipeProgress', 'healProgress'];
+        const pimpleBooleans = ['pierced', 'angleMatched', 'hardSqueezeWarned', 'snappedCap', 'iced'];
+        const validPimple = p => p && ['blackhead', 'whitehead', 'cyst'].includes(p.type)
+          && Number.isInteger(p.id) && Number.isInteger(p.state) && p.state >= P_STATE.INTACT && p.state <= P_STATE.HEALED
+          && pimpleNumbers.every(key => Number.isFinite(p[key])) && pimpleBooleans.every(key => typeof p[key] === 'boolean')
+          && p.radius > 0 && p.shape && ['p1', 'p2', 'p3', 'a1', 'a2', 'rot'].every(k => Number.isFinite(p.shape[k]));
+        if (!data.pimples.every(validPimple) || new Set(data.pimples.map(p => p.id)).size !== data.pimples.length) return false;
+        if (data.initialPimples !== undefined && (!Array.isArray(data.initialPimples) || !data.initialPimples.every(validPimple))) return false;
+        if (!['realistic', 'creamy'].includes(data.styleMode)) return false;
+        if (!['score', 'combo', 'perfectOps', 'damage', 'trophiesPlucked', 'coreSeedsCollected', 'iceCoverage', 'iceWaveProgress'].every(key => Number.isFinite(data[key]) && data[key] >= 0)) return false;
+        if (!['iceBrushingMode', 'iceFinishing'].every(key => typeof data[key] === 'boolean')) return false;
+        const numbers = (item, keys) => item && typeof item === 'object' && keys.every(key => Number.isFinite(item[key]));
+        for (const key of ['surfaceResidues', 'lensSplatters', 'bruises', 'iceGelBlobs', 'trophyTrayItems', 'flyingTrophies', 'dewDrops']) {
+          if (!Array.isArray(data[key]) || data[key].some(item => !item || typeof item !== 'object')) return false;
+        }
+        for (const key of ['surfaceResidues', 'lensSplatters', 'bruises', 'iceGelBlobs', 'dewDrops']) {
+          if (!data[key].every(item => numbers(item, ['x', 'y', 'r']) && item.r > 0)) return false;
+        }
+        if (!data.surfaceResidues.every(item => typeof item.kind === 'string' && Number.isFinite(item.alpha)
+          && (item.kind !== 'worm' || (Number.isFinite(item.thickness) && Array.isArray(item.pts) && item.pts.every(point => numbers(point, ['x', 'y']))))
+          && (!['core_seed', 'viscous_glob'].includes(item.kind) || Number.isFinite(item.rot)))) return false;
+        if (!data.lensSplatters.every(item => Number.isFinite(item.alpha) && Array.isArray(item.subDrops) && item.subDrops.every(drop => numbers(drop, ['dx', 'dy', 'rr']) && drop.rr > 0))) return false;
+        if (!data.bruises.every(item => Number.isFinite(item.alpha)) || !data.dewDrops.every(item => Number.isFinite(item.alpha))) return false;
+        if (!data.iceGelBlobs.every(item => numbers(item, ['bx', 'by']))) return false;
+        if (!numbers(data.swabStain, ['pus', 'blood', 'sebum'])) return false;
+        if (!data.collectionLedger || Array.isArray(data.collectionLedger) || typeof data.collectionLedger !== 'object') return false;
+        const ledger = data.collectionLedger;
+        if (!Object.values(ledger).every(item => item && ['skin', 'flight', 'tray'].includes(item.location)
+          && ['blackhead', 'seed'].includes(item.kind) && item.rewards && typeof item.rewards === 'object')) return false;
+        if (!data.flyingTrophies.every(item => numbers(item, ['sx', 'sy', 'tx', 'ty', 'progress', 'duration', 'wormLen', 'rot']) && item.duration > 0
+          && ledger[item.collectionId]?.location === 'flight' && ledger[item.collectionId].kind === item.kind)) return false;
+        if (!data.trophyTrayItems.every(item => numbers(item, ['wormLen', 'ox', 'oy', 'rot']) && ledger[item.collectionId]?.location === 'tray')) return false;
+        if (!data.surfaceResidues.every(item => !['worm', 'core_seed'].includes(item.kind) || ledger[item.collectionId]?.location === 'skin')) return false;
+        state.clientIndex = data.clientIndex;
+        state.targetDensity = data.targetDensity || 0;
+        generateLevel(state.targetDensity);
+        for (const key of SESSION_FIELDS) if (data[key] !== undefined) state[key] = data[key];
+        state.runDensity = data.runDensity === undefined ? data.targetDensity || 0 : data.runDensity;
+        state.runControlMode = data.runControlMode || (data.controlMode === 'keyboard' ? 'keyboard' : 'pointer');
+        if (typeof normalizeRunStats === 'function') normalizeRunStats();
+        const hydrate = p => ({ ...p, cfg: CONFIG.TYPES[p.type.toUpperCase()], pressure: 0, tentOffsetX: 0, tentOffsetY: 0 });
+        state.pimples = state.pimples.map(hydrate);
+        if (Array.isArray(state.initialPimples)) state.initialPimples = state.initialPimples.map(hydrate);
+        state.paused = false;
+        state.settled = false;
+        state.beforeCaptured = false;
+        releasePointer();
+        resizeCanvas();
+        const isCreamy = state.styleMode === 'creamy';
+        document.getElementById('style-mode-label').textContent = isCreamy ? '柔和肌理' : '自然肌理';
+        document.getElementById('btn-style-mode').setAttribute('aria-pressed', String(isCreamy));
+        document.getElementById('btn-style-mode').classList.toggle('active-mode', isCreamy);
+        const resumeTool = ['steam', 'needle', 'squeeze', 'tweezers', 'swab', 'ice_brush'].includes(state.currentTool) ? state.currentTool : 'steam';
+        selectTool(resumeTool);
+        if (resumeTool === 'ice_brush') enterIceBrushingStage();
+        trophyCountEl.textContent = `已收集 ${state.trophiesPlucked + state.coreSeedsCollected} 颗`;
+        updateHUD();
+        setHint('已接着上次的护理进度。准备好后，继续慢慢操作。', 'good');
+        lastSessionJSON = raw;
+        return true;
+      } catch (_) { return false; }
+    }
+
     function updateText(element, value) {
       const next = String(value);
       if (element.textContent !== next) element.textContent = next;
@@ -1305,6 +1434,7 @@
       } catch (_) {}
       updateText(bestScoreLabelEl, `最高 ${state.bestScore}`);
       updateText(coinValEl, `¥ ${state.coins}`);
+      queueSessionSave();
     }
 
     function currentClient() {
@@ -1571,6 +1701,207 @@
      * 2. 生成关卡并捕获「护理前 Before」微距快照
      * ============================================================================
      */
+    function planTreatmentLayout(pimples, width, height, seed = state.faceSeed) {
+      const count = pimples.length;
+      const side = Math.min(14, width * 0.04);
+      const top = Math.min(42, height * 0.18);
+      const bottom = height - Math.min(22, height * 0.09);
+      const left = side;
+      const right = width - side;
+      const gap = Math.min(6, width / Math.max(6, count * 3), height / Math.max(6, count * 2));
+      const outline = 1.08;
+      const bounds = { left, right, top, bottom };
+      if (!count) return { scale: 1, positions: [], bounds };
+
+      // Enumerate bounded row partitions instead of abandoning a target at the
+      // centre when rejection sampling runs out of attempts.
+      const ascending = [...pimples].sort((a, b) => (a.baseRadius || a.radius) - (b.baseRadius || b.radius) || a.id - b.id);
+      const partitions = [];
+      for (const order of [ascending, [...ascending].reverse()]) {
+        if (count <= 12) {
+          for (let cuts = 0; cuts < 2 ** (count - 1); cuts++) {
+            const rows = [[]];
+            order.forEach((p, index) => {
+              rows[rows.length - 1].push(p);
+              if (index < count - 1 && (cuts & (1 << index))) rows.push([]);
+            });
+            partitions.push(rows);
+          }
+        } else {
+          // Defensive bound for imported sessions; normal presets contain <=12.
+          for (let columns = 1; columns <= count; columns++) {
+            const rows = [];
+            for (let i = 0; i < count; i += columns) rows.push(order.slice(i, i + columns));
+            partitions.push(rows);
+          }
+        }
+      }
+
+      const idealRows = Math.max(1, Math.round(Math.sqrt(count * (bottom - top) / Math.max(1, right - left))));
+      let chosen = null;
+      for (let step = 0; step < 50 && !chosen; step++) {
+        const scale = 1 - step * 0.02;
+        let bestScore = Infinity;
+        for (const rows of partitions) {
+          let y = top;
+          let feasible = true;
+          let slack = 0;
+          const metrics = [];
+          for (const row of rows) {
+            const rowHeight = Math.max(...row.map(p => (p.baseRadius || p.radius) * 2 * outline * scale));
+            const rowWidth = row.reduce((sum, p) => sum + (p.baseRadius || p.radius) * 2 * outline * scale, 0) + gap * (row.length - 1);
+            // Keep targets clear of both the visible dish and its touch region.
+            const rowRight = y < 94 ? Math.max(left + (right - left) * 0.45, Math.min(right, width - 104)) : right;
+            if (rowWidth > rowRight - left + 0.0001 || y + rowHeight > bottom + 0.0001) { feasible = false; break; }
+            metrics.push({ row, height: rowHeight, width: rowWidth });
+            slack += ((rowRight - left - rowWidth) / Math.max(1, rowRight - left)) ** 2;
+            y += rowHeight + gap;
+          }
+          if (!feasible) continue;
+          const score = Math.abs(rows.length - idealRows) * 0.7 + slack / rows.length + (bottom - (y - gap)) / Math.max(1, bottom - top) * 0.25;
+          if (score < bestScore) { bestScore = score; chosen = { scale, metrics, totalHeight: y - gap - top }; }
+        }
+      }
+
+      // Extremely small/temporarily hidden viewports still receive a valid
+      // layout; hitRadius is kept at the original size independently.
+      if (!chosen) {
+        const columns = Math.max(1, Math.ceil(Math.sqrt(count * width / Math.max(1, height))));
+        const rows = Math.ceil(count / columns);
+        const cellW = (right - left) / columns;
+        const cellH = (bottom - top) / rows;
+        const scale = Math.max(0.001, Math.min(cellW, cellH) / (Math.max(...ascending.map(p => p.baseRadius || p.radius)) * 2 * outline));
+        return { scale, bounds, positions: ascending.map((p, i) => ({ id: p.id, x: left + (i % columns + 0.5) * cellW, y: top + (Math.floor(i / columns) + 0.5) * cellH, radius: (p.baseRadius || p.radius) * scale })) };
+      }
+
+      const freeHeight = Math.max(0, bottom - top - chosen.totalHeight);
+      let y = top + (chosen.metrics.length === 1 ? freeHeight * 0.5 : freeHeight * 0.15);
+      const rowGap = gap + (chosen.metrics.length > 1 ? freeHeight * 0.7 / (chosen.metrics.length - 1) : 0);
+      const positions = [];
+      chosen.metrics.forEach((metric, rowIndex) => {
+        const rowRight = y < 94 ? Math.max(left + (right - left) * 0.45, Math.min(right, width - 104)) : right;
+        const extra = Math.max(0, rowRight - left - metric.width) / metric.row.length;
+        const row = seededRand(seed + rowIndex * 17.3) > 0.5 ? metric.row : [...metric.row].reverse();
+        let x = left;
+        for (const p of row) {
+          const radius = (p.baseRadius || p.radius) * chosen.scale;
+          const footprint = radius * outline;
+          const jitterX = 0.18 + seededRand(seed + p.id * 11.7) * 0.64;
+          const jitterY = 0.18 + seededRand(seed + p.id * 19.1) * 0.64;
+          positions.push({ id: p.id, x: x + footprint + extra * jitterX, y: y + footprint + Math.max(0, metric.height - footprint * 2) * jitterY, radius });
+          x += footprint * 2 + extra + gap;
+        }
+        y += metric.height + rowGap;
+      });
+      // Break up the packing rows with bounded, seeded movement. Every accepted
+      // move retains the clearances, so even a crowded case stays valid.
+      const travel = Math.min(width, height) * 0.12;
+      for (let pass = 0; pass < 32; pass++) {
+        for (const p of positions) {
+          const footprint = p.radius * outline;
+          const x = p.x + (seededRand(seed + pass * 79.7 + p.id * 23.1) - 0.5) * travel * 2;
+          const y = p.y + (seededRand(seed + pass * 53.9 + p.id * 31.7) - 0.5) * travel * 2;
+          if (x - footprint < left || x + footprint > right || y - footprint < top || y + footprint > bottom) continue;
+          if (x + footprint > width - 104 && y - footprint < 94) continue;
+          if (positions.some(other => other !== p && Math.hypot(x - other.x, y - other.y) < (p.radius + other.radius) * outline + gap)) continue;
+          p.x = x;
+          p.y = y;
+        }
+      }
+      return { scale: chosen.scale, positions, bounds };
+    }
+
+    function captureSceneGeometry() {
+      return {
+        width: state.width, height: state.height, scale: state.sceneLayout?.scale || 1,
+        pimples: state.pimples.map(p => ({ id: p.id, x: p.x, y: p.y, radius: p.radius }))
+      };
+    }
+
+    function layoutTreatmentScene(previous = null) {
+      for (const p of state.pimples) {
+        if (!Number.isFinite(p.baseRadius)) p.baseRadius = p.radius / (previous?.scale || 1);
+        p.hitRadius = p.baseRadius;
+      }
+      const plan = planTreatmentLayout(state.pimples, state.width, state.height);
+      const positions = new Map(plan.positions.map(p => [p.id, p]));
+      const oldById = new Map((previous?.pimples || []).map(p => [p.id, p]));
+      for (const p of state.pimples) {
+        const next = positions.get(p.id);
+        const ratio = next.radius / Math.max(0.001, p.radius);
+        for (const key of ['headOffsetX', 'headOffsetY', 'surfacePusMound', 'bloodDropSize', 'serousDropSize', 'wormTotalLen']) {
+          if (Number.isFinite(p[key])) p[key] *= ratio;
+        }
+        p.x = next.x; p.y = next.y; p.radius = next.radius;
+        p.nx = p.x / state.width; p.ny = p.y / state.height;
+        p.tentOffsetX = 0; p.tentOffsetY = 0;
+      }
+
+      if (previous && previous.width > 0 && previous.height > 0) {
+        const scale = plan.scale / Math.max(0.001, previous.scale);
+        const clamp = (v, max) => Math.max(1, Math.min(Math.max(1, max - 1), v));
+        const anchorFor = (item) => {
+          if (oldById.has(item.pimpleId)) return oldById.get(item.pimpleId);
+          let nearest = null;
+          let distance = Infinity;
+          for (const old of previous.pimples) {
+            const d = Math.hypot(item.x - old.x, item.y - old.y);
+            if (d < distance && d <= Math.max(44, old.radius * 2.4)) { nearest = old; distance = d; }
+          }
+          return nearest;
+        };
+        const movePoint = (point, anchor) => {
+          const next = anchor && positions.get(anchor.id);
+          const ratio = next ? next.radius / Math.max(0.001, anchor.radius) : scale;
+          return {
+            x: clamp(next ? next.x + (point.x - anchor.x) * ratio : point.x / previous.width * state.width, state.width),
+            y: clamp(next ? next.y + (point.y - anchor.y) * ratio : point.y / previous.height * state.height, state.height)
+          };
+        };
+        // Discard already departed lens drops rather than reviving them on resize.
+        state.lensSplatters = state.lensSplatters.filter(sp => isLensSplatterVisible(sp, previous.width, previous.height));
+        for (const list of ['surfaceResidues', 'bruises', 'iceGelBlobs', 'lensSplatters', 'dewDrops', 'steamPuffs', 'flyingParticles', 'floatingTexts']) {
+          for (const item of state[list]) {
+            const anchor = anchorFor(item);
+            const moved = movePoint(item, anchor);
+            if (item.pts) item.pts = item.pts.map(point => {
+              const mapped = { ...point, ...movePoint(point, anchor) };
+              for (const key of ['distFromRoot', 'distFromTip']) if (Number.isFinite(mapped[key])) mapped[key] *= scale;
+              return mapped;
+            });
+            Object.assign(item, moved);
+            for (const key of ['r', 'thickness', 'wormLen', 'bx', 'by', 'vx', 'vy']) if (Number.isFinite(item[key])) item[key] *= scale;
+            if (item.subDrops) for (const drop of item.subDrops) for (const key of ['dx', 'dy', 'rr']) drop[key] *= scale;
+          }
+        }
+        for (const trophy of state.flyingTrophies) {
+          const point = { x: trophy.sx, y: trophy.sy };
+          const moved = movePoint(point, anchorFor(point));
+          trophy.sx = moved.x; trophy.sy = moved.y;
+          trophy.tx = state.width - 54 + (trophy.tx - (previous.width - 54)) * scale;
+          trophy.ty = 66 + (trophy.ty - 66) * scale;
+        }
+      }
+      state.sceneLayout = { version: 1, width: state.width, height: state.height, scale: plan.scale };
+    }
+
+    function comparisonBasis() {
+      return { version: 1, width: state.width, height: state.height, styleMode: state.styleMode, faceSeed: state.faceSeed };
+    }
+
+    function refreshComparisonSnapshots() {
+      if (!state.initialPimples?.length || !state.pimples.length) return;
+      captureFaceSnapshot(beforeSnap);
+      if (state.settled) captureFaceSnapshot(afterSnap);
+      state.beforeCaptured = true;
+      state.snapshotBasis = comparisonBasis();
+    }
+
+    function isLensSplatterVisible(sp, width = state.width, height = state.height) {
+      const drops = [{ dx: 0, dy: 0, rr: sp.r * 1.25 }, ...(sp.subDrops || [])];
+      return drops.some(drop => sp.x + drop.dx + drop.rr >= 0 && sp.x + drop.dx - drop.rr <= width && sp.y + drop.dy + drop.rr >= 0 && sp.y + drop.dy - drop.rr <= height);
+    }
+
     function generateLevel(overrideDensity = 0) {
       state.faceSeed = Math.random() * 99999;
       state.pimples = [];
@@ -1592,6 +1923,8 @@
       state.damage = 0;
       state.trophiesPlucked = 0;
       state.coreSeedsCollected = 0;
+      state.collectionLedger = {};
+      state.collectionSerial = 0;
       state.iceBrushingMode = false;
       state.iceCoverage = 0;
       state.iceWaveProgress = 0;
@@ -1637,12 +1970,6 @@
         for (let i = 0; i < client.recipe.cyst; i++) typePool.push('cyst');
       }
 
-      const marginX = 52;
-      const marginTop = 66;
-      const marginBottom = 58;
-      const usableW = Math.max(140, state.width - marginX * 2);
-      const usableH = Math.max(80, state.height - marginTop - marginBottom);
-
       typePool.forEach((typeKey, idx) => {
         const cfg = typeKey === 'whitehead'
           ? CONFIG.TYPES.WHITEHEAD
@@ -1651,34 +1978,6 @@
             : CONFIG.TYPES.CYST;
 
         const r = cfg.radiusRange[0] + Math.random() * (cfg.radiusRange[1] - cfg.radiusRange[0]);
-        let px = state.width * 0.5;
-        let py = state.height * 0.5;
-
-        for (let attempt = 0; attempt < 130; attempt++) {
-          const cx = marginX + Math.random() * usableW;
-          const cy = marginTop + Math.random() * usableH;
-          if (cx > state.width - 108 && cy < 108) continue;
-
-          const sebW = getSebaceousZoneWeight(cx / state.width, cy / state.height);
-          if (typeKey === 'blackhead' && sebW < 0.35 && attempt < 80) continue;
-          if (typeKey === 'cyst' && sebW > 0.78 && attempt < 60) continue;
-
-          let ok = true;
-          for (const other of state.pimples) {
-            const spacingFactor = (typeKey === 'blackhead' && other.type === 'blackhead') ? 1.55 : 2.1;
-            const minDist = (r + other.radius) * spacingFactor + 7;
-            if (Math.hypot(cx - other.x, cy - other.y) < minDist) {
-              ok = false;
-              break;
-            }
-          }
-          if (ok) {
-            px = cx;
-            py = cy;
-            break;
-          }
-        }
-
         const targetAngle = (Math.random() - 0.5) * Math.PI * 0.85;
         const shape = {
           p1: Math.random() * Math.PI * 2,
@@ -1696,11 +1995,13 @@
           id: idx + 1,
           type: typeKey,
           cfg,
-          x: px,
-          y: py,
-          nx: px / state.width,
-          ny: py / state.height,
+          x: 0,
+          y: 0,
+          nx: 0,
+          ny: 0,
           radius: r,
+          baseRadius: r,
+          hitRadius: r,
           shape,
           state: P_STATE.INTACT,
 
@@ -1738,36 +2039,65 @@
         });
       });
 
+      layoutTreatmentScene();
+      state.initialPimples = state.pimples.map(({ cfg, ...p }) => JSON.parse(JSON.stringify(p)));
+      state.snapshotBasis = null;
       updateHUD();
       setHint('从热敷开始，按住操作区缓缓移动。', 'normal');
       resultModalEl.classList.remove('open');
     }
 
     /**
-     * 截取画布核心病灶区用于结算 Before / After 滑动对比窗
+     * 将原始状态与护理后状态绘制到同一构图，供结算滑动比较。
      */
     function captureFaceSnapshot(targetCanvas) {
-      const cw = 360;
-      const ch = 130;
-      targetCanvas.width = cw;
-      targetCanvas.height = ch;
-      const tCtx = targetCanvas.getContext('2d');
+      // Repaint a clean scene from saved model state: changing tools, style or
+      // viewport must never become part of the before/after difference.
+      const isBefore = targetCanvas === beforeSnap;
+      const source = isBefore ? state.initialPimples : state.pimples;
+      if (!source?.length) return;
+      const currentById = new Map(state.pimples.map(p => [p.id, p]));
+      const backup = captureFaceSnapshot.backup || (captureFaceSnapshot.backup = document.createElement('canvas'));
+      backup.width = canvas.width;
+      backup.height = canvas.height;
+      backup.getContext('2d').drawImage(canvas, 0, 0);
 
-      // 计算所有痘痘中心点，裁取最具代表性的微距横幅区域
-      let sumY = state.height * 0.5;
-      if (state.pimples.length > 0) {
-        sumY = state.pimples.reduce((acc, p) => acc + p.y, 0) / state.pimples.length;
+      ctx.save();
+      try {
+        ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+        ctx.clearRect(0, 0, state.width, state.height);
+        ctx.drawImage(skinLayer, 0, 0, state.width, state.height);
+        if (!isBefore) {
+          for (const b of state.bruises) {
+            const gradient = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
+            gradient.addColorStop(0, `rgba(176, 32, 42, ${b.alpha})`);
+            gradient.addColorStop(0.6, `rgba(192, 52, 58, ${b.alpha * 0.38})`);
+            gradient.addColorStop(1, 'rgba(192, 52, 58, 0)');
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+        for (const original of source) {
+          const current = currentById.get(original.id);
+          if (!current) continue;
+          const ratio = current.radius / Math.max(0.001, original.radius);
+          const p = { ...original, cfg: current.cfg, x: current.x, y: current.y, radius: current.radius, tentOffsetX: 0, tentOffsetY: 0 };
+          for (const key of ['headOffsetX', 'headOffsetY', 'surfacePusMound', 'bloodDropSize', 'serousDropSize', 'wormTotalLen']) {
+            if (Number.isFinite(p[key])) p[key] *= ratio;
+          }
+          renderPimple(p, state.styleMode === 'creamy', true);
+        }
+        targetCanvas.width = 360;
+        targetCanvas.height = Math.max(1, Math.round(360 * state.height / state.width));
+        targetCanvas.getContext('2d').drawImage(canvas, 0, 0, targetCanvas.width, targetCanvas.height);
+      } finally {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(backup, 0, 0);
+        ctx.restore();
       }
-      const cropH = Math.min(state.height * 0.52, (state.width * ch) / cw);
-      const cropY = Math.max(40, Math.min(state.height - cropH - 20, sumY - cropH * 0.5));
-
-      tCtx.drawImage(
-        canvas,
-        0, cropY * state.dpr,
-        canvas.width, cropH * state.dpr,
-        0, 0,
-        cw, ch
-      );
     }
 
     /**
@@ -1783,16 +2113,23 @@
       compareCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
       const splitX = w * state.compareSplit;
+      const scale = Math.min(w / afterSnap.width, h / afterSnap.height);
+      const imageW = afterSnap.width * scale;
+      const imageH = afterSnap.height * scale;
+      const imageX = (w - imageW) * 0.5;
+      const imageY = (h - imageH) * 0.5;
+      compareCtx.fillStyle = '#f0eadf';
+      compareCtx.fillRect(0, 0, w, h);
 
       // 底层绘制 After（净肤冰敷后清爽毛孔）
-      compareCtx.drawImage(afterSnap, 0, 0, w, h);
+      compareCtx.drawImage(afterSnap, imageX, imageY, imageW, imageH);
 
       // 左侧裁剪绘制 Before（护理前满脸黑头红肿痘）
       compareCtx.save();
       compareCtx.beginPath();
       compareCtx.rect(0, 0, splitX, h);
       compareCtx.clip();
-      compareCtx.drawImage(beforeSnap, 0, 0, w, h);
+      compareCtx.drawImage(beforeSnap, imageX, imageY, imageW, imageH);
       compareCtx.restore();
 
       // 分割白线与圆形双向拉手
@@ -1887,10 +2224,33 @@
     /**
      * 发射拔出的脂栓/脓核沿抛物线飞入右上角不锈钢战利品弯盘！
      */
-    function launchTrophyToDish(startX, startY, kind = 'blackhead', wormLen = 28) {
+    function trophyIdFor(p, kind = p.type === 'blackhead' ? 'blackhead' : 'seed') {
+      return `${kind}:${p.id}`;
+    }
+
+    function placeTrophyOnSkin(collectionId, kind) {
+      if (state.collectionLedger[collectionId]) return false;
+      state.collectionLedger[collectionId] = { kind, location: 'skin', rewards: {} };
+      return true;
+    }
+
+    function rewardTrophyOnce(collectionId, reward, points, x, y, label) {
+      const item = state.collectionLedger[collectionId];
+      if (!item || item.rewards[reward]) return false;
+      item.rewards[reward] = true;
+      addScore(points, x, y, label);
+      return true;
+    }
+
+    function launchTrophyToDish(startX, startY, kind = 'blackhead', wormLen = 28, collectionId = null) {
+      const id = collectionId || `loose:${++state.collectionSerial}`;
+      const item = state.collectionLedger[id];
+      if (item && item.location !== 'skin') return false;
+      state.collectionLedger[id] = { kind, location: 'flight', rewards: item ? item.rewards : {} };
       const targetX = state.width - 54 + (Math.random() - 0.5) * 26;
       const targetY = 66 + (Math.random() - 0.5) * 10;
       state.flyingTrophies.push({
+        collectionId: id,
         kind,
         sx: startX,
         sy: startY,
@@ -1901,9 +2261,13 @@
         wormLen,
         rot: (Math.random() - 0.5) * 0.9
       });
+      return true;
     }
 
-    function finalizeTrophyInTray(kind = 'blackhead', wormLen = 28) {
+    function finalizeTrophyInTray(kind = 'blackhead', wormLen = 28, collectionId) {
+      const item = state.collectionLedger[collectionId];
+      if (!item || item.location !== 'flight') return false;
+      item.location = 'tray';
       if (kind === 'blackhead') state.trophiesPlucked += 1;
       else state.coreSeedsCollected += 1;
 
@@ -1913,6 +2277,7 @@
 
       if (state.trophyTrayItems.length < 20) {
         state.trophyTrayItems.push({
+          collectionId,
           kind,
           wormLen,
           ox: (state.trophyTrayItems.length % 6) * 10.5 + (Math.random() - 0.5) * 2.5,
@@ -1921,6 +2286,7 @@
         });
       }
       trophyCountEl.textContent = `已收集 ${state.trophiesPlucked + state.coreSeedsCollected} 颗`;
+      return true;
     }
 
     function updateCareGuidance() {
@@ -2076,6 +2442,8 @@
     }
 
     function dropExtractedBlackheadOnSkin(p) {
+      const collectionId = trophyIdFor(p);
+      if (!placeTrophyOnSkin(collectionId, 'blackhead')) return false;
       const pts = computeRealisticBlackheadCurve(
         p,
         1.0,
@@ -2084,6 +2452,7 @@
       );
       state.surfaceResidues.push({
         kind: 'worm',
+        collectionId,
         pimpleId: p.id,
         wormLen: p.wormTotalLen,
         x: p.x + p.wormCurlDir * 9,
@@ -2093,6 +2462,7 @@
         thickness: Math.max(2.1, p.radius * 0.21),
         alpha: 0.99
       });
+      return true;
     }
 
     function emitPopSquirt(p, intensity = 1.0) {
@@ -2136,19 +2506,24 @@
     }
 
     function emitSolidSebaceousCorePlug(p) {
+      const collectionId = trophyIdFor(p);
+      if (!placeTrophyOnSkin(collectionId, 'seed')) return false;
       const ang = state.pointer.axisAngle - Math.PI * 0.5 + (Math.random() - 0.5) * 0.6;
       const dist = p.type === 'cyst' ? 7.5 : 4.5;
       const rx = p.x + Math.cos(ang) * dist;
       const ry = p.y + Math.sin(ang) * dist;
       state.surfaceResidues.push({
         kind: 'core_seed',
+        collectionId,
+        pimpleId: p.id,
+        wormLen: p.type === 'cyst' ? 26 : 18,
         x: rx,
         y: ry,
         r: p.type === 'cyst' ? 4.6 : 3.1,
         rot: ang,
         alpha: 0.99
       });
-      launchTrophyToDish(rx, ry, 'seed', p.type === 'cyst' ? 26 : 18);
+      return true;
     }
 
     function enterOozingStage(p, pluckedCleanly = false) {
@@ -2230,7 +2605,7 @@
       let newlyOpened = false;
       for (const p of state.pimples) {
         if (p.state === P_STATE.HEALED) continue;
-        if (Math.hypot(pt.x - p.x, pt.y - p.y) < CONFIG.INTERACTION.STEAM_RADIUS_PX + p.radius) {
+        if (Math.hypot(pt.x - p.x, pt.y - p.y) < CONFIG.INTERACTION.STEAM_RADIUS_PX + (p.hitRadius || p.radius)) {
           const before = p.steamed;
           p.steamed = Math.min(1, p.steamed + dt * 1.15 * speedMult);
           if (before < 0.75 && p.steamed >= 0.75) {
@@ -2309,7 +2684,7 @@
       for (const p of state.pimples) {
         if (p.state === P_STATE.HEALED) continue;
         const d = Math.hypot(pt.x - p.x, pt.y - p.y);
-        if (d <= p.radius * 1.5 && d < minDist) {
+        if (d <= (p.hitRadius || p.radius) * 1.5 && d < minDist) {
           minDist = d;
           hit = p;
         }
@@ -2326,9 +2701,11 @@
         hit.extrudeProgress = 1;
         sound.playPop('blackhead');
         triggerHaptic(16);
-        launchTrophyToDish(hit.x, hit.y, 'blackhead', hit.wormTotalLen);
-        state.perfectOps += 1;
-        addScore(CONFIG.TYPES.BLACKHEAD.scorePop, hit.x, hit.y, '已取出');
+        const collectionId = trophyIdFor(hit);
+        if (launchTrophyToDish(hit.x, hit.y, 'blackhead', hit.wormTotalLen, collectionId)) {
+          state.perfectOps += 1;
+          rewardTrophyOnce(collectionId, 'extract', CONFIG.TYPES.BLACKHEAD.scorePop, hit.x, hit.y, '已取出');
+        }
         enterOozingStage(hit, true);
         return;
       }
@@ -2378,8 +2755,9 @@
           const wLen = res.wormLen || 24;
           const kind = res.kind === 'worm' ? 'blackhead' : 'seed';
           state.surfaceResidues.splice(i, 1);
-          launchTrophyToDish(rx, ry, kind, wLen);
-          addScore(45, rx, ry, '已收集');
+          if (launchTrophyToDish(rx, ry, kind, wLen, res.collectionId)) {
+            rewardTrophyOnce(res.collectionId, 'collect', 45, rx, ry, '已收集');
+          }
           if (linkedId) {
             const owner = state.pimples.find((pm) => pm.id === linkedId);
             if (owner && owner.state === P_STATE.OOZING && owner.bloodDropSize <= 0.1) {
@@ -2480,7 +2858,9 @@
       const pullVecLen = Math.hypot(pullVecX, pullVecY) || 1;
       // 真实细节：毛孔口被粘稠脂栓向外弹性牵拉鼓起 2~4.5px！
       tw.pullDist = Math.hypot(pt.x - tw.grabStartX, pt.y - tw.grabStartY);
-      tw.pullRatio = Math.min(1, tw.pullDist / CONFIG.INTERACTION.TWEEZER_PULL_NEEDED_PX);
+      const pullNeeded = CONFIG.INTERACTION.TWEEZER_PULL_NEEDED_PX *
+        (state.upgrades.steamer && p.steamed >= 0.75 ? 0.75 : 1);
+      tw.pullRatio = Math.min(1, tw.pullDist / pullNeeded);
 
       p.tentOffsetX = (pullVecX / pullVecLen) * tw.pullRatio * 4.2;
       p.tentOffsetY = (pullVecY / pullVecLen) * tw.pullRatio * 4.2;
@@ -2495,19 +2875,22 @@
         p.tentOffsetY = 0;
         sound.playPop('tweeze_pluck');
         triggerHaptic([20, 18, 38]);
-        state.perfectOps += 1;
-
         const upgMult = state.upgrades.tweezers ? 1.3 : 1.0;
+        const collectionId = trophyIdFor(p);
         if (p.type === 'blackhead') {
-          launchTrophyToDish(pt.x, pt.y, 'blackhead', p.wormTotalLen);
           const pts = Math.round((CONFIG.TYPES.BLACKHEAD.scorePop + CONFIG.TYPES.BLACKHEAD.scoreTweezeBonus) * upgMult);
-          addScore(pts, p.x, p.y, '已完整夹取');
+          if (launchTrophyToDish(pt.x, pt.y, 'blackhead', p.wormTotalLen, collectionId)) {
+            state.perfectOps += 1;
+            rewardTrophyOnce(collectionId, 'extract', pts, p.x, p.y, '已完整夹取');
+          }
           enterOozingStage(p, true);
         } else {
-          launchTrophyToDish(pt.x, pt.y, 'seed', 24);
           p.pusRemaining = 0;
           const pts = Math.round((p.cfg.scorePop + 70) * upgMult);
-          addScore(pts, p.x, p.y, '已夹取');
+          if (launchTrophyToDish(pt.x, pt.y, 'seed', 24, collectionId)) {
+            state.perfectOps += 1;
+            rewardTrophyOnce(collectionId, 'extract', pts, p.x, p.y, '已夹取');
+          }
           enterOozingStage(p, false);
         }
       }
@@ -2550,7 +2933,9 @@
 
           if (res.alpha <= 0.08) {
             const linkedId = res.pimpleId;
-            if (res.kind === 'worm') launchTrophyToDish(res.x, res.y, 'blackhead', res.wormLen || 24);
+            if (res.kind === 'worm' || res.kind === 'core_seed') {
+              launchTrophyToDish(res.x, res.y, res.kind === 'worm' ? 'blackhead' : 'seed', res.wormLen || 24, res.collectionId);
+            }
             state.surfaceResidues.splice(i, 1);
             if (linkedId) {
               const owner = state.pimples.find((pm) => pm.id === linkedId);
@@ -2579,7 +2964,7 @@
 
       for (const p of state.pimples) {
         const dist = Math.hypot(pt.x - p.x, pt.y - p.y);
-        if (dist >= swabR + p.radius) continue;
+        if (dist >= swabR + (p.hitRadius || p.radius)) continue;
 
         if (p.state === P_STATE.EXTRUDING) {
           if (p.surfacePusMound > 0.2) {
@@ -2606,9 +2991,14 @@
             p.state = P_STATE.HEALING;
             p.healProgress = 0;
             p.surfacePusMound = 0;
-            state.surfaceResidues = state.surfaceResidues.filter(
-              (r) => Math.hypot(r.x - p.x, r.y - p.y) > p.radius * 2.2
-            );
+            state.surfaceResidues = state.surfaceResidues.filter((r) => {
+              if (Math.hypot(r.x - p.x, r.y - p.y) > p.radius * 2.2) return true;
+              if (r.kind === 'worm' || r.kind === 'core_seed') {
+                if (r.pimpleId !== p.id) return true;
+                launchTrophyToDish(r.x, r.y, r.kind === 'worm' ? 'blackhead' : 'seed', r.wormLen || 24, r.collectionId);
+              }
+              return false;
+            });
             const healAmt = CONFIG.RULES.SWAB_SOOTHE_HEAL + (state.upgrades.iceprobe ? 3.5 : 0);
             state.damage = Math.max(0, state.damage - healAmt);
             sound.playCleanChime();
@@ -2640,13 +3030,32 @@
 
     function bindCanvasInteractions() {
       canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+      const touchIdentity = (touch, index = 0) => touch.identifier === undefined ? index : touch.identifier;
+      const trackedTouches = list => {
+        const all = Array.from(list);
+        const first = all.find((touch, index) => touchIdentity(touch, index) === state.pointer.touchId);
+        const second = all.find((touch, index) => touchIdentity(touch, index) === state.pointer.secondTouchId);
+        return first ? second ? [first, second] : [first] : [];
+      };
 
       canvas.addEventListener('touchstart', (e) => {
         e.preventDefault();
         if (state.settled || state.paused || state.iceFinishing) return;
+        const allTouches = Array.from(e.touches);
+        if (!allTouches.length) return;
+        if (state.pointer.active && (state.currentTool !== 'squeeze' || state.pointer.mode === 'two-finger')) return;
+        if (!state.pointer.active) {
+          state.pointer.touchId = touchIdentity(allTouches[0]);
+          state.pointer.secondTouchId = null;
+          if (typeof beginCareAction === 'function') beginCareAction();
+        }
+        if (state.currentTool === 'squeeze' && allTouches.length >= 2) {
+          const secondIndex = allTouches.findIndex((touch, index) => touchIdentity(touch, index) !== state.pointer.touchId);
+          state.pointer.secondTouchId = touchIdentity(allTouches[secondIndex], secondIndex);
+        }
         sound.unlock();
 
-        const touches = e.touches;
+        const touches = trackedTouches(e.touches);
         if (touches.length === 0) return;
         const pt = getCanvasPoint(touches[0].clientX, touches[0].clientY);
 
@@ -2727,7 +3136,7 @@
       canvas.addEventListener('touchmove', (e) => {
         e.preventDefault();
         if (!state.pointer.active || state.settled || state.paused || state.iceFinishing) return;
-        const touches = e.touches;
+        const touches = trackedTouches(e.touches);
         if (touches.length === 0) return;
         const pt = getCanvasPoint(touches[0].clientX, touches[0].clientY);
 
@@ -2796,11 +3205,14 @@
 
       const endTouch = (e) => {
         e.preventDefault();
-        if (state.pointer.active && state.pointer.mode === 'needle' && !state.paused && !state.settled && !state.iceFinishing && e.changedTouches && e.changedTouches.length > 0) {
-          const pt = getCanvasPoint(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+        const ended = Array.from(e.changedTouches || []);
+        const primary = ended.find((touch, index) => touchIdentity(touch, index) === state.pointer.touchId);
+        const secondEnded = ended.some((touch, index) => touchIdentity(touch, index) === state.pointer.secondTouchId);
+        if (primary && state.pointer.active && state.pointer.mode === 'needle' && !state.paused && !state.settled && !state.iceFinishing) {
+          const pt = getCanvasPoint(primary.clientX, primary.clientY);
           handleNeedleTap(pt);
         }
-        if (e.touches.length === 0 || (e.touches.length === 1 && state.pointer.mode === 'two-finger')) {
+        if (primary || e.touches.length === 0 || (secondEnded && state.pointer.mode === 'two-finger')) {
           releasePointer();
         }
       };
@@ -2809,6 +3221,7 @@
 
       canvas.addEventListener('mousedown', (e) => {
         if (e.button !== 0 || state.settled || state.paused || state.iceFinishing) return;
+        if (typeof beginCareAction === 'function') beginCareAction();
         sound.unlock();
         const pt = getCanvasPoint(e.clientX, e.clientY);
         state.pointer.hoverX = pt.x;
@@ -2899,6 +3312,18 @@
           }
           releasePointer();
         }
+      });
+
+      const suspendInteraction = () => {
+        releasePointer();
+        state.pointer.hoverX = -999;
+        state.pointer.hoverY = -999;
+        saveCurrentSession();
+      };
+      window.addEventListener('blur', suspendInteraction);
+      window.addEventListener('pagehide', suspendInteraction);
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) suspendInteraction();
       });
 
       // 结算面板 Before / After 对比分割线交互绑定
@@ -3014,11 +3439,14 @@
         state.tweezers.clampedPimple.tentOffsetY = 0;
       }
       state.pointer.active = false;
+      state.pointer.touchId = null;
+      state.pointer.secondTouchId = null;
       state.pointer.mode = 'none';
       state.pointer.rawForce = 0;
       state.pointer.lockedPimple = null;
       state.tweezers.clampedPimple = null;
       sound.setTension(0);
+      saveCurrentSession();
     }
 
     function getAxisAngleDiff(a, b) {
@@ -3079,7 +3507,7 @@
         const ft = state.flyingTrophies[i];
         ft.progress += dt / ft.duration;
         if (ft.progress >= 1) {
-          finalizeTrophyInTray(ft.kind, ft.wormLen);
+          finalizeTrophyInTray(ft.kind, ft.wormLen, ft.collectionId);
           state.flyingTrophies.splice(i, 1);
         }
       }
@@ -3210,9 +3638,16 @@
         }
       }
 
-      for (const sp of state.lensSplatters) {
+      let removedSplatter = false;
+      for (let i = state.lensSplatters.length - 1; i >= 0; i--) {
+        const sp = state.lensSplatters[i];
         sp.y += CONFIG.PARTICLES.LENS_SLIDE_SPEED * dt * (sp.r / 12);
+        if (!isLensSplatterVisible(sp)) {
+          state.lensSplatters.splice(i, 1);
+          removedSplatter = true;
+        }
       }
+      if (removedSplatter) updateHUD();
 
       for (let i = state.floatingTexts.length - 1; i >= 0; i--) {
         const ft = state.floatingTexts[i];
@@ -3340,9 +3775,10 @@
         if (p.extrudeProgress >= 1) {
           sound.playPop('blackhead');
           triggerHaptic([18, 16, 26]);
-          dropExtractedBlackheadOnSkin(p);
-          if (!p.hardSqueezeWarned) state.perfectOps += 1;
-          addScore(CONFIG.TYPES.BLACKHEAD.scorePop, p.x, p.y, '已取出');
+          if (dropExtractedBlackheadOnSkin(p)) {
+            if (!p.hardSqueezeWarned) state.perfectOps += 1;
+            rewardTrophyOnce(trophyIdFor(p), 'extract', CONFIG.TYPES.BLACKHEAD.scorePop, p.x, p.y, '已取出');
+          }
           enterOozingStage(p, false);
         }
         return;
@@ -3356,9 +3792,10 @@
         if (p.pusRemaining <= 0) {
           sound.playPop('blackhead');
           triggerHaptic(22);
-          emitSolidSebaceousCorePlug(p);
-          if (!p.hardSqueezeWarned) state.perfectOps += 1;
-          addScore(CONFIG.TYPES.WHITEHEAD.scorePop, p.x, p.y, '已清理');
+          if (emitSolidSebaceousCorePlug(p)) {
+            if (!p.hardSqueezeWarned) state.perfectOps += 1;
+            rewardTrophyOnce(trophyIdFor(p), 'extract', CONFIG.TYPES.WHITEHEAD.scorePop, p.x, p.y, '已清理');
+          }
           enterOozingStage(p, false);
         }
         return;
@@ -3398,10 +3835,12 @@
           state.cameraShake = 9.5;
           sound.playPop('core_plug');
           triggerHaptic([45, 25, 65]);
-          emitSolidSebaceousCorePlug(p);
+          const emitted = emitSolidSebaceousCorePlug(p);
           emitPopSquirt(p, 0.95);
-          if (!p.hardSqueezeWarned) state.perfectOps += 1;
-          addScore(CONFIG.TYPES.CYST.scorePop, p.x, p.y, '已清理');
+          if (emitted) {
+            if (!p.hardSqueezeWarned) state.perfectOps += 1;
+            rewardTrophyOnce(trophyIdFor(p), 'extract', CONFIG.TYPES.CYST.scorePop, p.x, p.y, '已清理');
+          }
           enterOozingStage(p, false);
         }
       }
@@ -3413,6 +3852,10 @@
      * ============================================================================
      */
     function renderScene(cleanForSnapshot = false) {
+      const basis = state.snapshotBasis;
+      if (!state.beforeCaptured || !basis || basis.width !== state.width || basis.height !== state.height || basis.styleMode !== state.styleMode || basis.faceSeed !== state.faceSeed) {
+        refreshComparisonSnapshots();
+      }
       const w = state.width;
       const h = state.height;
       const isCreamy = state.styleMode === 'creamy';
@@ -3450,13 +3893,6 @@
         renderPimple(p, isCreamy);
       }
 
-      // 首帧自动抓取“护理前 Before”原始皮肤快照！
-      if (!state.beforeCaptured && state.pimples.length > 0) {
-        state.beforeCaptured = true;
-        ctx.restore();
-        captureFaceSnapshot(beforeSnap);
-        ctx.save();
-      }
 
       if (cleanForSnapshot) {
         ctx.restore();
@@ -3951,7 +4387,7 @@
       ctx.restore();
     }
 
-    function renderPimple(p, isCreamy) {
+    function renderPimple(p, isCreamy, cleanForSnapshot = false) {
       const ptr = state.pointer;
       const isTarget = ptr.active && ptr.lockedPimple === p && ptr.squeezeForce > 0.05;
       const isClampedByTweezer = state.tweezers.clampedPimple === p;
@@ -3973,7 +4409,7 @@
         ctx.beginPath();
         ctx.ellipse(p.x, p.y, finalPoreR, finalPoreR * 0.8, p.shape.rot, 0, Math.PI * 2);
         ctx.fill();
-        if (state.currentTool === 'ice_brush' && !p.iced) {
+        if (!cleanForSnapshot && state.currentTool === 'ice_brush' && !p.iced) {
           ctx.translate(p.x, p.y);
           renderSubtleClinicalGuides(p, false);
         }
@@ -4050,7 +4486,7 @@
         ctx.restore();
       }
 
-      renderSubtleClinicalGuides(p, isTarget);
+      if (!cleanForSnapshot) renderSubtleClinicalGuides(p, isTarget);
       ctx.restore();
     }
 
@@ -5389,11 +5825,16 @@
     }
 
     function resizeCanvas() {
+      const previous = captureSceneGeometry();
       const rect = viewportWrap.getBoundingClientRect();
       const newW = Math.max(1, Math.floor(rect.width));
       const newH = Math.max(1, Math.floor(rect.height));
       const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
 
+      releasePointer();
+      state.pointer.squeezeForce = 0;
+      state.pointer.hoverX = -999;
+      state.pointer.hoverY = -999;
       state.width = newW;
       state.height = newH;
       state.dpr = dpr;
@@ -5401,13 +5842,11 @@
       canvas.width = Math.floor(newW * dpr);
       canvas.height = Math.floor(newH * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-      for (const p of state.pimples) {
-        p.x = Math.max(42, Math.min(newW - 42, p.nx * newW));
-        p.y = Math.max(54, Math.min(newH - 46, p.ny * newH));
-      }
-
+      layoutTreatmentScene(previous);
       renderSkinTexture();
+      // Also run at equal dimensions after session hydration.
+      refreshComparisonSnapshots();
+      if (state.pimples.length) updateHUD();
     }
 
     let rafId = null;
@@ -5430,8 +5869,12 @@
       bindCanvasInteractions();
       persistSaveData();
       resizeCanvas();
-      generateLevel(0);
-      selectTool('steam');
+      if (!restoreCurrentSession()) {
+        generateLevel(0);
+        selectTool('steam');
+      }
+      sessionSaveEnabled = true;
+      saveCurrentSession();
 
       window.addEventListener('resize', () => {
         resizeCanvas();
