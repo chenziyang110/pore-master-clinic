@@ -27,6 +27,13 @@ jobs:
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 24
+      - name: Prepare Chinese fonts for readable screenshots
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends fonts-noto-cjk fontconfig
+          fc-cache -f
+          fc-match -f '%{family}\n' 'sans-serif:lang=zh-cn'
+          fc-match -f '%{family}\n' 'serif:lang=zh-cn'
       - name: Check real browser layouts and capture screenshots
         run: node scripts/browser-smoke.cjs
       - name: Upload screenshots and layout report

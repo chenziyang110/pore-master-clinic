@@ -145,6 +145,10 @@ async function runViewport(cdp, origin, viewport, report) {
     };
     const checkpoint = async (name, expectedModal) => {
       await evaluate('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
+      // Check before click() scrolls anything into view: the main entry and
+      // everyday care controls must be immediately usable at each screen size.
+      const requiredControls = expectedModal === 'home-modal' ? ['#btn-start-adventure']
+        : expectedModal === null ? ['#btn-wardrobe', '#tool-steam', '#tool-needle', '#tool-squeeze', '#tool-tweezers', '#tool-swab'] : [];
       const layout = await evaluate(`(() => {
         const modal = document.querySelector('.modal-backdrop.open');
         const active = modal || document.getElementById('app-shell');
@@ -160,7 +164,40 @@ async function runViewport(cdp, origin, viewport, report) {
           if (box.left < -2 || box.right > innerWidth + 2)
             overflow.push(name + ': outside viewport [' + Math.round(box.left) + ', ' + Math.round(box.right) + ']');
         }
-        return {width:innerWidth,height:innerHeight,modal:modal?.id || null,overflow};
+        const visibilityIssues = [];
+        const controls = ${JSON.stringify(requiredControls)}.map(selector => {
+          const button = document.querySelector(selector);
+          if (!button || !button.getClientRects().length || button.disabled || button.closest('[hidden], [inert]')) {
+            visibilityIssues.push(selector + ': missing, hidden or disabled');
+            return {selector,visible:false};
+          }
+          const box = button.getBoundingClientRect();
+          let left=0, top=0, right=innerWidth, bottom=innerHeight;
+          for (let ancestor=button.parentElement; ancestor; ancestor=ancestor.parentElement) {
+            const style=getComputedStyle(ancestor), bounds=ancestor.getBoundingClientRect();
+            if (style.visibility === 'hidden' || Number(style.opacity) === 0) {
+              visibilityIssues.push(selector + ': invisible ancestor');
+            }
+            if (/(hidden|clip|scroll|auto)/.test(style.overflowX)) {
+              left=Math.max(left,bounds.left+ancestor.clientLeft);
+              right=Math.min(right,bounds.left+ancestor.clientLeft+ancestor.clientWidth);
+            }
+            if (/(hidden|clip|scroll|auto)/.test(style.overflowY)) {
+              top=Math.max(top,bounds.top+ancestor.clientTop);
+              bottom=Math.min(bottom,bounds.top+ancestor.clientTop+ancestor.clientHeight);
+            }
+          }
+          const fullyVisible = box.width>0 && box.height>0 && box.left>=left-1 && box.right<=right+1
+            && box.top>=top-1 && box.bottom<=bottom+1;
+          if (!fullyVisible) visibilityIssues.push(selector + ': clipped or outside the initial viewport');
+          else {
+            const hit=document.elementFromPoint((box.left+box.right)/2,(box.top+box.bottom)/2);
+            if (!hit || !button.contains(hit)) visibilityIssues.push(selector + ': covered by another element');
+          }
+          return {selector,visible:fullyVisible,rect:{x:Math.round(box.x),y:Math.round(box.y),
+            width:Math.round(box.width),height:Math.round(box.height)}};
+        });
+        return {width:innerWidth,height:innerHeight,modal:modal?.id || null,overflow,controls,visibilityIssues};
       })()`);
       const filename = `${label}-${name}.png`;
       const shot = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false, fromSurface: true });
@@ -169,10 +206,12 @@ async function runViewport(cdp, origin, viewport, report) {
       assert.equal(layout.modal, expectedModal, `${label}/${name}: expected active screen`);
       assert.equal(layout.width, viewport.width, `${label}/${name}: CSS viewport width`);
       if (layout.overflow.length) report.failures.push(`${label}/${name}: ${layout.overflow.join('; ')}`);
-      console.log(`${label}/${name}: ${layout.overflow.length ? 'OVERFLOW' : 'layout OK'}`);
+      if (layout.visibilityIssues.length) report.failures.push(`${label}/${name}: ${layout.visibilityIssues.join('; ')}`);
+      console.log(`${label}/${name}: ${layout.overflow.length || layout.visibilityIssues.length ? 'LAYOUT FAILURE' : 'layout OK'}`);
     };
 
-    await Promise.all([send('Page.enable'), send('Runtime.enable'), send('Log.enable')]);
+    await Promise.all([send('Page.enable'), send('Runtime.enable'), send('Log.enable'), send('DOM.enable')]);
+    await send('CSS.enable');
     await send('Emulation.setDeviceMetricsOverride', { width: viewport.width, height: viewport.height, deviceScaleFactor: 1,
       mobile: viewport.mobile, screenWidth: viewport.width, screenHeight: viewport.height });
     await send('Emulation.setTouchEmulationEnabled', { enabled: viewport.mobile });
@@ -181,6 +220,15 @@ async function runViewport(cdp, origin, viewport, report) {
     await send('Page.navigate', { url: origin });
     await waitFor('document.readyState === "complete" && typeof startAdventure === "function"', 'page startup');
     assert.equal(await evaluate('(async()=>{await careControlReady;return careControl.owned;})()'), true, 'local profile ownership');
+    await evaluate('document.fonts.ready.then(()=>true)');
+    const {root} = await send('DOM.getDocument', {depth:1});
+    for (const selector of ['#home-title', '#btn-start-adventure']) {
+      const {nodeId} = await send('DOM.querySelector', {nodeId:root.nodeId, selector});
+      const {fonts} = await send('CSS.getPlatformFontsForNode', {nodeId});
+      report.fonts.push({viewport:label,selector,fonts});
+      if (!fonts.some(font => /Noto.*CJK/.test(font.familyName) && font.glyphCount>0))
+        report.failures.push(`${label}/${selector}: Chinese Noto CJK glyphs were not rendered`);
+    }
 
     await checkpoint('01-home', 'home-modal');
     await click('#btn-start-adventure');
@@ -223,7 +271,7 @@ async function runViewport(cdp, origin, viewport, report) {
 
 async function main() {
   await fsp.mkdir(OUTPUT, { recursive: true });
-  const report = { viewports: VIEWPORTS, screens: [], failures: [] };
+  const report = { viewports: VIEWPORTS, screens: [], fonts: [], failures: [] };
   let server, child, cdp, profileDirectory;
   try {
     const executable = [process.env.CHROME_BIN, '/usr/bin/google-chrome', '/usr/bin/chromium'].find(file => file && fs.existsSync(file));
