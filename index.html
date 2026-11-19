@@ -2,1040 +2,431 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>妙手净肤馆 · 精工微距清痘护理模拟器</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#faf9f5" />
+  <meta name="description" content="一间小小的净肤馆。放慢节奏，体验热敷、清理与舒缓护理的微距解压小游戏。" />
+  <title>妙手净肤馆 · 慢慢照顾每一寸肌肤</title>
   <style>
+
     :root {
-      --bg-dark: #131015;
-      --panel-bg: rgba(26, 21, 29, 0.92);
-      --panel-border: rgba(255, 236, 230, 0.14);
-      --text-main: #fdf6f3;
-      --text-sub: #c6b3ad;
-      --accent-rose: #ff6b8b;
-      --accent-gold: #ffca63;
-      --accent-mint: #4cd9a4;
-      --accent-ice: #6be2ff;
-      --accent-danger: #ff4d5e;
+      color-scheme: light;
+      --paper: #faf9f5;
+      --surface: #f1f1e9;
+      --ink: #303e36;
+      --muted: #737b70;
+      --line: #dddfd4;
+      --green: #4b6554;
+      --green-soft: #e9eee4;
+      --text-main: var(--ink);
+      --text-sub: var(--muted);
+      --accent-rose: #9c6b60;
+      --accent-gold: #927443;
+      --accent-mint: #4b705b;
+      --accent-ice: #507d7e;
+      --accent-danger: #ae554c;
+      --serif: 'Noto Serif CJK SC', 'Songti SC', 'STSong', 'SimSun', serif;
     }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      user-select: none;
-      -webkit-user-select: none;
-      -webkit-touch-callout: none;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    html, body {
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      overscroll-behavior: none;
-      touch-action: none;
-      background: radial-gradient(circle at 50% 22%, #2a2028 0%, #0e0b10 82%);
-      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-      color: var(--text-main);
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html { min-height: 100%; background: #eaece3; }
+    body {
+      min-height: 100vh;
+      min-height: 100dvh;
+      padding: 30px;
       display: flex;
       align-items: center;
       justify-content: center;
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overscroll-behavior: none;
     }
-
+    button { font: inherit; color: inherit; cursor: pointer; -webkit-appearance: none; appearance: none; touch-action: manipulation; }
+    button, canvas { user-select: none; -webkit-user-select: none; }
+    button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--green); outline-offset: 4px; }
+    button:disabled { cursor: default; }
+    .icon { width: 18px; height: 18px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+    .sprite { position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; }
     #app-shell {
       position: relative;
-      width: 100%;
-      height: 100%;
-      max-width: 468px;
-      max-height: 930px;
       display: flex;
       flex-direction: column;
-      background: #1a1418;
+      width: min(1160px, 100%);
+      height: min(850px, calc(100dvh - 60px));
+      min-height: 690px;
       overflow: hidden;
-      box-shadow: 0 24px 72px rgba(0, 0, 0, 0.74), 0 0 0 1px rgba(255, 255, 255, 0.08);
-    }
-
-    @media (min-width: 500px) {
-      #app-shell {
-        height: min(95vh, 900px);
-        border-radius: 28px;
-      }
-    }
-
-    /* 顶部诊所状态栏 HUD */
-    .hud-header {
-      position: relative;
-      z-index: 20;
-      padding: 9px 12px 8px;
-      background: linear-gradient(180deg, rgba(21, 17, 24, 0.97) 0%, rgba(21, 17, 24, 0.86) 100%);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--panel-border);
-      display: flex;
-      flex-direction: column;
-      gap: 7px;
-    }
-
-    .hud-top-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 6px;
-    }
-
-    .brand-title {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 14px;
-      font-weight: 800;
-      color: #fff3ee;
-      white-space: nowrap;
-    }
-
-    .coin-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
-      padding: 2px 8px;
-      border-radius: 999px;
-      background: rgba(255, 202, 99, 0.16);
-      border: 1px solid rgba(255, 202, 99, 0.42);
-      color: #ffd980;
-      font-size: 11px;
-      font-weight: 800;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .top-actions {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      flex-wrap: nowrap;
-    }
-
-    .icon-btn {
-      appearance: none;
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      background: rgba(255, 255, 255, 0.07);
-      color: var(--text-main);
-      height: 28px;
-      padding: 0 8px;
-      border-radius: 999px;
-      font-size: 11px;
-      font-weight: 600;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
-      white-space: nowrap;
-      transition: transform 0.14s ease, background 0.18s ease, border-color 0.18s ease;
-    }
-
-    .icon-btn:hover {
-      background: rgba(255, 255, 255, 0.14);
-    }
-
-    .icon-btn:active {
-      transform: scale(0.94);
-    }
-
-    .icon-btn.active-mode {
-      border-color: rgba(255, 202, 99, 0.55);
-      background: rgba(255, 202, 99, 0.16);
-      color: #ffe29e;
-    }
-
-    .icon-btn.highlight-plan {
-      border-color: rgba(107, 226, 255, 0.5);
-      background: rgba(107, 226, 255, 0.14);
-      color: #c7f4ff;
-    }
-
-    /* 顾客实时问诊与微表情状态条 */
-    .patient-bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 12px;
-      padding: 5px 9px;
-    }
-
-    .patient-info {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      min-width: 0;
-    }
-
-    .patient-avatar-wrap {
-      position: relative;
-      width: 30px;
-      height: 30px;
-      flex-shrink: 0;
-    }
-
-    .patient-avatar {
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #ff9bb3, #ffd275);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 16px;
-      transition: transform 0.18s ease;
-    }
-
-    .mood-badge {
-      position: absolute;
-      right: -4px;
-      bottom: -3px;
-      font-size: 11px;
-      line-height: 1;
-      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.6));
-    }
-
-    .patient-text-wrap {
-      min-width: 0;
-    }
-
-    .patient-name-line {
-      font-size: 12px;
-      font-weight: 700;
-      color: #fff5f0;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-
-    .patient-quote {
-      font-size: 10.5px;
-      color: var(--text-sub);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      transition: color 0.2s ease;
-    }
-
-    .tray-trigger-box {
-      text-align: right;
-      flex-shrink: 0;
-      cursor: pointer;
-      padding: 2px 6px;
-      border-radius: 8px;
-      border: 1px solid transparent;
-      transition: background 0.16s ease, border-color 0.16s ease;
-    }
-
-    .tray-trigger-box:hover {
-      background: rgba(255, 255, 255, 0.08);
-      border-color: rgba(255, 226, 158, 0.35);
-    }
-
-    .hud-stats-row {
-      display: grid;
-      grid-template-columns: 0.95fr 0.95fr 1.25fr;
-      gap: 7px;
-      align-items: center;
-    }
-
-    .stat-card {
-      background: rgba(255, 255, 255, 0.045);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 11px;
-      padding: 4px 8px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
-
-    .stat-label {
-      font-size: 10px;
-      color: var(--text-sub);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .stat-value {
-      font-size: 14px;
-      font-weight: 800;
-      font-variant-numeric: tabular-nums;
-      color: #ffffff;
-      margin-top: 1px;
-    }
-
-    .stat-value.gold {
-      color: var(--accent-gold);
-    }
-
-    .combo-pill {
-      font-size: 10px;
-      font-weight: 700;
-      color: #ff9eb5;
-      opacity: 0;
-      transform: scale(0.85);
-      transition: opacity 0.2s ease, transform 0.2s ease;
-    }
-
-    .combo-pill.show {
-      opacity: 1;
-      transform: scale(1);
-    }
-
-    .damage-bar-track {
-      width: 100%;
-      height: 6px;
-      background: rgba(0, 0, 0, 0.44);
-      border-radius: 999px;
-      overflow: hidden;
-      margin-top: 3px;
-      border: 1px solid rgba(255, 255, 255, 0.07);
-    }
-
-    .damage-bar-fill {
-      height: 100%;
-      width: 0%;
-      border-radius: 999px;
-      background: linear-gradient(90deg, #4cd9a4 0%, #ffca63 60%, #ff4d5e 100%);
-      transition: width 0.18s ease-out;
-    }
-
-    /* 主画布视窗 */
-    #viewport-wrap {
-      position: relative;
-      flex: 1;
-      width: 100%;
-      overflow: hidden;
-      touch-action: none;
-      cursor: grab;
-    }
-
-    #skin-canvas {
-      display: block;
-      width: 100%;
-      height: 100%;
-      touch-action: none;
-    }
-
-    .hint-banner {
-      position: absolute;
-      top: 9px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 15;
-      width: calc(100% - 22px);
-      max-width: 416px;
-      padding: 6px 12px;
-      border-radius: 999px;
-      background: rgba(20, 16, 22, 0.82);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.13);
-      color: #f8e9e4;
-      font-size: 11.5px;
-      text-align: center;
-      line-height: 1.35;
-      pointer-events: none;
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
-    }
-
-    .hint-banner.warn {
-      border-color: rgba(255, 92, 112, 0.65);
-      color: #ffd0d6;
-      background: rgba(48, 14, 22, 0.88);
-    }
-
-    .hint-banner.good {
-      border-color: rgba(76, 217, 164, 0.6);
-      color: #d4ffee;
-    }
-
-    /* 冰敷修护浮动操作组 */
-    .ice-cta-group {
-      position: absolute;
-      bottom: 14px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 18;
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-
-    .ice-finish-cta {
-      appearance: none;
-      border: 1.5px solid rgba(107, 226, 255, 0.78);
-      background: linear-gradient(135deg, rgba(20, 84, 114, 0.94), rgba(34, 142, 174, 0.94));
-      color: #ebfcff;
-      padding: 9px 16px;
-      border-radius: 999px;
-      font-size: 12.5px;
-      font-weight: 800;
-      cursor: pointer;
-      box-shadow: 0 8px 24px rgba(56, 198, 238, 0.44);
-      display: none;
-      align-items: center;
-      gap: 5px;
-      white-space: nowrap;
-      animation: floatPulse 1.6s infinite ease-in-out;
-    }
-
-    .ice-finish-cta.show {
-      display: inline-flex;
-    }
-
-    .ice-quick-btn {
-      appearance: none;
-      border: 1px solid rgba(255, 255, 255, 0.24);
-      background: rgba(22, 28, 36, 0.88);
-      color: #d8f6ff;
-      padding: 9px 12px;
-      border-radius: 999px;
-      font-size: 11.5px;
-      font-weight: 700;
-      cursor: pointer;
-      display: none;
-      white-space: nowrap;
-    }
-
-    .ice-quick-btn.show {
-      display: inline-flex;
-    }
-
-    @keyframes floatPulse {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-3px); }
-    }
-
-    .macro-frame-overlay {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      z-index: 10;
-      box-shadow: inset 0 0 46px rgba(18, 9, 11, 0.45);
-    }
-
-    .macro-reticle {
-      position: absolute;
-      bottom: 8px;
-      left: 12px;
-      font-size: 10px;
-      letter-spacing: 0.4px;
-      color: rgba(255, 240, 235, 0.52);
-      pointer-events: none;
-      z-index: 12;
-    }
-
-    /* 五步专业清痘工具栏 */
-    .toolbar-dock {
-      position: relative;
-      z-index: 20;
-      padding: 8px 8px calc(10px + env(safe-area-inset-bottom, 0px));
-      background: linear-gradient(0deg, rgba(18, 14, 20, 0.98) 0%, rgba(27, 21, 30, 0.92) 100%);
-      border-top: 1px solid var(--panel-border);
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 6px;
-    }
-
-    .tool-btn {
-      position: relative;
-      appearance: none;
-      border: 1.5px solid rgba(255, 255, 255, 0.10);
-      background: rgba(255, 255, 255, 0.045);
-      color: var(--text-sub);
-      border-radius: 14px;
-      padding: 7px 3px;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 2px;
-      transition: all 0.16s cubic-bezier(0.22, 1, 0.36, 1);
-    }
-
-    .tool-btn:hover {
-      background: rgba(255, 255, 255, 0.09);
-      color: #fff;
-    }
-
-    .tool-btn:active {
-      transform: scale(0.95);
-    }
-
-    .tool-btn.selected {
-      background: linear-gradient(180deg, rgba(255, 107, 139, 0.25) 0%, rgba(255, 107, 139, 0.1) 100%);
-      border-color: var(--accent-rose);
-      color: #ffffff;
-      box-shadow: 0 4px 14px rgba(255, 107, 139, 0.22);
-      transform: translateY(-2px);
-    }
-
-    .tool-icon {
-      font-size: 18px;
-      line-height: 1.1;
-    }
-
-    .tool-name {
-      font-size: 11px;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-
-    .tool-desc {
-      font-size: 9px;
-      opacity: 0.72;
-      white-space: nowrap;
-    }
-
-    .tool-badge {
-      position: absolute;
-      top: 3px;
-      right: 4px;
-      min-width: 15px;
-      height: 15px;
-      padding: 0 4px;
-      border-radius: 999px;
-      font-size: 9px;
-      font-weight: 800;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      color: #1b1216;
-      background: var(--accent-gold);
-    }
-
-    .tool-badge.show {
-      display: inline-flex;
-      animation: pulseBadge 1.5s infinite ease-in-out;
-    }
-
-    .tool-badge.mint {
-      background: var(--accent-mint);
-    }
-
-    .tool-badge.ice {
-      background: var(--accent-ice);
-    }
-
-    @keyframes pulseBadge {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.14); }
-    }
-
-    /* 模态弹窗通用样式 */
-    .modal-backdrop {
-      position: absolute;
-      inset: 0;
-      z-index: 50;
-      background: rgba(11, 8, 13, 0.82);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 15px;
-    }
-
-    .modal-backdrop.open {
-      display: flex;
-      animation: fadeIn 0.22s ease-out;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-
-    .modal-card {
-      width: 100%;
-      max-width: 404px;
-      max-height: 88vh;
-      overflow-y: auto;
-      background: linear-gradient(180deg, #29212c 0%, #1a151d 100%);
-      border: 1px solid rgba(255, 232, 224, 0.18);
-      border-radius: 22px;
-      padding: 16px 15px 15px;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.68);
-      color: var(--text-main);
-    }
-
-    .modal-header {
-      text-align: center;
-      margin-bottom: 10px;
-    }
-
-    .rank-badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 50px;
-      height: 50px;
-      border-radius: 16px;
-      font-size: 25px;
-      font-weight: 900;
-      margin-bottom: 5px;
-      background: linear-gradient(135deg, #ffd875, #ff85a1);
-      color: #23141b;
-      box-shadow: 0 8px 24px rgba(255, 133, 161, 0.35);
-    }
-
-    .modal-title {
-      font-size: 16.5px;
-      font-weight: 800;
-      margin-bottom: 3px;
-    }
-
-    .modal-subtitle {
-      font-size: 11px;
-      color: var(--text-sub);
-    }
-
-    /* 结算面板核心爽点：可拖动护理前后对比视窗 (Before / After Slider) */
-    .ba-compare-wrap {
-      position: relative;
-      width: 100%;
-      height: 126px;
-      border-radius: 14px;
-      overflow: hidden;
-      border: 1px solid rgba(255, 255, 255, 0.16);
-      margin-bottom: 10px;
-      touch-action: none;
-      cursor: ew-resize;
-      background: #22181c;
-    }
-
-    #compare-canvas {
-      display: block;
-      width: 100%;
-      height: 100%;
-    }
-
-    .ba-tag {
-      position: absolute;
-      top: 7px;
-      padding: 2px 7px;
-      border-radius: 999px;
-      font-size: 10px;
-      font-weight: 700;
-      background: rgba(15, 12, 18, 0.72);
-      color: #fff;
-      pointer-events: none;
-    }
-
-    .ba-tag.left { left: 8px; }
-    .ba-tag.right { right: 8px; color: #9effdf; }
-
-    .ba-hint {
-      position: absolute;
-      bottom: 6px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 9.5px;
-      padding: 1px 8px;
-      border-radius: 999px;
-      background: rgba(15, 12, 18, 0.65);
-      color: #ffe8b8;
-      pointer-events: none;
-      white-space: nowrap;
-    }
-
-    .summary-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 7px;
-      margin: 9px 0;
-    }
-
-    .summary-item {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 12px;
-      padding: 7px 9px;
-      text-align: center;
-    }
-
-    .summary-item .label {
-      font-size: 10px;
-      color: var(--text-sub);
-    }
-
-    .summary-item .val {
-      font-size: 15px;
-      font-weight: 800;
-      margin-top: 2px;
-    }
-
-    .trophy-tray-box {
-      background: linear-gradient(135deg, rgba(188, 200, 214, 0.12), rgba(96, 108, 124, 0.16));
-      border: 1px solid rgba(210, 224, 240, 0.22);
-      border-radius: 13px;
-      padding: 8px 11px;
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: 12px;
-    }
-
-    .level-presets {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 10px;
-    }
-
-    .preset-btn {
-      flex: 1;
-      appearance: none;
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--text-sub);
-      padding: 6px 4px;
-      border-radius: 10px;
-      font-size: 10.5px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    .preset-btn.active {
-      border-color: var(--accent-mint);
-      background: rgba(76, 217, 164, 0.16);
-      color: #dcfff2;
-    }
-
-    .primary-btn {
-      width: 100%;
-      appearance: none;
-      border: none;
-      border-radius: 13px;
-      padding: 11px 16px;
-      font-size: 14px;
-      font-weight: 800;
-      color: #231118;
-      background: linear-gradient(135deg, #ff9bb3 0%, #ffd275 100%);
-      cursor: pointer;
-      box-shadow: 0 8px 22px rgba(255, 138, 168, 0.32);
-    }
-
-    .secondary-btn {
-      width: 100%;
-      margin-top: 7px;
-      appearance: none;
-      border: 1px solid rgba(255, 255, 255, 0.16);
-      border-radius: 12px;
-      padding: 8.5px 14px;
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--text-main);
-      background: rgba(255, 255, 255, 0.07);
-      cursor: pointer;
-    }
-
-    .client-list, .guide-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin: 10px 0 14px;
-    }
-
-    .client-card {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.10);
-      border-radius: 13px;
-      padding: 9px 11px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      cursor: pointer;
-      transition: border-color 0.16s ease, background 0.16s ease;
-    }
-
-    .client-card:hover {
-      background: rgba(255, 255, 255, 0.09);
-      border-color: rgba(255, 155, 179, 0.5);
-    }
-
-    .client-card.active-client {
-      border-color: var(--accent-gold);
-      background: rgba(255, 202, 99, 0.11);
-    }
-
-    .client-meta {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .client-title {
-      font-size: 13px;
-      font-weight: 800;
-      color: #fff5f0;
-      margin-bottom: 2px;
-    }
-
-    .client-desc {
-      font-size: 11px;
-      color: var(--text-sub);
-      line-height: 1.38;
-    }
-
-    .client-reward {
-      font-size: 11.5px;
-      font-weight: 800;
-      color: var(--accent-gold);
-      white-space: nowrap;
-    }
-
-    .upgrade-row {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.09);
-      border-radius: 12px;
-      padding: 9px 11px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
-
-    .buy-btn {
-      appearance: none;
-      border: none;
-      border-radius: 9px;
-      padding: 6px 10px;
-      font-size: 11px;
-      font-weight: 800;
-      background: var(--accent-gold);
-      color: #23141a;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-
-    .buy-btn:disabled {
-      background: rgba(255, 255, 255, 0.12);
-      color: rgba(255, 255, 255, 0.45);
-      cursor: default;
-    }
-
-    .guide-row {
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 12px;
-      padding: 9px 11px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      font-size: 12px;
-      line-height: 1.5;
-      color: #eadad5;
-    }
-
-    .guide-row strong {
-      color: #ffd584;
-    }
-
-    /* 25X 战利品微距检视盘画布 */
-    #tray-zoom-canvas {
-      display: block;
-      width: 100%;
-      height: 190px;
-      border-radius: 14px;
-      background: radial-gradient(circle at 45% 38%, #dce4ec 0%, #8f9ead 100%);
-      border: 1px solid rgba(255, 255, 255, 0.28);
-      margin: 10px 0 12px;
-    }
+      background: var(--paper);
+      border: 1px solid #d8ddcf;
+      border-radius: 18px;
+      box-shadow: 0 16px 60px rgba(46, 58, 40, .07);
+    }
+    .studio-header { height: 82px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 0 28px; border-bottom: 1px solid var(--line); }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-mark { width: 39px; height: 39px; color: var(--green); }
+    .brand-title { font-family: var(--serif); font-size: 22px; font-weight: 600; letter-spacing: 3px; }
+    .brand-caption { margin-top: 5px; color: var(--muted); font-size: 9px; letter-spacing: 2.1px; }
+    .top-actions { display: flex; align-items: center; gap: 8px; }
+    .header-wallet { display: flex; align-items: center; gap: 10px; padding-right: 20px; margin-right: 10px; border-right: 1px solid var(--line); font-size: 11px; color: var(--muted); }
+    .coin-pill { font-size: 14px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+    .icon-btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 38px; padding: 0 12px; border: 1px solid transparent; border-radius: 7px; background: transparent; color: var(--muted); font-size: 12px; transition: background .15s ease, color .15s ease; white-space: nowrap; }
+    .icon-btn:hover { background: var(--surface); color: var(--ink); }
+    .icon-btn:active { background: #e2e7db; }
+    .icon-btn.active-mode { background: var(--green-soft); color: var(--green); border-color: #c3cebc; }
+    .clinic-button { border-color: #cbd2c3; color: var(--green); }
+    .sound-off-line { display: none; }
+    #btn-sound[aria-pressed='false'] .sound-off-line { display: block; }
+    #btn-sound[aria-pressed='false'] .sound-waves { display: none; }
+    .studio-layout { display: grid; grid-template-columns: 274px minmax(0, 1fr); flex: 1; min-height: 0; }
+    .case-panel { position: relative; display: flex; flex-direction: column; padding: 28px 26px 22px; border-right: 1px solid var(--line); background: #f6f6ef; min-width: 0; }
+    .eyebrow { display: flex; align-items: center; gap: 9px; font-size: 10px; font-weight: 500; letter-spacing: 1.8px; color: var(--muted); }
+    .eyebrow .line { width: 22px; height: 1px; background: #9daa92; }
+    .case-intro h1 { font-family: var(--serif); font-size: 29px; line-height: 1.5; font-weight: 500; letter-spacing: 1px; margin: 17px 0 8px; }
+    .case-intro p { color: var(--muted); font-size: 11px; line-height: 1.8; }
+    .patient-bar { position: relative; padding: 22px 0 19px; margin-top: 5px; border-bottom: 1px solid var(--line); }
+    .patient-info { display: flex; align-items: center; gap: 12px; padding-right: 27px; }
+    .patient-avatar-wrap { flex-shrink: 0; }
+    .patient-avatar { display: flex; align-items: center; justify-content: center; width: 42px; height: 46px; border-radius: 16px 16px 9px 9px; background: #e3e7da; color: #65745a; font-family: var(--serif); font-size: 21px; }
+    .patient-name-line { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; font-size: 16px; font-weight: 500; }
+    .patient-role { margin-top: 5px; color: var(--muted); font-size: 10px; }
+    .mood-badge { color: var(--green); font-size: 9px; font-weight: 400; letter-spacing: .4px; }
+    .patient-quote { margin-top: 13px; color: var(--muted); font-size: 11px; line-height: 1.8; }
+    .reset-button { position: absolute; top: 26px; right: -5px; min-width: 34px; min-height: 34px; padding: 0; }
+    #patient-steam-tag { display: none; margin-top: 9px; color: var(--accent-ice); font-size: 10px; }
+    .case-stats { display: grid; grid-template-columns: 1fr 1fr; margin-top: 22px; gap: 21px 14px; }
+    .stat-label { display: flex; align-items: center; justify-content: space-between; gap: 4px; color: var(--muted); font-size: 10px; }
+    .stat-value { margin-top: 6px; color: var(--ink); font-family: Georgia, 'Times New Roman', serif; font-size: 30px; font-weight: 400; font-variant-numeric: tabular-nums; line-height: 1.15; letter-spacing: -.7px; }
+    .stat-value.gold { color: var(--green); }
+    #best-score-label { display: block; font-size: 9px; color: #818777; margin-top: 6px; }
+    .progress-track { height: 3px; margin-top: 10px; background: #dfe3d7; overflow: hidden; }
+    #care-progress-fill { display: block; height: 100%; width: 0; background: #718460; transition: width .2s; }
+    .damage-stat { grid-column: 1 / -1; }
+    #damage-val { font-variant-numeric: tabular-nums; font-size: 11px; }
+    .damage-bar-track { height: 4px; margin-top: 9px; background: #e0e3d8; overflow: hidden; border-radius: 2px; }
+    .damage-bar-fill { width: 0%; height: 100%; background: #bd8170; transition: width .18s ease-out; }
+    .combo-pill { color: #9c6b60; font-size: 9px; opacity: 0; transition: opacity .2s; }
+    .combo-pill.show { opacity: 1; }
+    .condition-list { display: flex; gap: 0; margin-top: 23px; padding-top: 17px; border-top: 1px solid var(--line); color: var(--muted); font-size: 10px; }
+    .condition-list span { flex: 1; text-align: center; border-right: 1px solid var(--line); }
+    .condition-list span:first-child { text-align: left; }
+    .condition-list span:last-child { border-right: 0; text-align: right; }
+    .condition-list b { color: var(--ink); font-size: 11px; font-weight: 500; margin-left: 3px; }
+    .tray-trigger-box { display: flex; align-items: center; gap: 11px; padding: 14px 0; margin-top: 20px; background: transparent; border: 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); text-align: left; width: 100%; }
+    .tray-trigger-box:hover { color: var(--green); }
+    .tray-trigger-box > .icon { width: 24px; height: 24px; color: var(--green); }
+    .tray-text { display: flex; flex: 1; flex-direction: column; gap: 5px; font-size: 11px; }
+    #trophy-count { color: var(--muted); font-size: 10px; }
+    .tray-arrow { font-size: 18px; color: var(--muted); font-family: Georgia, serif; }
+    .case-foot { margin-top: auto; padding-top: 15px; display: flex; align-items: flex-end; justify-content: space-between; gap: 5px; }
+    .face-study { color: #9aa78d; width: 76px; height: 100px; flex-shrink: 0; }
+    .case-note { color: #7c8574; font-family: var(--serif); font-size: 12px; line-height: 1.9; padding-bottom: 9px; }
+    .text-button { display: inline-flex; align-items: center; gap: 5px; margin-top: 9px; padding: 0; color: var(--green); background: transparent; border: 0; border-bottom: 1px solid #c3cdba; font-family: inherit; font-size: 10px; line-height: 1.9; }
+    .treatment-panel { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+    .treatment-heading { display: flex; flex-shrink: 0; justify-content: space-between; align-items: center; gap: 12px; padding: 18px 24px 15px; }
+    .treatment-heading h2 { font-family: var(--serif); font-size: 19px; font-weight: 500; letter-spacing: 1px; }
+    .treatment-heading .section-meta { margin-top: 5px; color: var(--muted); font-size: 9px; letter-spacing: .8px; }
+    #btn-style-mode { min-height: 32px; border: 1px solid var(--line); font-size: 10px; padding: 0 10px; }
+    #btn-style-mode .icon { width: 14px; height: 14px; }
+    #viewport-wrap { position: relative; flex: 1; min-height: 320px; margin: 0 24px; overflow: hidden; background: #ddc3ac; border-radius: 11px; isolation: isolate; touch-action: none; cursor: crosshair; }
+    #skin-canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+    .view-label { position: absolute; top: 17px; left: 18px; z-index: 12; display: flex; align-items: center; gap: 7px; pointer-events: none; font-size: 9px; color: rgba(65, 55, 42, .8); letter-spacing: 1.8px; }
+    .view-label::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: #60795b; }
+    .view-label span { color: rgba(65, 55, 42, .6); margin-left: 5px; font-size: 8px; letter-spacing: 1px; }
+    .macro-frame-overlay { position: absolute; inset: 0; pointer-events: none; z-index: 10; box-shadow: inset 0 0 45px rgba(81, 57, 35, .09); border: 1px solid rgba(115, 90, 66, .1); border-radius: inherit; }
+    .macro-reticle { position: absolute; left: 17px; bottom: 15px; z-index: 12; color: rgba(74, 57, 41, .75); pointer-events: none; font-size: 9px; letter-spacing: .4px; }
+    .scale-marker { position: absolute; right: 17px; bottom: 15px; color: rgba(74, 57, 41, .65); pointer-events: none; z-index: 12; font: 8px Georgia, serif; letter-spacing: 1.3px; text-align: center; }
+    .scale-marker::before { content: ''; display: block; width: 43px; height: 5px; border: 1px solid currentColor; border-top: 0; margin-bottom: 5px; }
+    .ice-cta-group { position: absolute; left: 16px; right: 16px; bottom: 45px; z-index: 18; display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 7px; }
+    .ice-finish-cta, .ice-quick-btn { display: none; align-items: center; gap: 6px; border: 1px solid #a8c3bb; border-radius: 7px; background: #eef5ef; color: #36584c; font-size: 11px; padding: 11px 15px; box-shadow: 0 3px 9px rgba(61,80,65,.08); }
+    .ice-finish-cta.show, .ice-quick-btn.show { display: inline-flex; }
+    .ice-quick-btn { background: #426454; border-color: #426454; color: #fff; }
+    .tool-section { flex-shrink: 0; padding: 16px 24px 18px; }
+    .tool-section-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 5px; }
+    .active-tool-title { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 500; }
+    .active-tool-title::before { content: ''; width: 3px; height: 11px; background: #829175; }
+    .shortcut-note { color: #8a9083; font-size: 9px; }
+    .hint-banner { min-height: 30px; color: var(--muted); font-size: 10.5px; line-height: 1.6; margin-bottom: 9px; overflow-wrap: anywhere; }
+    .hint-banner.warn { color: #a8554c; }
+    .hint-banner.good { color: var(--green); }
+    .toolbar-dock { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+    .tool-btn { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 83px; padding: 8px 4px; border: 1px solid #e2e4d9; border-radius: 8px; color: #7c8474; background: transparent; transition: background .15s ease, border-color .15s ease, color .15s ease; }
+    .tool-btn:hover { background: #f0f2e9; color: var(--green); border-color: #b5c1aa; }
+    .tool-btn.selected { color: #3e5b46; background: #e8ede1; border-color: #93a585; }
+    .tool-step { position: absolute; left: 8px; top: 6px; color: #a2aa97; font: 9px Georgia, serif; }
+    .tool-btn.selected .tool-step { color: #75876a; }
+    .tool-icon { display: flex; align-items: center; justify-content: center; height: 31px; }
+    .tool-icon .icon { height: 30px; width: 30px; stroke-width: 1.15; }
+    .tool-name { font-size: 11px; font-weight: 500; white-space: nowrap; }
+    .tool-desc { font-size: 8px; color: #828c79; white-space: nowrap; }
+    .tool-badge { position: absolute; top: 6px; right: 6px; min-width: 14px; height: 14px; padding: 0 4px; display: none; justify-content: center; align-items: center; color: #6f765e; background: #e4e6d8; border-radius: 4px; font-size: 8px; font-weight: 500; }
+    .tool-badge.ice, .tool-badge.mint { color: #53715d; background: #d8e4d4; }
+    .tool-badge.show { display: inline-flex; }
+    .studio-footer { display: flex; align-items: center; justify-content: space-between; padding: 11px 27px; border-top: 1px solid var(--line); font-size: 8px; letter-spacing: 1.5px; color: #8f9785; }
+    .footer-dot { width: 3px; height: 3px; border-radius: 50%; display: inline-block; background: #9aa88d; margin: 0 8px 2px; }
+    .modal-backdrop { display: none; position: absolute; inset: 0; z-index: 50; justify-content: center; align-items: center; padding: 24px; background: rgba(47, 57, 42, .3); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
+    .modal-backdrop.open { display: flex; animation: fadeIn .18s ease-out; }
+    .modal-card { width: 100%; max-width: 460px; max-height: 100%; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; padding: 28px; background: var(--paper); border: 1px solid #e2e4d9; border-radius: 14px; box-shadow: 0 16px 60px rgba(36, 49, 32, .12); }
+    .modal-header { text-align: left; margin-bottom: 20px; }
+    .modal-title { font-family: var(--serif); font-size: 23px; font-weight: 500; line-height: 1.5; color: var(--ink); margin-bottom: 6px; }
+    .modal-subtitle { color: var(--muted); font-size: 11px; line-height: 1.8; }
+    .rank-badge { display: inline-flex; justify-content: center; align-items: center; width: 48px; height: 48px; background: #e6eddf; color: var(--green); border: 1px solid #c1d0b6; border-radius: 50%; font: italic 28px Georgia, serif; margin-bottom: 14px; }
+    .primary-btn, .secondary-btn { width: 100%; min-height: 42px; padding: 12px 16px; border: 1px solid #45604d; border-radius: 7px; background: #45604d; color: #fafbf8; font-size: 12px; font-weight: 500; line-height: 1.5; transition: background .15s; }
+    .primary-btn:hover { background: #374f3f; }
+    .secondary-btn { background: transparent; color: var(--green); border-color: #ccd3c4; margin-top: 9px; }
+    .secondary-btn:hover { background: var(--green-soft); }
+    .ba-compare-wrap { position: relative; width: 100%; height: 150px; overflow: hidden; border-radius: 7px; margin-bottom: 16px; background: #e1c5ae; touch-action: none; cursor: ew-resize; }
+    #compare-canvas { display: block; width: 100%; height: 100%; }
+    .ba-tag { position: absolute; top: 9px; padding: 4px 7px; background: rgba(248,247,240,.86); color: #4f5c47; font-size: 9px; border-radius: 3px; pointer-events: none; }
+    .ba-tag.left { left: 9px; } .ba-tag.right { right: 9px; }
+    .ba-hint { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.5); font-size: 9px; white-space: nowrap; pointer-events: none; }
+    .trophy-tray-box { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 12px 0; margin-bottom: 14px; font-size: 12px; }
+    .summary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px 12px; margin: 18px 0; }
+    .summary-item .label { color: var(--muted); font-size: 10px; }
+    .summary-item .val { margin-top: 6px; color: var(--green); font-size: 18px; font-variant-numeric: tabular-nums; }
+    .level-presets { display: flex; gap: 6px; margin: 18px 0; }
+    .preset-btn { flex: 1; padding: 8px 3px; background: transparent; color: var(--muted); border: 1px solid var(--line); border-radius: 5px; font-size: 10px; }
+    .preset-btn.active { border-color: #99ae8d; background: #e9eee2; color: var(--green); }
+    .client-list, .guide-list { display: flex; flex-direction: column; margin: 12px 0 22px; }
+    .client-card { display: flex; align-items: center; width: 100%; gap: 12px; padding: 13px 9px; margin: 0; border: 0; border-bottom: 1px solid var(--line); text-align: left; background: transparent; cursor: pointer; border-radius: 5px; }
+    .client-card:hover { background: #f0f2e9; }
+    .client-card.active-client { background: #eaf0e3; }
+    .client-card .patient-avatar { width: 35px; height: 39px; border-radius: 13px 13px 7px 7px; font-size: 17px; }
+    .client-meta { min-width: 0; flex: 1; }
+    .client-title { color: var(--ink); font-size: 12px; font-weight: 500; margin-bottom: 5px; }
+    .client-desc { color: var(--muted); font-size: 10px; line-height: 1.7; }
+    .client-reward { color: var(--accent-gold); font-size: 10px; white-space: nowrap; }
+    .upgrade-row { display: flex; align-items: center; gap: 12px; padding: 13px 0; border-bottom: 1px solid var(--line); }
+    .buy-btn { flex-shrink: 0; border: 1px solid #c7d0be; border-radius: 5px; background: #edf1e7; color: var(--green); font-size: 10px; padding: 8px 10px; }
+    .buy-btn:disabled { color: #929888; background: #eeefe9; border-color: #e0e4d8; }
+    .guide-row { color: var(--muted); padding: 13px 0; font-size: 12px; line-height: 1.85; border-bottom: 1px solid var(--line); }
+    .guide-row strong { color: var(--green); font-weight: 600; }
+    .modal-section-label { margin: 19px 0 6px; display: flex; justify-content: space-between; color: var(--green); font-size: 11px; }
+    #tray-zoom-canvas { display: block; width: 100%; height: 190px; margin: 12px 0 20px; border-radius: 8px; background: #d4d9d3; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @media (max-width: 1000px) and (min-width: 761px) {
+      body { padding: 20px; }
+      #app-shell { height: calc(100dvh - 40px); }
+      .studio-layout { grid-template-columns: 230px minmax(0, 1fr); }
+      .case-panel { padding: 24px 20px 18px; }
+      .case-intro h1 { font-size: 26px; }
+      .studio-header { padding: 0 22px; }
+      .header-wallet > span:first-child, #sound-icon { display: none; }
+      .header-wallet { padding-right: 12px; margin-right: 0; }
+      .treatment-heading { padding-inline: 18px; }
+      #viewport-wrap { margin-inline: 18px; }
+      .tool-section { padding-inline: 18px; }
+      .toolbar-dock { gap: 5px; }
+      .tool-desc { display: none; }
+    }
+    @media (max-width: 760px) {
+      html { background: var(--paper); }
+      body { padding: 0; min-height: 100dvh; align-items: flex-start; }
+      #app-shell { width: 100%; height: 100vh; height: 100dvh; min-height: 580px; border: 0; border-radius: 0; box-shadow: none; }
+      .studio-header { height: calc(62px + env(safe-area-inset-top, 0px)); padding: env(safe-area-inset-top, 0px) 16px 0; gap: 8px; }
+      .brand { gap: 8px; }
+      .brand-mark { width: 28px; height: 31px; }
+      .brand-title { font-size: 17px; letter-spacing: 1.5px; }
+      .brand-caption { margin-top: 3px; font-size: 7px; letter-spacing: 1px; }
+      .top-actions { gap: 2px; }
+      .icon-btn { min-width: 34px; min-height: 36px; padding: 0 7px; font-size: 10px; }
+      .header-wallet { display: none; }
+      .clinic-button { border-color: transparent; }
+      .action-label { display: none; }
+      .studio-layout { display: flex; flex-direction: column; }
+      .case-panel { display: block; padding: 10px 16px 12px; border-right: 0; border-bottom: 1px solid var(--line); background: #f7f7f0; }
+      .case-intro, .case-foot, .condition-list { display: none; }
+      .patient-bar { margin: 0; padding: 0; border: 0; }
+      .patient-info { gap: 9px; padding-right: 110px; }
+      .patient-avatar { width: 31px; height: 34px; font-size: 17px; border-radius: 12px 12px 6px 6px; }
+      .patient-name-line { font-size: 13px; gap: 6px; }
+      .patient-role { font-size: 9px; margin-top: 3px; }
+      .patient-quote { display: none; }
+      .reset-button { top: 0; right: -4px; min-height: 34px; }
+      #patient-steam-tag { position: absolute; right: 39px; bottom: -12px; font-size: 8px; margin: 0; }
+      .case-stats { display: grid; grid-template-columns: .85fr 1fr 1.1fr; gap: 16px; margin-top: 12px; }
+      .stat-card { min-width: 0; }
+      .stat-label { font-size: 9px; }
+      .stat-value { font-size: 22px; line-height: 1; margin-top: 5px; }
+      #best-score-label { display: none; }
+      .progress-track { margin-top: 5px; height: 2px; }
+      .damage-stat { grid-column: auto; }
+      #damage-val { font-size: 9px; }
+      .damage-bar-track { margin-top: 12px; height: 4px; }
+      .tray-trigger-box { position: absolute; top: 10px; right: 52px; width: auto; padding: 0; margin: 0; border: 0; gap: 6px; min-height: 34px; }
+      .tray-trigger-box > .icon { width: 20px; height: 20px; }
+      .tray-text { font-size: 9px; gap: 3px; }
+      #trophy-count { font-size: 8px; }
+      .tray-arrow { display: none; }
+      .treatment-panel { flex: 1; }
+      .treatment-heading { padding: 10px 16px 9px; min-height: 48px; }
+      .treatment-heading h2 { font-size: 15px; }
+      .treatment-heading .section-meta { display: none; }
+      #btn-style-mode { min-height: 28px; font-size: 9px; padding: 0 7px; }
+      #viewport-wrap { margin: 0 12px; min-height: 270px; border-radius: 9px; }
+      .view-label { left: 12px; top: 13px; font-size: 8px; }
+      .view-label span { display: none; }
+      .macro-reticle { left: 12px; bottom: 11px; font-size: 8px; max-width: calc(100% - 70px); line-height: 1.4; }
+      .scale-marker { bottom: 10px; right: 13px; font-size: 7px; }
+      .scale-marker::before { width: 30px; }
+      .tool-section { padding: 11px 12px calc(12px + env(safe-area-inset-bottom, 0px)); }
+      .tool-section-head { margin-bottom: 3px; }
+      .active-tool-title { font-size: 10px; }
+      .shortcut-note { font-size: 8px; }
+      .hint-banner { min-height: 27px; margin-bottom: 6px; font-size: 9px; line-height: 1.5; }
+      .toolbar-dock { gap: 5px; }
+      .tool-btn { min-height: 64px; padding: 6px 2px; gap: 3px; border-radius: 6px; }
+      .tool-step { top: 5px; left: 5px; font-size: 7px; }
+      .tool-icon, .tool-icon .icon { width: 25px; height: 25px; }
+      .tool-name { font-size: 10px; }
+      .tool-desc { display: none; }
+      .tool-badge { top: 4px; right: 4px; font-size: 7px; height: 12px; min-width: 12px; padding: 0 3px; }
+      .studio-footer { display: none; }
+      .modal-backdrop { position: fixed; padding: 14px; }
+      .modal-card { max-height: calc(100dvh - 28px); padding: 23px 20px; border-radius: 11px; }
+      .modal-title { font-size: 21px; }
+      .modal-header { margin-bottom: 14px; }
+    }
+    @media (max-width: 760px) and (max-height: 700px) {
+      #app-shell { min-height: 568px; }
+      .studio-header { height: 54px; }
+      .case-panel { padding-top: 7px; padding-bottom: 9px; }
+      .case-stats { margin-top: 9px; }
+      .tray-trigger-box { top: 7px; }
+      .treatment-heading { min-height: 40px; padding-top: 7px; padding-bottom: 7px; }
+      #viewport-wrap { min-height: 245px; }
+      .tool-section { padding-top: 9px; padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)); }
+      .hint-banner { min-height: 24px; font-size: 8.5px; }
+      .tool-btn { min-height: 58px; }
+      .tool-icon, .tool-icon .icon { width: 22px; height: 22px; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
   </style>
 </head>
 <body>
+
+  <svg class="sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+    <symbol id="i-brand" viewBox="0 0 40 40"><path d="M20 35V17M20 23C8 24 5 16 7 9c8 0 14 4 13 14ZM20 17C20 7 28 4 34 5c1 8-5 14-14 12Z"/><path d="M11 14l9 9M28 10l-8 7M12 35h16"/></symbol>
+    <symbol id="i-clinic" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M8 3v4m8-4v4M4 10h16M8 14h2m4 0h2m-8 3h2"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><path d="M12 20c-3-2-6-2-9-1V5c3-1 6-1 9 1 3-2 6-2 9-1v14c-3-1-6-1-9 1Zm0 0V6M6 9h3m-3 4h3m6-4h3m-3 4h3"/></symbol>
+    <symbol id="i-reset" viewBox="0 0 24 24"><path d="M19 8a8 8 0 1 0 1 6M19 3v5h-5"/></symbol>
+    <symbol id="i-style" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16Z" fill="currentColor" opacity=".25"/><path d="M12 4v16"/></symbol>
+    <symbol id="i-tray" viewBox="0 0 24 24"><path d="M4 8c4-4 6 1 10 0 5-2 8 0 7 5s-5 8-10 7S1 15 3 11Z"/><path d="M6 11c3-2 5 1 9 0 3-1 4 0 3 3-1 3-5 4-8 3s-5-3-4-6Z"/></symbol>
+    <symbol id="i-steam" viewBox="0 0 32 32"><path d="M10 19h12v8H10zM12 19v-5h8v5M14 27v2m4-2v2M16 14V9m-5 1c-3-3 2-4 0-7m10 7c3-3-2-4 0-7M16 6V2"/><path d="M13 23h6"/></symbol>
+    <symbol id="i-needle" viewBox="0 0 32 32"><path d="M9 26 21 10m-8 17 12-16M9 26l-3 4 7-3M21 10l2-5 4-3 2 2-3 4-1 3Z"/><path d="m12 22 3 2m-1-5 3 2m-1-5 3 2"/></symbol>
+    <symbol id="i-squeeze" viewBox="0 0 32 32"><path d="M4 24c0-5 1-10 4-10 2 0 2 3 1 7l4-3c2-1 4 1 2 3l-6 7H5ZM28 24c0-5-1-10-4-10-2 0-2 3-1 7l-4-3c-2-1-4 1-2 3l6 7h4ZM12 9l4 3 4-3M16 12V4"/></symbol>
+    <symbol id="i-tweezers" viewBox="0 0 32 32"><path d="M10 29 15 7c1-5 4-6 6-3l4 21M10 29l4-4 6-19m5 19-4-3-1-16"/><path d="m14 12 3 1m-4 3 3 1m-4 3 3 1m7-9-2 1m3 3-2 1"/></symbol>
+    <symbol id="i-swab" viewBox="0 0 32 32"><path d="m11 23 11-14"/><rect x="6" y="21" width="6" height="10" rx="3" transform="rotate(38 9 26)"/><rect x="21" y="1" width="6" height="10" rx="3" transform="rotate(38 24 6)"/></symbol>
+  </defs></svg>
+
   <div id="app-shell">
-    <!-- 顶部状态栏 -->
-    <header class="hud-header">
-      <div class="hud-top-row">
-        <div class="brand-title">
-          <span>🏥 妙手净肤馆</span>
-          <span id="coin-val" class="coin-pill">¥ 0</span>
-        </div>
-        <div class="top-actions">
-          <button id="btn-clinic" class="icon-btn" type="button" title="接诊大厅与器械升级">
-            <span>📋 接诊/升级</span>
-          </button>
-          <button id="btn-plan" class="icon-btn highlight-plan" type="button" title="完整玩法策划案">
-            <span>📐 玩法企划</span>
-          </button>
-          <button id="btn-style-mode" class="icon-btn" type="button" title="切换写实微距肌 / 奶油Q弹肌">
-            <span id="style-mode-label">🔬 写实肌</span>
-          </button>
-          <button id="btn-sound" class="icon-btn" type="button" title="音效开关">
-            <span id="sound-icon">🔊</span>
-          </button>
-          <button id="btn-help" class="icon-btn" type="button" title="操作指南">
-            <span>❓</span>
-          </button>
-          <button id="btn-reset" class="icon-btn" type="button" title="刷新当前关卡">
-            <span>🔄 换脸</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- 当前顾客情绪与战利品托盘入口 -->
-      <div class="patient-bar">
-        <div class="patient-info">
-          <div class="patient-avatar-wrap">
-            <div id="patient-avatar" class="patient-avatar">👨‍💻</div>
-            <span id="patient-mood" class="mood-badge">🙂</span>
-          </div>
-          <div class="patient-text-wrap">
-            <div class="patient-name-line">
-              <span id="patient-name">程序员·阿哲</span>
-              <span id="patient-steam-tag" style="font-size:10px;color:#6be2ff;display:none;">♨️毛孔已舒张</span>
-            </div>
-            <div id="patient-quote" class="patient-quote">“连熬两周夜，鼻头全是陈年黑头，轻点挤拜托了…”</div>
-          </div>
-        </div>
-        <div id="btn-tray-inspect" class="tray-trigger-box" title="点击放大检视拔出的黑头战利品弯盘">
-          <div style="font-size:10px;color:#c6b3ad;">🔍 战利品弯盘</div>
-          <div id="trophy-count" style="font-size:12px;font-weight:800;color:#ffe29e;">🥢 0 颗脂栓</div>
-        </div>
-      </div>
-
-      <div class="hud-stats-row">
-        <div class="stat-card">
-          <div class="stat-label">
-            <span>解压爽感分</span>
-            <span id="combo-tag" class="combo-pill">x2</span>
-          </div>
-          <div id="score-val" class="stat-value gold">0</div>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-label">
-            <span>净肤进度</span>
-            <span id="best-score-label">最高 0</span>
-          </div>
-          <div id="progress-val" class="stat-value">0 / 0</div>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-label">
-            <span>疼痛/损伤度</span>
-            <span id="damage-val">0%</span>
-          </div>
-          <div class="damage-bar-track">
-            <div id="damage-fill" class="damage-bar-fill"></div>
-          </div>
-        </div>
+    <header class="studio-header">
+      <div class="brand"><svg class="icon brand-mark" aria-hidden="true"><use href="#i-brand"/></svg><div><div class="brand-title">妙手净肤馆</div><div class="brand-caption">PORE MASTER CLINIC</div></div></div>
+      <div class="top-actions">
+        <div class="header-wallet"><span>诊所收入</span><span id="coin-val" class="coin-pill">¥ 0</span></div>
+        <button id="btn-clinic" class="icon-btn clinic-button" type="button" title="接诊与器械升级" aria-label="接诊与器械升级"><svg class="icon " aria-hidden="true"><use href="#i-clinic"/></svg><span class="action-label">接诊台</span></button>
+        <button id="btn-sound" class="icon-btn" type="button" title="音效开关" aria-label="关闭音效" aria-pressed="true"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m11 4-6 5H2v6h3l6 5Z"/><path class="sound-waves" d="M15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/><path class="sound-off-line" d="m16 9 6 6m0-6-6 6"/></svg><span id="sound-icon" class="action-label">音效开</span></button>
+        <button id="btn-help" class="icon-btn" type="button" title="操作指南" aria-label="操作指南"><svg class="icon " aria-hidden="true"><use href="#i-help"/></svg></button>
       </div>
     </header>
-
-    <!-- 核心微距皮肤画布 -->
-    <main id="viewport-wrap">
-      <div id="hint-banner" class="hint-banner">
-        ♨️ 先用【热喷】蒸出温润水珠软化毛孔，或挤压后用【细胞夹】连根慢拔！
-      </div>
-      <canvas id="skin-canvas"></canvas>
-      <div class="ice-cta-group">
-        <button id="btn-ice-finish" class="ice-finish-cta" type="button">
-          🧊 涂抹冰感积雪草冻膜 · 收毛孔
-        </button>
-        <button id="btn-ice-quick" class="ice-quick-btn" type="button">
-          ⚡ 一键厚敷结算
-        </button>
-      </div>
-      <div class="macro-frame-overlay"></div>
-      <div id="macro-reticle" class="macro-reticle">部位：鼻翼沟与内侧脸颊 · 真实微距</div>
-    </main>
-
-    <!-- 五步沉浸式专业护理工具栏 -->
-    <nav class="toolbar-dock" aria-label="专业清痘五步工具栏">
-      <button id="tool-steam" class="tool-btn" type="button" data-tool="steam">
-        <span id="badge-steam" class="tool-badge ice">荐</span>
-        <span class="tool-icon">♨️</span>
-        <span class="tool-name">热喷软化</span>
-        <span class="tool-desc">凝露开毛孔</span>
+    <div class="studio-layout">
+      <aside class="case-panel" aria-label="本次护理记录">
+        <div class="case-intro"><div class="eyebrow"><span class="line"></span>CARE RECORD <span id="case-number">01</span></div><h1>一寸肌肤，<br>慢慢照顾。</h1><p>从一次轻柔的热敷开始。</p></div>
+        <div class="patient-bar">
+          <div class="patient-info"><div class="patient-avatar-wrap"><div id="patient-avatar" class="patient-avatar" aria-hidden="true">哲</div></div><div class="patient-text-wrap"><div class="patient-name-line"><span id="patient-name">阿哲</span><span id="patient-mood" class="mood-badge">准备中</span></div><div id="patient-role" class="patient-role">程序员 · 混合肤质</div></div></div>
+          <button id="btn-reset" class="icon-btn reset-button" type="button" title="重新开始本次护理" aria-label="重新开始本次护理"><svg class="icon " aria-hidden="true"><use href="#i-reset"/></svg></button>
+          <p id="patient-quote" class="patient-quote">最近作息有些乱，想清理一下鼻翼。</p><div id="patient-steam-tag">已充分热敷</div>
+        </div>
+        <div class="case-stats">
+          <div class="stat-card"><div class="stat-label"><span>护理得分</span><span id="combo-tag" class="combo-pill">2连击</span></div><div id="score-val" class="stat-value gold">0</div><span id="best-score-label">最高 0</span></div>
+          <div class="stat-card"><div class="stat-label"><span>清理进度</span></div><div id="progress-val" class="stat-value">0 / 8</div><div class="progress-track" role="progressbar" aria-label="清理进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="care-progress-fill"></span></div></div>
+          <div class="stat-card damage-stat"><div class="stat-label"><span>皮肤刺激度</span><span id="damage-val">0%</span></div><div class="damage-bar-track"><div id="damage-fill" class="damage-bar-fill"></div></div></div>
+        </div>
+        <div class="condition-list" aria-label="本次清理内容"><span>黑头 <b id="count-blackhead">5</b></span><span>白头 <b id="count-whitehead">2</b></span><span>深层 <b id="count-cyst">1</b></span></div>
+        <button id="btn-tray-inspect" class="tray-trigger-box" type="button" title="查看本次收集盘"><svg class="icon " aria-hidden="true"><use href="#i-tray"/></svg><span class="tray-text"><span>收集盘</span><span id="trophy-count">已收集 0 颗</span></span><span class="tray-arrow" aria-hidden="true">↗</span></button>
+        <div class="case-foot"><svg class="face-study" viewBox="0 0 90 120" fill="none" stroke="currentColor" stroke-width=".85" aria-hidden="true"><path d="M20 31c0-17 13-26 27-25s25 11 24 29l-4 31c-2 13-11 26-23 28-12-2-22-15-24-28Z"/><path d="M20 39c-8-7-11 4-6 12l7 7m50-19c8-7 10 4 5 12l-8 7M29 41l9-2m16 0 9 2M46 43l-4 16 6 2M34 72c7 5 14 5 21-1M31 88l-3 18m30-19 4 19M12 118l16-12m34 0 16 12"/><ellipse cx="31" cy="57" rx="8" ry="10" fill="#c6d1b8" fill-opacity=".35" stroke-dasharray="2 2"/><path d="M44 23c9-1 15-5 19-10M25 24c10 0 17-7 21-18"/></svg><div class="case-note">轻一点，<br>给肌肤一点耐心。<br><button id="btn-plan" class="text-button" type="button">护理手记 <span aria-hidden="true">↗</span></button></div></div>
+      </aside>
+      <section class="treatment-panel" aria-label="护理工作台">
+        <div class="treatment-heading"><div><h2 id="care-zone">鼻翼与脸颊</h2><div class="section-meta">TREATMENT AREA · 微距护理</div></div><button id="btn-style-mode" class="icon-btn" type="button" aria-pressed="false" title="切换自然肌理与柔和肌理"><svg class="icon " aria-hidden="true"><use href="#i-style"/></svg><span id="style-mode-label">自然肌理</span></button></div>
+        <main id="viewport-wrap" aria-label="微距皮肤操作区域">
+          <canvas id="skin-canvas" aria-label="护理画布：选择下方工具后，按住或拖动操作"></canvas>
+          <div class="view-label">微距视野 <span>TAKE YOUR TIME</span></div>
+          <div class="ice-cta-group"><button id="btn-ice-finish" class="ice-finish-cta" type="button">涂抹舒缓冰膜</button><button id="btn-ice-quick" class="ice-quick-btn" type="button">一键敷膜 · 完成护理</button></div>
+          <div class="macro-frame-overlay"></div><div id="macro-reticle" class="macro-reticle">鼻翼沟与内侧脸颊 · 自然肌理</div><div class="scale-marker" aria-hidden="true">MACRO</div>
+        </main>
+        <div class="tool-section"><div class="tool-section-head"><div id="active-tool-name" class="active-tool-title">热喷 · 温热软化</div><span class="shortcut-note">按住操作 / 1–5 切换工具</span></div><p id="hint-banner" class="hint-banner" role="status" aria-live="polite" aria-atomic="true">按住皮肤缓缓移动，先让护理区域充分热敷。</p><nav class="toolbar-dock" aria-label="护理工具"><button id="tool-steam" class="tool-btn selected" type="button" data-tool="steam" aria-pressed="true" title="热喷 · 快捷键 1">
+        <span class="tool-step" aria-hidden="true">01</span><span id="badge-steam" class="tool-badge ice">先</span>
+        <span class="tool-icon"><svg class="icon " aria-hidden="true"><use href="#i-steam"/></svg></span><span class="tool-name">热喷</span><span class="tool-desc">温热软化</span>
       </button>
-
-      <button id="tool-needle" class="tool-btn" type="button" data-tool="needle">
-        <span id="badge-needle" class="tool-badge">0</span>
-        <span class="tool-icon">📍</span>
-        <span class="tool-name">粉刺针</span>
-        <span class="tool-desc">微距瞄准挑破</span>
+<button id="tool-needle" class="tool-btn" type="button" data-tool="needle" aria-pressed="false" title="粉刺针 · 快捷键 2">
+        <span class="tool-step" aria-hidden="true">02</span><span id="badge-needle" class="tool-badge ">0</span>
+        <span class="tool-icon"><svg class="icon " aria-hidden="true"><use href="#i-needle"/></svg></span><span class="tool-name">粉刺针</span><span class="tool-desc">精准破口</span>
       </button>
-
-      <button id="tool-squeeze" class="tool-btn selected" type="button" data-tool="squeeze">
-        <span class="tool-icon">🤏</span>
-        <span class="tool-name">手指挤压</span>
-        <span class="tool-desc">兜底推脂栓</span>
+<button id="tool-squeeze" class="tool-btn" type="button" data-tool="squeeze" aria-pressed="false" title="轻柔挤压 · 快捷键 3">
+        <span class="tool-step" aria-hidden="true">03</span>
+        <span class="tool-icon"><svg class="icon " aria-hidden="true"><use href="#i-squeeze"/></svg></span><span class="tool-name">轻柔挤压</span><span class="tool-desc">缓缓向内</span>
       </button>
-
-      <button id="tool-tweezers" class="tool-btn" type="button" data-tool="tweezers">
-        <span id="badge-tweezers" class="tool-badge mint">0</span>
-        <span class="tool-icon">🥢</span>
-        <span class="tool-name">细胞夹</span>
-        <span class="tool-desc">微距慢拔整栓</span>
+<button id="tool-tweezers" class="tool-btn" type="button" data-tool="tweezers" aria-pressed="false" title="细胞夹 · 快捷键 4">
+        <span class="tool-step" aria-hidden="true">04</span><span id="badge-tweezers" class="tool-badge mint">0</span>
+        <span class="tool-icon"><svg class="icon " aria-hidden="true"><use href="#i-tweezers"/></svg></span><span class="tool-name">细胞夹</span><span class="tool-desc">匀速夹取</span>
       </button>
-
-      <button id="tool-swab" class="tool-btn" type="button" data-tool="swab">
-        <span id="badge-swab" class="tool-badge mint">0</span>
-        <span class="tool-icon">🧼</span>
-        <span class="tool-name">消毒棉签</span>
-        <span class="tool-desc">吸脓擦血珠</span>
-      </button>
-    </nav>
+<button id="tool-swab" class="tool-btn" type="button" data-tool="swab" aria-pressed="false" title="清洁棉签 · 快捷键 5">
+        <span class="tool-step" aria-hidden="true">05</span><span id="badge-swab" class="tool-badge mint">0</span>
+        <span class="tool-icon"><svg class="icon " aria-hidden="true"><use href="#i-swab"/></svg></span><span class="tool-name">清洁棉签</span><span class="tool-desc">细致擦拭</span>
+      </button></nav></div>
+      </section>
+    </div>
+    <footer class="studio-footer"><span>一间小小的净肤馆 <span class="footer-dot"></span> 慢慢来，也很好</span><span>SKIN CARE SIMULATION</span></footer>
 
     <!-- 通关结算面板（新增可拖动 Before / After 净肤前后滑动对比照！） -->
     <div id="result-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="result-title">
       <div class="modal-card">
         <div class="modal-header">
           <div id="result-rank" class="rank-badge">S</div>
-          <h2 id="result-title" class="modal-title">无瑕妙手净肤大师！</h2>
-          <p id="result-subtitle" class="modal-subtitle">冰膜收敛完毕，毛孔细腻隐形，顾客大呼过瘾！</p>
+          <h2 id="result-title" class="modal-title">本次护理已完成</h2>
+          <p id="result-subtitle" class="modal-subtitle">看看这一寸肌肤，慢慢被照顾好的样子。</p>
         </div>
 
         <!-- 护理前 vs 护理后 交互滑动对比窗 -->
         <div id="ba-compare-box" class="ba-compare-wrap">
           <canvas id="compare-canvas"></canvas>
           <span class="ba-tag left">护理前 Before</span>
-          <span class="ba-tag right">护理后 After ✨</span>
-          <span class="ba-hint">◀ 左右拖动分割线对比净肤效果 ▶</span>
+          <span class="ba-tag right">护理后 After</span>
+          <span class="ba-hint">左右拖动，看看护理前后</span>
         </div>
 
         <div class="trophy-tray-box">
           <div>
-            <div style="font-weight:800;color:#fff;">🍽️ 战利品弯盘清点</div>
-            <div id="res-trophies" style="font-size:11px;color:#c6b3ad;margin-top:2px;">完整黑头脂栓 0 颗 · 固态白芯脓核 0 颗</div>
+            <div style="font-weight:800;color:var(--ink);">本次收集</div>
+            <div id="res-trophies" style="font-size:11px;color:var(--muted);margin-top:2px;">完整黑头脂栓 0 颗 · 固态白芯脓核 0 颗</div>
           </div>
-          <div id="res-coins-earned" style="font-size:16px;font-weight:900;color:#ffd980;">+¥220</div>
+          <div id="res-coins-earned" style="font-size:16px;font-weight:900;color:var(--accent-gold);">+¥220</div>
         </div>
 
         <div class="summary-grid">
           <div class="summary-item">
-            <div class="label">本局爽感分</div>
-            <div id="res-score" class="val" style="color: #ffca63;">0</div>
+            <div class="label">护理得分</div>
+            <div id="res-score" class="val" style="color: var(--accent-gold);">0</div>
           </div>
           <div class="summary-item">
-            <div class="label">顾客疼痛损伤</div>
-            <div id="res-damage" class="val" style="color: #4cd9a4;">0%</div>
+            <div class="label">皮肤刺激度</div>
+            <div id="res-damage" class="val" style="color: var(--accent-mint);">0%</div>
           </div>
           <div class="summary-item">
-            <div class="label">清理瑕疵明细</div>
+            <div class="label">清理记录</div>
             <div id="res-breakdown" class="val" style="font-size: 12.5px; margin-top: 5px;">白0 · 黑0 · 肿0</div>
           </div>
           <div class="summary-item">
-            <div class="label">无创完美手法</div>
-            <div id="res-perfect" class="val" style="color: #ff9bb3;">0 次</div>
+            <div class="label">轻柔操作</div>
+            <div id="res-perfect" class="val" style="color: var(--accent-rose);">0 次</div>
           </div>
         </div>
 
         <div class="level-presets" role="group" aria-label="自由难度档位">
-          <button class="preset-btn active" type="button" data-density="0">顾客专属配方</button>
-          <button class="preset-btn" type="button" data-density="8">标准随机 (8颗)</button>
-          <button class="preset-btn" type="button" data-density="11">重度密集 (11颗)</button>
+          <button class="preset-btn active" type="button" data-density="0">当前顾客</button>
+          <button class="preset-btn" type="button" data-density="8">标准 · 8 处</button>
+          <button class="preset-btn" type="button" data-density="11">进阶 · 11 处</button>
         </div>
 
-        <button id="btn-next-face" class="primary-btn" type="button">✨ 接待下一位顾客（下一张脸）</button>
-        <button id="btn-open-clinic-from-res" class="secondary-btn" type="button">🛠️ 前往器械升级 / 自选专场模式</button>
+        <button id="btn-next-face" class="primary-btn" type="button">接待下一位顾客</button>
+        <button id="btn-open-clinic-from-res" class="secondary-btn" type="button">返回接诊台 · 器械升级</button>
       </div>
     </div>
 
@@ -1043,8 +434,8 @@
     <div id="tray-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="tray-modal-title">
       <div class="modal-card">
         <div class="modal-header">
-          <h2 id="tray-modal-title" class="modal-title">🔍 25X 战利品不锈钢弯盘检视</h2>
-          <p id="tray-modal-sub" class="modal-subtitle">微距观察本局连根拔出的每一颗油脂栓与固态脓核</p>
+          <h2 id="tray-modal-title" class="modal-title">本次收集盘</h2>
+          <p id="tray-modal-sub" class="modal-subtitle">放大看看，这次细致清理留下的记录。</p>
         </div>
         <canvas id="tray-zoom-canvas"></canvas>
         <button id="btn-close-tray" class="primary-btn" type="button">继续护理</button>
@@ -1055,16 +446,16 @@
     <div id="clinic-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="clinic-title">
       <div class="modal-card">
         <div class="modal-header">
-          <h2 id="clinic-title" class="modal-title">🏥 接诊挂号台 & 器械升级</h2>
-          <p class="modal-subtitle">选择不同肤质诉求的顾客，或进入纯爽黑头专场</p>
+          <h2 id="clinic-title" class="modal-title">接诊台</h2>
+          <p class="modal-subtitle">选一位顾客，开始下一次细致护理。</p>
         </div>
 
-        <div style="font-size:12px;font-weight:800;color:#ffd584;margin-bottom:6px;">🧑‍⚕️ 今日候诊顾客与解压专场</div>
+        <div style="font-size:12px;font-weight:800;color:var(--green);margin-bottom:6px;">今日顾客</div>
         <div id="client-list-container" class="client-list"></div>
 
-        <div style="font-size:12px;font-weight:800;color:#6be2ff;margin:10px 0 6px;display:flex;justify-content:space-between;">
-          <span>🛠️ 诊所专业器械升级</span>
-          <span id="shop-coin-label" style="color:#ffd980;">余额 ¥0</span>
+        <div style="font-size:12px;font-weight:800;color:var(--accent-ice);margin:10px 0 6px;display:flex;justify-content:space-between;">
+          <span>器械升级</span>
+          <span id="shop-coin-label" style="color:var(--accent-gold);">余额 ¥0</span>
         </div>
         <div class="client-list" id="upgrade-list-container"></div>
 
@@ -1072,27 +463,11 @@
       </div>
     </div>
 
-    <!-- 完整游戏玩法策划案弹窗 -->
+    <!-- Care notes remain available without occupying the main toolbar. -->
     <div id="plan-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="plan-title">
-      <div class="modal-card">
-        <div class="modal-header">
-          <h2 id="plan-title" class="modal-title">📐 《妙手净肤馆》完整玩法与精工细节</h2>
-          <p class="modal-subtitle">真实生理反馈 × 微距光学放大镜 × 前后对比满足感</p>
-        </div>
-        <div class="guide-list">
-          <div class="guide-row">
-            <strong>一、精工级微距交互细节（全新打磨！）</strong><br />
-            • <strong>2.2X 光学微距瞄准镜</strong>：使用粉刺针或细胞夹按住屏幕时，手指上方自动浮现偏振微距放大镜，彻底解决手机端手指遮挡痛点；<br />
-            • <strong>毛孔粘连牵拉物理</strong>：细胞夹夹住黑头往外拉时，镊尖死死咬合脂栓颈部，毛孔唇缘随拉力真实向外牵拉鼓起，拔出瞬间沿抛物线飞入右上角弯盘并伴随金属清脆落盘声；<br />
-            • <strong>真实蒸汽凝露 + 手刷冰感冻膜</strong>：热喷会在皮肤表面凝结晶莹细小水珠；全脸排空后可亲手用硅胶刷涂抹带微气泡的冰感积雪草冻膜收缩毛孔！
-          </div>
-          <div class="guide-row">
-            <strong>二、高潮多巴胺闭环（Before / After 滑动对比 + 弯盘微距检视）</strong><br />
-            • 点击右上角<strong>「🔍 战利品弯盘」</strong>可随时打开 25X 放大镜欣赏本局拔出的水滴状黑头米粒；<br />
-            • 通关结算内置<strong>可交互拖动分割线的「护理前 vs 护理后」实景对比窗</strong>，成就感拉满！
-          </div>
-        </div>
-        <button id="btn-close-plan" class="primary-btn" type="button">立即体验精工细节！</button>
+      <div class="modal-card"><div class="modal-header"><h2 id="plan-title" class="modal-title">护理手记</h2><p class="modal-subtitle">不用赶进度。清理、收集，再看看前后的变化。</p></div>
+        <div class="guide-list"><div class="guide-row"><strong>从热敷开始</strong><br>用热喷缓缓扫过操作区。皮肤出现细小水珠后，再开始后续步骤。</div><div class="guide-row"><strong>留意每一次反馈</strong><br>使用粉刺针或细胞夹时，按住会出现局部放大镜。夹取时观察张力，慢慢移动更容易完整取出。</div><div class="guide-row"><strong>给这次护理留个记录</strong><br>点开收集盘查看清理成果。完成清洁后敷上冰膜，在护理记录中拖动分割线，比较前后变化。</div></div>
+        <button id="btn-close-plan" class="primary-btn" type="button">回到护理台</button>
       </div>
     </div>
 
@@ -1100,24 +475,17 @@
     <div id="help-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="help-title">
       <div class="modal-card">
         <div class="modal-header">
-          <h2 id="help-title" class="modal-title">🔬 五大专业器械微操指南</h2>
-          <p class="modal-subtitle">快捷键：数字键 1 ~ 5 快速切换底部工具</p>
+          <h2 id="help-title" class="modal-title">慢慢上手</h2>
+          <p class="modal-subtitle">桌面端按 1–5 切换工具；触屏点击下方器械。</p>
         </div>
         <div class="guide-list">
-          <div class="guide-row">
-            <strong>♨️ 1. 热喷软化：</strong>按住滑过鼻翼或痘痘，温热雾气在皮肤上凝结微水珠并蒸开毛孔，降低一半痛感与拔栓阻力！
-          </div>
-          <div class="guide-row">
-            <strong>📍 2. 粉刺针 + 🤏 3. 手指挤压：</strong>按住粉刺针可开启上方 2.2X 瞄准镜精准点破大痘偏心脓尖，再用双指从底座外围往中间兜底推挤。
-          </div>
-          <div class="guide-row">
-            <strong>🥢 4. 超尖细胞夹：</strong>先轻挤让黑头冒头，切换细胞夹夹住脂栓头<strong>匀速往外拉</strong>（注意观察镊旁张力条，切忌猛拽夹断），整根拔出后会飞入右上角不锈钢弯盘！
-          </div>
-          <div class="guide-row">
-            <strong>🧼 5. 消毒棉签 + 🧊 手刷冰膜：</strong>棉签吸净渗液后，点击底部弹出的<strong>涂抹冰感冻膜</strong>按钮，亲手刷满清凉冻膜（或一键厚敷）即可对比护理前后效果！
-          </div>
+          <div class="guide-row"><strong>01 / 热喷</strong><br>按住并缓慢移动，给操作区域热敷。出现凝露后，后续清理会更轻松。</div>
+          <div class="guide-row"><strong>02 / 粉刺针</strong><br>按住可打开局部放大镜。对准深层痘的浅色尖端，松开完成破口。</div>
+          <div class="guide-row"><strong>03 / 轻柔挤压</strong><br>鼠标或单指在瑕疵旁按住，向中心缓缓推。也可以用双指从两侧向内捏合。</div>
+          <div class="guide-row"><strong>04 / 细胞夹</strong><br>夹住已经露头的黑头，缓慢向外拖动。留意张力条，突然拉得太快可能夹断。</div>
+          <div class="guide-row"><strong>05 / 清洁棉签</strong><br>轻轻擦净残留。再点一次棉签可换新。全部清理后，涂抹冰膜完成本次护理。</div>
         </div>
-        <button id="btn-close-help" class="primary-btn" type="button">明白，开始清痘！</button>
+        <button id="btn-close-help" class="primary-btn" type="button">知道了，开始护理</button>
       </div>
     </div>
   </div>
@@ -1232,65 +600,75 @@
     const CLIENTS = [
       {
         id: 'coder',
+        initial: '哲',
+        role: '程序员 · 混合肤质',
         avatar: '👨‍💻',
-        name: '程序员·阿哲',
+        name: '阿哲',
         zoneId: 'nose_cheek',
         zoneLabel: '部位：鼻翼沟与内侧脸颊 · 真实微距',
-        quote: '“连熬两周夜，鼻翼全是陈年黑头，旁边还冒了熟痘…”',
-        painQuote: '“嘶——轻点按呀医生！鼻梁骨快压扁啦！”',
-        happyQuote: '“天呐鼻头毛孔全通透了！呼吸都顺畅了！”',
+        quote: '最近作息有些乱，想清理一下鼻翼。',
+        painQuote: '稍微有点疼，可以再轻一些吗？',
+        happyQuote: '清爽多了，谢谢你的耐心。',
         painMult: 1.0,
         bounty: 200,
         recipe: { blackhead: 5, whitehead: 2, cyst: 1 }
       },
       {
         id: 'student',
+        initial: '林',
+        role: '学生 · 敏感肤质',
         avatar: '🧑‍🎓',
-        name: '备考高中生·小林',
+        name: '小林',
         zoneId: 'nose_cheek',
         zoneLabel: '部位：内侧苹果肌与鼻旁 · 真实微距',
-        quote: '“天天刷题喝奶茶爆了好多白头熟痘，我超怕疼轻点哦…”',
-        painQuote: '“嗷呜好痛！先蒸一下热喷或者别硬掐好皮肤呀！”',
-        happyQuote: '“居然一点都没留红印！手法也太温柔了吧！”',
+        quote: '最近忙着备考，想给皮肤一点照顾。',
+        painQuote: '我比较怕疼，先热敷一下吧。',
+        happyQuote: '轻轻的很舒服，下次还来。',
         painMult: 1.35,
         bounty: 250,
         recipe: { blackhead: 2, whitehead: 5, cyst: 1 }
       },
       {
         id: 'anchor',
+        initial: '薇',
+        role: '主播 · 下巴护理',
         avatar: '👩‍🎤',
-        name: '带货主播·薇薇',
+        name: '薇薇',
         zoneId: 'chin_jaw',
         zoneLabel: '部位：下巴与唇周三角区 · 真实微距',
-        quote: '“下巴闷了好几颗深层大红痘，明天要上镜千万别挤紫了！”',
-        painQuote: '“喂！深层闷痘要先用粉刺针破口再兜底挤呀！”',
-        happyQuote: '“脓核全拔出来了！敷完冰膜平得能直接素颜开播！”',
+        quote: '想重点清理下巴，动作轻一些就好。',
+        painQuote: '这几处比较深，先用粉刺针试试。',
+        happyQuote: '护理完成，可以好好休息一下了。',
         painMult: 1.1,
         bounty: 320,
         recipe: { blackhead: 2, whitehead: 2, cyst: 4 }
       },
       {
         id: 'foodie_vip',
+        initial: '鹏',
+        role: '混合护理 · 进阶',
         avatar: '🌶️',
-        name: '火锅探店王·大鹏',
+        name: '大鹏',
         zoneId: 'nose_cheek',
         zoneLabel: '部位：重油重辣全混合重灾区 · 大师挑战',
-        quote: '“顿顿牛油红锅，黑头群+爆浆白头+三大深层闷痘全齐了！”',
-        painQuote: '“嘶哈！这颗老痘根子深，先针挑再从外圈兜底挤！”',
-        happyQuote: '“神医啊！脸上轻松了二两油，今晚又能炫火锅了！”',
+        quote: '今天需要多一点耐心，几种类型都有。',
+        painQuote: '这处有点敏感，慢慢来。',
+        happyQuote: '终于清理好了，辛苦你了。',
         painMult: 0.95,
         bounty: 460,
         recipe: { blackhead: 5, whitehead: 3, cyst: 3 }
       },
       {
         id: 'strawberry_nose',
+        initial: '净',
+        role: '鼻部护理 · 自由练习',
         avatar: '🍓',
-        name: '【纯爽专场】陈年草莓鼻',
+        name: '黑头专场',
         zoneId: 'nose_tip',
         zoneLabel: '部位：鼻头重度皮脂黑头带 · 纯享解压专场',
-        quote: '“零痛感纯享沙盒！整整12颗鼻头大黑头，用细胞夹拔到爽！”',
-        painQuote: '“放开手脚尽情拔黑头吧！”',
-        happyQuote: '“整盘黑头米粒排得整整齐齐，强迫症一本满足！”',
+        quote: '专注于十二处黑头，按自己的节奏慢慢清理。',
+        painQuote: '试着放慢夹取的速度。',
+        happyQuote: '一颗颗收集起来，很有成就感。',
         painMult: 0.20,
         bounty: 280,
         recipe: { blackhead: 12, whitehead: 0, cyst: 0 }
@@ -1301,22 +679,22 @@
       {
         key: 'steamer',
         icon: '♨️',
-        name: '纳米草本热喷仪 Lv.2',
-        desc: '热敷打开毛孔速度翻倍，软化后拔栓阻力再降 25%',
+        name: '恒温热喷仪',
+        desc: '游戏内热敷速度 ×2，软化后夹取阻力降低 25%',
         cost: 220
       },
       {
         key: 'tweezers',
         icon: '🥢',
-        name: '瑞士钛合金超尖细胞夹',
-        desc: '夹拔黑头不断根速度上限 +70%，拔栓爽感分 +30%',
+        name: '精细钛合金夹',
+        desc: '夹取速度容错提高 70%，夹取得分提高 30%',
         cost: 300
       },
       {
         key: 'iceprobe',
         icon: '🧊',
-        name: '蓝光冰导修护棉头',
-        desc: '棉签擦拭速度 +45%，每次净肤额外修复 4% 皮肤红肿',
+        name: '舒缓护理棉头',
+        desc: '擦拭速度提高 45%，每次清理降低 4% 刺激度',
         cost: 360
       }
     ];
@@ -1732,7 +1110,7 @@
       height: 640,
       dpr: 1,
       styleMode: 'realistic',
-      currentTool: 'squeeze', // 'steam' | 'needle' | 'squeeze' | 'tweezers' | 'swab' | 'ice_brush'
+      currentTool: 'steam', // 'steam' | 'needle' | 'squeeze' | 'tweezers' | 'swab' | 'ice_brush'
       targetDensity: 0,
       faceSeed: Math.random() * 10000,
       clientIndex: 0,
@@ -1839,7 +1217,8 @@
     }
 
     function setPatientMood(emoji) {
-      patientMoodEl.textContent = emoji;
+      const moods = { '😟': '准备中', '🙂': '放松', '😌': '舒适', '😣': '请轻一点', '🤩': '很满意', '🥰': '已完成' };
+      patientMoodEl.textContent = moods[emoji] || '放松';
     }
 
     function seededRand(seed) {
@@ -1897,93 +1276,100 @@
       const isCreamy = state.styleMode === 'creamy';
       const seedBase = state.faceSeed;
       const client = currentClient();
-      reticleEl.textContent = client.zoneLabel;
+      const region = client.zoneId === 'nose_tip' ? '鼻头皮脂区' : client.zoneId === 'chin_jaw' ? '下巴与唇周' : '鼻翼沟与内侧脸颊';
+      reticleEl.textContent = `${region} · ${isCreamy ? '柔和肌理' : '自然肌理'}`;
 
+      // A broad, soft light keeps the skin warm without a glossy orange cast.
       const shift = Math.floor((seededRand(seedBase + 1) - 0.5) * 10);
       const baseGrad = skinCtx.createRadialGradient(
-        w * 0.45, h * 0.36, w * 0.05,
-        w * 0.50, h * 0.52, Math.max(w, h) * 0.82
+        w * 0.28, h * 0.23, w * 0.06,
+        w * 0.48, h * 0.48, Math.max(w, h) * 0.94
       );
       if (isCreamy) {
-        baseGrad.addColorStop(0, '#ffede4');
-        baseGrad.addColorStop(0.5, '#f9d8c8');
-        baseGrad.addColorStop(1, '#e6b49e');
+        baseGrad.addColorStop(0, '#f5e5d8');
+        baseGrad.addColorStop(0.55, '#ead0bc');
+        baseGrad.addColorStop(1, '#d5ae92');
       } else {
-        baseGrad.addColorStop(0, `rgb(${246 + shift}, ${206 + shift}, ${180 + shift})`);
-        baseGrad.addColorStop(0.46, `rgb(${235 + shift}, ${190 + shift}, ${163 + shift})`);
-        baseGrad.addColorStop(0.82, `rgb(${217 + shift}, ${168 + shift}, ${140 + shift})`);
-        baseGrad.addColorStop(1, `rgb(${194 + shift}, ${144 + shift}, ${117 + shift})`);
+        baseGrad.addColorStop(0, `rgb(${239 + shift}, ${214 + shift}, ${193 + shift})`);
+        baseGrad.addColorStop(0.48, `rgb(${226 + shift}, ${195 + shift}, ${171 + shift})`);
+        baseGrad.addColorStop(0.82, `rgb(${209 + shift}, ${175 + shift}, ${149 + shift})`);
+        baseGrad.addColorStop(1, `rgb(${196 + shift}, ${158 + shift}, ${134 + shift})`);
       }
       skinCtx.fillStyle = baseGrad;
       skinCtx.fillRect(0, 0, w, h);
 
+      // Keep each facial region recognizable through form, not a dark outline.
       skinCtx.save();
       if (client.zoneId === 'nose_cheek') {
-        const noseWingHL = skinCtx.createRadialGradient(w * 0.18, h * 0.45, 4, w * 0.20, h * 0.46, w * 0.34);
-        noseWingHL.addColorStop(0, 'rgba(255, 248, 240, 0.22)');
-        noseWingHL.addColorStop(1, 'rgba(255, 248, 240, 0)');
+        const noseWingHL = skinCtx.createRadialGradient(w * 0.12, h * 0.38, 3, w * 0.18, h * 0.43, w * 0.36);
+        noseWingHL.addColorStop(0, 'rgba(255, 248, 235, 0.19)');
+        noseWingHL.addColorStop(1, 'rgba(255, 248, 235, 0)');
         skinCtx.fillStyle = noseWingHL;
         skinCtx.fillRect(0, 0, w, h);
 
-        skinCtx.strokeStyle = isCreamy ? 'rgba(188, 118, 104, 0.22)' : 'rgba(152, 76, 62, 0.30)';
-        skinCtx.lineWidth = 18;
-        skinCtx.filter = 'blur(8px)';
+        skinCtx.strokeStyle = isCreamy ? 'rgba(130, 90, 70, 0.08)' : 'rgba(119, 77, 59, 0.13)';
+        skinCtx.lineWidth = 22;
+        skinCtx.filter = 'blur(10px)';
         skinCtx.beginPath();
         skinCtx.moveTo(w * 0.30, -20);
         skinCtx.bezierCurveTo(w * 0.42, h * 0.34, w * 0.38, h * 0.68, w * 0.18, h * 0.92);
         skinCtx.stroke();
         skinCtx.filter = 'none';
       } else if (client.zoneId === 'nose_tip') {
-        const tipHL = skinCtx.createRadialGradient(w * 0.5, h * 0.46, 8, w * 0.5, h * 0.48, w * 0.45);
-        tipHL.addColorStop(0, 'rgba(255, 250, 242, 0.28)');
-        tipHL.addColorStop(0.58, 'rgba(255, 242, 230, 0.08)');
-        tipHL.addColorStop(1, 'rgba(135, 78, 58, 0.22)');
+        const tipHL = skinCtx.createRadialGradient(w * 0.39, h * 0.36, 5, w * 0.48, h * 0.48, w * 0.55);
+        tipHL.addColorStop(0, 'rgba(255, 249, 236, 0.19)');
+        tipHL.addColorStop(0.58, 'rgba(250, 235, 215, 0.025)');
+        tipHL.addColorStop(1, 'rgba(115, 81, 59, 0.10)');
         skinCtx.fillStyle = tipHL;
         skinCtx.fillRect(0, 0, w, h);
       } else {
-        const chinShadow = skinCtx.createLinearGradient(0, h * 0.06, 0, h * 0.34);
-        chinShadow.addColorStop(0, 'rgba(150, 88, 68, 0.20)');
-        chinShadow.addColorStop(0.5, 'rgba(145, 82, 64, 0.10)');
-        chinShadow.addColorStop(1, 'rgba(255, 244, 232, 0)');
+        const chinShadow = skinCtx.createLinearGradient(0, h * 0.04, 0, h * 0.37);
+        chinShadow.addColorStop(0, 'rgba(123, 85, 65, 0.13)');
+        chinShadow.addColorStop(0.55, 'rgba(135, 90, 70, 0.035)');
+        chinShadow.addColorStop(1, 'rgba(135, 90, 70, 0)');
         skinCtx.fillStyle = chinShadow;
         skinCtx.fillRect(0, 0, w, h);
 
-        const chinDome = skinCtx.createRadialGradient(w * 0.5, h * 0.56, 8, w * 0.5, h * 0.58, w * 0.44);
-        chinDome.addColorStop(0, 'rgba(255, 248, 240, 0.20)');
-        chinDome.addColorStop(1, 'rgba(255, 248, 240, 0)');
+        const chinDome = skinCtx.createRadialGradient(w * 0.41, h * 0.49, 6, w * 0.5, h * 0.58, w * 0.48);
+        chinDome.addColorStop(0, 'rgba(255, 247, 232, 0.14)');
+        chinDome.addColorStop(1, 'rgba(255, 247, 232, 0)');
         skinCtx.fillStyle = chinDome;
         skinCtx.fillRect(0, 0, w, h);
       }
       skinCtx.restore();
 
-      const blotchCount = isCreamy ? 6 : 15;
+      // Broad, low-contrast undertones prevent a uniform synthetic surface.
+      const blotchCount = isCreamy ? 8 : 18;
       for (let i = 0; i < blotchCount; i++) {
         const bx = seededRand(seedBase + 15 + i * 3.7) * w;
         const by = seededRand(seedBase + 16 + i * 3.7) * h;
-        const br = 35 + seededRand(seedBase + 17 + i * 3.7) * 80;
+        const br = 28 + seededRand(seedBase + 17 + i * 3.7) * 70;
+        const alpha = (isCreamy ? 0.018 : 0.025) + seededRand(seedBase + 80 + i) * 0.02;
         const bGrad = skinCtx.createRadialGradient(bx, by, 0, bx, by, br);
-        bGrad.addColorStop(0, isCreamy ? 'rgba(255, 148, 158, 0.08)' : 'rgba(205, 84, 78, 0.085)');
-        bGrad.addColorStop(1, 'rgba(205, 84, 78, 0)');
+        const pigment = i % 3 === 0 ? '156, 112, 77' : '185, 104, 93';
+        bGrad.addColorStop(0, `rgba(${pigment}, ${alpha})`);
+        bGrad.addColorStop(0.55, `rgba(${pigment}, ${alpha * 0.35})`);
+        bGrad.addColorStop(1, `rgba(${pigment}, 0)`);
         skinCtx.fillStyle = bGrad;
         skinCtx.fillRect(0, 0, w, h);
       }
 
-      const tile = 150;
+      const tile = 192;
       const noiseCanvas = document.createElement('canvas');
       noiseCanvas.width = tile;
       noiseCanvas.height = tile;
       const nCtx = noiseCanvas.getContext('2d');
       const imgData = nCtx.createImageData(tile, tile);
       const px = imgData.data;
-      const noiseAlpha = isCreamy ? 9 : 18;
+      const noiseAlpha = isCreamy ? 6 : 12;
       for (let i = 0; i < px.length; i += 4) {
         const idx = i >> 2;
         const v = seededRand(seedBase + idx * 0.31) * 0.6 + seededRand(seedBase + idx * 1.13 + 9) * 0.4;
         if (v > 0.52) {
-          px[i] = 255; px[i + 1] = 238; px[i + 2] = 224;
+          px[i] = 255; px[i + 1] = 245; px[i + 2] = 231;
           px[i + 3] = Math.floor((v - 0.52) * 2.08 * noiseAlpha);
         } else if (v < 0.48) {
-          px[i] = 132; px[i + 1] = 76; px[i + 2] = 58;
+          px[i] = 139; px[i + 1] = 104; px[i + 2] = 80;
           px[i + 3] = Math.floor((0.48 - v) * 2.08 * noiseAlpha);
         }
       }
@@ -1994,21 +1380,22 @@
         skinCtx.fillRect(0, 0, w, h);
       }
 
+      const areaScale = (w * h) / (390 * 640);
       if (!isCreamy) {
         skinCtx.save();
-        skinCtx.lineWidth = 0.6;
-        for (let i = 0; i < 200; i++) {
+        skinCtx.lineWidth = 0.5;
+        for (let i = 0; i < Math.floor(165 * Math.max(0.8, areaScale)); i++) {
           const lx = seededRand(seedBase + 300 + i * 2.1) * w;
           const ly = seededRand(seedBase + 301 + i * 2.1) * h;
           const tWeight = getSebaceousZoneWeight(lx / w, ly / h);
-          const len = 10 + seededRand(seedBase + 302 + i) * 18;
-          const ang = (i % 2 === 0 ? 0.52 : -0.48) + (seededRand(seedBase + 400 + i) - 0.5) * 0.4;
-          skinCtx.strokeStyle = `rgba(142, 82, 64, ${0.095 * (1 - tWeight * 0.55)})`;
+          const len = 5 + seededRand(seedBase + 302 + i) * 14;
+          const ang = (i % 3 === 0 ? -0.62 : 0.42) + (seededRand(seedBase + 400 + i) - 0.5) * 0.95;
+          skinCtx.strokeStyle = `rgba(131, 95, 74, ${0.055 * (1 - tWeight * 0.45)})`;
           skinCtx.beginPath();
           skinCtx.moveTo(lx, ly);
           skinCtx.quadraticCurveTo(
             lx + Math.cos(ang) * len * 0.5,
-            ly + Math.sin(ang) * len * 0.5 + 1.4,
+            ly + Math.sin(ang) * len * 0.5 + 1.1,
             lx + Math.cos(ang) * len,
             ly + Math.sin(ang) * len
           );
@@ -2017,37 +1404,44 @@
         skinCtx.restore();
       }
 
-      const areaScale = (w * h) / (390 * 640);
       const poreCount = Math.floor(CONFIG.SKIN.PORE_COUNT_BASE * Math.max(0.8, areaScale) * (isCreamy ? 0.55 : 1));
       for (let i = 0; i < poreCount; i++) {
         const pxX = seededRand(seedBase + 1000 + i * 2.3) * w;
         const pxY = seededRand(seedBase + 1001 + i * 2.3) * h;
         const sebW = getSebaceousZoneWeight(pxX / w, pxY / h);
-        const pr = (0.72 + sebW * 0.95) + seededRand(seedBase + 3000 + i) * (0.65 + sebW * 1.05);
-        const stretch = 1.08 + (1 - sebW) * 0.28;
-        const rot = 0.45 + (seededRand(seedBase + 3500 + i) - 0.5) * 0.35;
+        const sizeVariation = seededRand(seedBase + 3000 + i);
+        const pr = 0.48 + sebW * 0.72 + sizeVariation * sizeVariation * (0.55 + sebW * 0.70);
+        const stretch = 0.94 + seededRand(seedBase + 3200 + i) * 0.43 + (1 - sebW) * 0.16;
+        const rot = 0.42 + (seededRand(seedBase + 3500 + i) - 0.5) * 0.95;
+        const poreAlpha = (isCreamy ? 0.075 : 0.12) + sebW * 0.07 + sizeVariation * 0.035;
 
-        skinCtx.fillStyle = isCreamy
-          ? 'rgba(168, 106, 90, 0.18)'
-          : `rgba(108, 54, 40, ${0.20 + sebW * 0.18})`;
-        skinCtx.beginPath();
-        skinCtx.ellipse(pxX, pxY, pr * stretch, pr, rot, 0, Math.PI * 2);
-        skinCtx.fill();
+        // Feather the cavity into the surrounding skin instead of stamping dots.
+        skinCtx.save();
+        skinCtx.translate(pxX, pxY);
+        skinCtx.rotate(rot);
+        skinCtx.scale(stretch, 1);
+        const poreShade = skinCtx.createRadialGradient(-pr * 0.10, -pr * 0.16, 0, 0, 0, pr * 1.7);
+        poreShade.addColorStop(0, `rgba(111, 76, 56, ${poreAlpha})`);
+        poreShade.addColorStop(0.35, `rgba(128, 88, 64, ${poreAlpha * 0.8})`);
+        poreShade.addColorStop(0.72, `rgba(147, 105, 78, ${poreAlpha * 0.28})`);
+        poreShade.addColorStop(1, 'rgba(147, 105, 78, 0)');
+        skinCtx.fillStyle = poreShade;
+        skinCtx.fillRect(-pr * 1.8, -pr * 1.8, pr * 3.6, pr * 3.6);
 
-        if (!isCreamy && sebW > 0.35 && seededRand(seedBase + 4200 + i) < 0.48) {
-          const isOxidizedTiny = seededRand(seedBase + 4600 + i) < 0.28;
-          skinCtx.fillStyle = isOxidizedTiny
-            ? 'rgba(86, 54, 38, 0.38)'
-            : 'rgba(232, 204, 156, 0.42)';
+        if (!isCreamy && sebW > 0.4 && seededRand(seedBase + 4200 + i) < 0.35) {
+          const isOxidizedTiny = seededRand(seedBase + 4600 + i) < 0.20;
+          skinCtx.fillStyle = isOxidizedTiny ? 'rgba(100, 75, 51, 0.19)' : 'rgba(238, 220, 181, 0.25)';
           skinCtx.beginPath();
-          skinCtx.arc(pxX, pxY, pr * 0.58, 0, Math.PI * 2);
+          skinCtx.ellipse(0, 0, pr * 0.38, pr * 0.47, 0, 0, Math.PI * 2);
           skinCtx.fill();
         }
 
-        skinCtx.fillStyle = `rgba(255, 246, 236, ${0.18 + sebW * 0.16})`;
+        skinCtx.strokeStyle = `rgba(255, 246, 229, ${isCreamy ? 0.12 : 0.17})`;
+        skinCtx.lineWidth = 0.5;
         skinCtx.beginPath();
-        skinCtx.arc(pxX + pr * 0.38, pxY + pr * 0.40, pr * 0.48, 0, Math.PI * 2);
-        skinCtx.fill();
+        skinCtx.ellipse(pr * 0.17, pr * 0.20, pr * 0.77, pr * 0.69, 0, 0.1, Math.PI * 0.72);
+        skinCtx.stroke();
+        skinCtx.restore();
       }
 
       if (!isCreamy) {
@@ -2057,16 +1451,17 @@
           const hx = seededRand(seedBase + 6100 + i * 2) * w;
           const hy = seededRand(seedBase + 6101 + i * 2) * h;
           if (getSebaceousZoneWeight(hx / w, hy / h) > 0.72) continue;
-          const hLen = 5.5 + seededRand(seedBase + 6300 + i) * 8.5;
-          const hAng = 0.58 + (seededRand(seedBase + 6500 + i) - 0.5) * 0.55;
+          const hLen = 4.5 + seededRand(seedBase + 6300 + i) * 7;
+          const hAng = 0.55 + (seededRand(seedBase + 6500 + i) - 0.5) * 0.75;
           const ex = hx + Math.cos(hAng) * hLen;
           const ey = hy + Math.sin(hAng) * hLen;
 
           const hGrad = skinCtx.createLinearGradient(hx, hy, ex, ey);
-          hGrad.addColorStop(0, 'rgba(78, 44, 32, 0.24)');
-          hGrad.addColorStop(1, 'rgba(255, 240, 225, 0.03)');
+          hGrad.addColorStop(0, 'rgba(105, 81, 55, 0.17)');
+          hGrad.addColorStop(0.7, 'rgba(147, 121, 84, 0.08)');
+          hGrad.addColorStop(1, 'rgba(249, 234, 210, 0)');
           skinCtx.strokeStyle = hGrad;
-          skinCtx.lineWidth = 0.6;
+          skinCtx.lineWidth = 0.55;
           skinCtx.beginPath();
           skinCtx.moveTo(hx, hy);
           skinCtx.quadraticCurveTo((hx + ex) * 0.5 + 1.2, (hy + ey) * 0.5 - 1.0, ex, ey);
@@ -2115,15 +1510,18 @@
       sound.setTension(0);
 
       const client = currentClient();
-      patientAvatarEl.textContent = client.avatar;
+      patientAvatarEl.textContent = client.initial;
+      document.getElementById('patient-role').textContent = client.role;
+      document.getElementById('case-number').textContent = String(state.clientIndex % CLIENTS.length + 1).padStart(2, '0');
+      document.getElementById('care-zone').textContent = client.zoneId === 'nose_tip' ? '鼻部集中护理' : client.zoneId === 'chin_jaw' ? '下巴与唇周' : '鼻翼与脸颊';
       setPatientMood('😟');
       patientNameEl.textContent = client.name;
       patientQuoteEl.textContent = client.quote;
-      patientQuoteEl.style.color = '#c6b3ad';
+      patientQuoteEl.style.color = 'var(--muted)';
       patientSteamTagEl.style.display = 'none';
       iceFinishBtnEl.classList.remove('show');
       iceQuickBtnEl.classList.remove('show');
-      trophyCountEl.textContent = '🥢 0 颗脂栓';
+      trophyCountEl.textContent = '已收集 0 颗';
 
       renderSkinTexture();
 
@@ -2146,7 +1544,7 @@
       const marginTop = 66;
       const marginBottom = 58;
       const usableW = Math.max(140, state.width - marginX * 2);
-      const usableH = Math.max(200, state.height - marginTop - marginBottom);
+      const usableH = Math.max(80, state.height - marginTop - marginBottom);
 
       typePool.forEach((typeKey, idx) => {
         const cfg = typeKey === 'whitehead'
@@ -2244,7 +1642,7 @@
       });
 
       updateHUD();
-      setHint('♨️ 第1步推荐用【热喷软化】蒸出凝露开毛孔，或挤压后用【细胞夹】微距拔栓！', 'normal');
+      setHint('从热敷开始，按住操作区缓缓移动。', 'normal');
       resultModalEl.classList.remove('open');
     }
 
@@ -2329,13 +1727,15 @@
      * ============================================================================
      */
     function setHint(text, level = 'normal') {
-      hintBannerEl.textContent = text;
+      hintBannerEl.textContent = text.replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, '').replace(/【([^】]+)】/g, '$1').trim();
       hintBannerEl.classList.remove('warn', 'good');
       if (level === 'warn') hintBannerEl.classList.add('warn');
       if (level === 'good') hintBannerEl.classList.add('good');
     }
 
-    function spawnFloatingText(x, y, text, color = '#ffe082') {
+    function spawnFloatingText(x, y, text, color = '#405b43') {
+      text = text.replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, '').trim();
+      color = ['#ff6b7a', '#ff5c70', '#ff4d5e'].includes(color) ? '#8b403a' : '#405b43';
       state.floatingTexts.push({
         x,
         y,
@@ -2369,7 +1769,7 @@
 
       setPatientMood('😣');
       patientQuoteEl.textContent = client.painQuote;
-      patientQuoteEl.style.color = '#ff9aa8';
+      patientQuoteEl.style.color = 'var(--accent-danger)';
 
       if (typeof x === 'number' && typeof y === 'number') {
         const existing = state.bruises.find((b) => Math.hypot(b.x - x, b.y - y) < 26);
@@ -2424,7 +1824,7 @@
           rot: (Math.random() - 0.5) * 0.65
         });
       }
-      trophyCountEl.textContent = `🥢 ${state.trophiesPlucked + state.coreSeedsCollected} 颗脂栓`;
+      trophyCountEl.textContent = `已收集 ${state.trophiesPlucked + state.coreSeedsCollected} 颗`;
     }
 
     function updateHUD() {
@@ -2442,11 +1842,18 @@
         (p) => p.state === P_STATE.HEALED || p.state === P_STATE.HEALING
       ).length;
       progressValEl.textContent = `${healedCount} / ${state.pimples.length}`;
+      const progressPercent = state.pimples.length ? Math.round(healedCount / state.pimples.length * 100) : 0;
+      const progressFill = document.getElementById('care-progress-fill');
+      progressFill.style.width = `${progressPercent}%`;
+      progressFill.parentElement.setAttribute('aria-valuenow', String(progressPercent));
+      for (const type of ['blackhead', 'whitehead', 'cyst']) {
+        document.getElementById(`count-${type}`).textContent = state.pimples.filter(p => p.type === type).length;
+      }
 
       const dmgRounded = Math.round(state.damage);
       damageValEl.textContent = `${dmgRounded}%`;
       damageFillEl.style.width = `${dmgRounded}%`;
-      damageValEl.style.color = dmgRounded < 25 ? '#4cd9a4' : dmgRounded < 55 ? '#ffca63' : '#ff5c70';
+      damageValEl.style.color = dmgRounded < 25 ? 'var(--green)' : dmgRounded < 55 ? 'var(--accent-gold)' : 'var(--accent-danger)';
 
       const unsteamedCount = state.pimples.filter((p) => p.state === P_STATE.INTACT && p.steamed < 0.6).length;
       badgeSteamEl.classList.toggle('show', !state.iceBrushingMode && unsteamedCount >= Math.ceil(state.pimples.length * 0.6));
@@ -2492,8 +1899,8 @@
           iceQuickBtnEl.classList.add('show');
           setPatientMood('🥰');
           patientQuoteEl.textContent = currentClient().happyQuote;
-          patientQuoteEl.style.color = '#9effdf';
-          setHint('🧊 全脸毛孔已清空！点击下方按钮亲手刷上【冰感积雪草冻膜】收细毛孔！', 'good');
+          patientQuoteEl.style.color = 'var(--green)';
+          setHint('清理完成。涂抹舒缓冰膜，为这次护理收个尾。', 'good');
         }
       }
     }
@@ -2623,18 +2030,18 @@
         if (pluckedCleanly) {
           p.state = P_STATE.HEALING;
           p.healProgress = 0;
-          setHint('🥢 水滴状脂囊连根拔出并飞入右上角弯盘！可点右上角弯盘 25X 放大检视', 'good');
+          setHint('已完整取出并放入收集盘，点开收集盘可放大查看。', 'good');
         } else {
-          setHint('✨ 黑头脂栓已顶出！可用【细胞夹】夹入弯盘或用【消毒棉签】擦走', 'good');
+          setHint('黑头已露出。用细胞夹取出，或用清洁棉签擦净。', 'good');
         }
       } else if (p.type === 'whitehead') {
         p.bloodDropSize = 1.8 + p.traumaLevel * 1.4;
         p.serousDropSize = 3.0;
-        setHint('💧 白芯已清出，见到清亮组织液就停手！换【消毒棉签】擦拭收口', 'good');
+        setHint('已经清理干净，可以停手了。换清洁棉签擦净残留。', 'good');
       } else {
         p.bloodDropSize = 4.0 + p.traumaLevel * 1.6;
         p.serousDropSize = 3.6;
-        setHint('🩸 深层固态脓核已拔除！快换【消毒棉签】吸净渗血与浓脓', 'good');
+        setHint('深层清理已完成，用清洁棉签处理残留。', 'good');
       }
       updateHUD();
     }
@@ -2694,7 +2101,7 @@
           p.steamed = Math.min(1, p.steamed + dt * 1.15 * speedMult);
           if (before < 0.75 && p.steamed >= 0.75) {
             newlyOpened = true;
-            spawnFloatingText(p.x, p.y - 14, '♨️毛孔舒张', '#8cebff');
+            spawnFloatingText(p.x, p.y - 14, '热敷完成', '#8cebff');
           }
         }
       }
@@ -2705,7 +2112,7 @@
           patientSteamTagEl.style.display = 'inline';
           patientQuoteEl.textContent = '“暖呼呼的热喷雾好舒服呀，毛孔全都张开了～”';
           patientQuoteEl.style.color = '#b8f4ff';
-          setHint('✨ 毛孔已蒸出温润水露！现在去挤痘或用【细胞夹】拔黑头丝滑无痛！', 'good');
+          setHint('已充分热敷，可以开始后续清理。', 'good');
         }
         updateHUD();
       }
@@ -2747,7 +2154,7 @@
             p.iced = true;
             p.state = P_STATE.HEALED;
             triggerHaptic(10);
-            spawnFloatingText(p.x, p.y - 12, '🧊毛孔隐形', '#9effdf');
+            spawnFloatingText(p.x, p.y - 12, '舒缓完成', '#9effdf');
           }
         }
         if (p.iced) icedCount += 1;
@@ -2798,7 +2205,7 @@
       }
 
       if (hit.pierced) {
-        setHint('📍 微口已开！切换【手指挤压】从底座两侧往中间推挤吧', 'normal');
+        setHint('破口完成。切换轻柔挤压，从两侧缓缓向中间推。', 'normal');
         return;
       }
 
@@ -2810,10 +2217,10 @@
         state.perfectOps += 1;
         hit.surfacePusMound = 2.5;
         addScore(CONFIG.TYPES.CYST.scorePierce, hit.x, hit.y, '精准破口');
-        setHint('✨ 脓尖已挑开！换【手指挤压】放在红肿底座外围往中间兜底推挤', 'good');
+        setHint('破口完成。沿红肿区域外围，缓缓向内推。', 'good');
       } else if (hit.type === 'blackhead') {
         addScore(30, hit.x, hit.y, '挑松黑头');
-        setHint('✨ 黑头硬塞已挑松！轻挤冒头后可用【细胞夹】整根拔入弯盘！', 'good');
+        setHint('黑头已松动，轻挤露头后再用细胞夹取出。', 'good');
       } else {
         hit.surfacePusMound = 1.9;
         spawnFloatingText(hit.x, hit.y - 16, '挑开薄皮', '#a8f0d4');
@@ -2870,7 +2277,7 @@
       }
 
       if (!target) {
-        setHint('🥢 先用【手指挤压】让黑头冒出一小截，再用细胞夹借助上方放大镜夹住慢拔！', 'normal');
+        setHint('先轻挤，让黑头露出一小截，再用细胞夹缓慢取出。', 'normal');
         return;
       }
 
@@ -2879,14 +2286,14 @@
           target.state = P_STATE.EXTRUDING;
           target.extrudeProgress = 0.22;
         } else {
-          setHint('🤏 这颗还没冒头夹不住哦！先用【手指挤压】挤出一小截（或先热喷软化）再来夹拔', 'warn');
+          setHint('还没有露头，先热敷或轻挤一下，再尝试夹取。', 'warn');
           return;
         }
       }
 
       if (target.state === P_STATE.EXTRUDING) {
         if (target.type === 'blackhead' && target.extrudeProgress < 0.16) {
-          setHint('🤏 黑头才刚松动一点点，再挤高一点点就能用细胞夹牢牢夹住了！', 'normal');
+          setHint('已经松动，再轻挤一点就能夹住了。', 'normal');
           return;
         }
         sound.playTweezerClamp();
@@ -2901,7 +2308,7 @@
         state.tweezers.pullDist = 0;
         state.tweezers.pullRatio = 0;
         state.tweezers.dangerRatio = 0;
-        setHint('🥢 已咬合脂栓颈部！观察放大镜，匀速往外拉即可连根拔入弯盘！', 'good');
+        setHint('已经夹住，观察放大镜，缓慢向外拖动。', 'good');
       }
     }
 
@@ -2928,7 +2335,7 @@
         tw.clampedPimple = null;
         sound.playWarnHurt();
         triggerHaptic([20, 30]);
-        setHint('😱 拽太快把黑头帽夹断了！底下还剩半截白脂根，慢一点拉或用手挤出来吧', 'warn');
+        setHint('拉得太快，夹断了一截。试着更慢一些，或继续轻挤。', 'warn');
         return;
       }
 
@@ -3043,7 +2450,7 @@
             p.surfacePusMound = Math.max(0, p.surfacePusMound - 0.5);
             state.swabStain.pus = Math.min(1, state.swabStain.pus + 0.12);
             wipedAnything = true;
-            setHint('🤏 表面浮脓已擦掉，继续挤或用【细胞夹】把底下的白芯/脂栓拔出来吧！', 'normal');
+            setHint('表面已擦净，还需要继续轻挤或夹取剩余部分。', 'normal');
           }
           continue;
         }
@@ -3126,7 +2533,7 @@
           state.pointer.mode = 'needle';
           state.pointer.x = pt.x;
           state.pointer.y = pt.y;
-          setHint('🔍 移动准星对准大痘浅黄脓尖（或半截黑头），松手即可精准挑破！', 'good');
+          setHint('对准浅色尖端或未取出的黑头，松开完成操作。', 'good');
           return;
         }
         if (state.currentTool === 'steam') {
@@ -3253,7 +2660,7 @@
 
       const endTouch = (e) => {
         e.preventDefault();
-        if (state.pointer.mode === 'needle' && e.changedTouches && e.changedTouches.length > 0) {
+        if (state.pointer.active && state.pointer.mode === 'needle' && !state.paused && !state.settled && !state.iceFinishing && e.changedTouches && e.changedTouches.length > 0) {
           const pt = getCanvasPoint(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
           handleNeedleTap(pt);
         }
@@ -3262,7 +2669,7 @@
         }
       };
       canvas.addEventListener('touchend', endTouch, { passive: false });
-      canvas.addEventListener('touchcancel', endTouch, { passive: false });
+      canvas.addEventListener('touchcancel', (e) => { e.preventDefault(); releasePointer(); }, { passive: false });
 
       canvas.addEventListener('mousedown', (e) => {
         if (e.button !== 0 || state.settled || state.paused || state.iceFinishing) return;
@@ -3289,7 +2696,7 @@
           state.pointer.mode = 'needle';
           state.pointer.x = pt.x;
           state.pointer.y = pt.y;
-          setHint('🔍 移动准星对准大痘浅黄脓尖（或半截黑头），松手即可精准挑破！', 'good');
+          setHint('对准浅色尖端或未取出的黑头，松开完成操作。', 'good');
           return;
         }
         if (state.currentTool === 'steam') {
@@ -3479,13 +2886,12 @@
     }
 
     function enterIceBrushingStage() {
+      selectTool('ice_brush');
       state.iceBrushingMode = true;
-      state.currentTool = 'ice_brush';
-      document.querySelectorAll('.tool-btn').forEach((b) => b.classList.remove('selected'));
       iceFinishBtnEl.classList.remove('show');
       iceQuickBtnEl.classList.add('show');
       viewportWrap.style.cursor = 'pointer';
-      setHint('🧊 按住拖动硅胶刷，在所有刚清完的毛孔上涂抹冰感积雪草冻膜！（或点右下角一键厚敷）', 'good');
+      setHint('按住并拖动，给清理后的皮肤涂上冰膜；也可以选择一键敷膜。', 'good');
     }
 
     function triggerIceMaskFinale() {
@@ -3760,11 +3166,11 @@
         sound.playPop('whitehead');
         triggerHaptic(32);
         emitPopSquirt(p, Math.min(1.2, 0.75 + force * 0.4));
-        setHint('💥 破口出脓！继续挤（或换【细胞夹】）把底下那颗固态白芯取出来！', 'good');
+        setHint('已经破口。继续轻挤，或用细胞夹取出剩余部分。', 'good');
       } else if (p.type === 'blackhead') {
         p.extrudeProgress = 0.24;
         triggerHaptic(14);
-        setHint('🥢 黑头已冒头！切换【细胞夹】借助放大镜稳速拔出可得高分，或继续挤到底！', 'good');
+        setHint('黑头已露头。现在可以换细胞夹缓慢取出。', 'good');
       } else if (p.type === 'cyst') {
         p.pusRemaining = 0.82;
         p.surfacePusMound = 5.8;
@@ -3772,7 +3178,7 @@
         sound.playPop('cyst');
         triggerHaptic([35, 20, 40]);
         emitPopSquirt(p, 0.85);
-        setHint('🌋 浓脓涌出中！保持兜底推挤，把最深处的【固态脓栓核】挤蹦出来！', 'good');
+        setHint('保持轻缓的推挤，继续清理深处的残留。', 'good');
       }
       updateHUD();
     }
@@ -3819,7 +3225,7 @@
         const angDiff = getAxisAngleDiff(axisAngle, p.targetAngle);
         p.angleMatched = angDiff <= CONFIG.TYPES.CYST.angleTolerance * 1.25;
         if (!p.angleMatched) {
-          setHint('📐 顺着红肿长轴方向兜底夹挤，才能把深层脓栓核顶出来！', 'warn');
+          setHint('调整方向，顺着红肿区域的长轴，从两侧向内推。', 'warn');
           return;
         }
 
@@ -3998,10 +3404,10 @@
         ctx.save();
         const alpha = Math.min(1, ft.life / (ft.maxLife * 0.45));
         ctx.globalAlpha = Math.max(0, alpha);
-        ctx.font = '800 13px -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif';
+        ctx.font = '500 12px -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif';
         ctx.textAlign = 'center';
         ctx.lineWidth = 3;
-        ctx.strokeStyle = 'rgba(22, 12, 16, 0.85)';
+        ctx.strokeStyle = 'rgba(255, 252, 244, 0.86)';
         ctx.strokeText(ft.text, ft.x, ft.y);
         ctx.fillStyle = ft.color;
         ctx.fillText(ft.text, ft.x, ft.y);
@@ -4409,9 +3815,9 @@
 
       if (swell > 0.05 && p.state !== P_STATE.HEALING) {
         const blanchG = ctx.createRadialGradient(0, 0, r * 0.15, 0, 0, r * 1.15);
-        blanchG.addColorStop(0, `rgba(255, 242, 224, ${swell * 0.42})`);
-        blanchG.addColorStop(0.65, `rgba(218, 152, 128, ${swell * 0.18})`);
-        blanchG.addColorStop(1, 'rgba(218, 152, 128, 0)');
+        blanchG.addColorStop(0, `rgba(248, 236, 214, ${swell * 0.28})`);
+        blanchG.addColorStop(0.65, `rgba(192, 147, 120, ${swell * 0.12})`);
+        blanchG.addColorStop(1, 'rgba(192, 147, 120, 0)');
         ctx.fillStyle = blanchG;
         ctx.beginPath();
         ctx.arc(0, 0, r * 1.15, 0, Math.PI * 2);
@@ -4420,8 +3826,8 @@
 
       if (p.traumaLevel > 0.1) {
         const trG = ctx.createRadialGradient(0, 0, 1, 0, 0, r * 1.2);
-        trG.addColorStop(0, `rgba(192, 52, 56, ${p.traumaLevel * 0.35 * healFade})`);
-        trG.addColorStop(1, 'rgba(192, 52, 56, 0)');
+        trG.addColorStop(0, `rgba(170, 101, 91, ${p.traumaLevel * 0.28 * healFade})`);
+        trG.addColorStop(1, 'rgba(170, 101, 91, 0)');
         ctx.fillStyle = trG;
         ctx.beginPath();
         ctx.arc(0, 0, r * 1.2, 0, Math.PI * 2);
@@ -4433,17 +3839,17 @@
       const steamDilate = p.steamed >= 0.75 ? 1.15 : 1.0;
       const poreR = r * (0.34 + swell * 0.07) * steamDilate;
       const funnelGrad = ctx.createLinearGradient(-poreR, -poreR, poreR, poreR);
-      funnelGrad.addColorStop(0, isCreamy ? 'rgba(132, 72, 56, 0.82)' : 'rgba(64, 28, 18, 0.90)');
-      funnelGrad.addColorStop(1, isCreamy ? 'rgba(255, 228, 212, 0.80)' : 'rgba(236, 186, 158, 0.82)');
+      funnelGrad.addColorStop(0, isCreamy ? 'rgba(133, 99, 75, 0.56)' : 'rgba(89, 63, 44, 0.66)');
+      funnelGrad.addColorStop(1, isCreamy ? 'rgba(238, 218, 193, 0.38)' : 'rgba(221, 187, 157, 0.42)');
       ctx.fillStyle = funnelGrad;
       beginOrganicPath(ctx, 0, 0, poreR * 1.32, poreR * 1.18, p.shape, 1.0);
       ctx.fill();
 
-      ctx.fillStyle = '#140804';
+      ctx.fillStyle = 'rgba(64, 45, 32, 0.86)';
       beginOrganicPath(ctx, 0, 0, poreR * 1.02, poreR * 0.92, p.shape, 1.05);
       ctx.fill();
 
-      ctx.strokeStyle = 'rgba(255, 244, 232, 0.50)';
+      ctx.strokeStyle = 'rgba(250, 236, 214, 0.20)';
       ctx.lineWidth = 0.9;
       ctx.beginPath();
       ctx.arc(0, 0, poreR * 1.16, 0.15, 1.52);
@@ -4454,20 +3860,20 @@
         const plugR = poreR * 0.88;
 
         if (swell > 0.15 || p.pierced || p.steamed >= 0.75) {
-          ctx.fillStyle = 'rgba(236, 208, 138, 0.72)';
+          ctx.fillStyle = 'rgba(225, 208, 172, 0.48)';
           beginOrganicPath(ctx, 0, liftY + 0.3, plugR * 1.04, plugR * 0.94, p.shape, 1.0);
           ctx.fill();
         }
 
         const plugG = ctx.createRadialGradient(-plugR * 0.2, liftY - plugR * 0.2, 0.3, 0, liftY, plugR);
-        plugG.addColorStop(0, isCreamy ? '#68412a' : '#462a19');
-        plugG.addColorStop(0.55, isCreamy ? '#422515' : '#24130a');
-        plugG.addColorStop(1, '#5c3920');
+        plugG.addColorStop(0, isCreamy ? '#806c54' : '#6c5742');
+        plugG.addColorStop(0.55, isCreamy ? '#5c4937' : '#423329');
+        plugG.addColorStop(1, '#6a5140');
         ctx.fillStyle = plugG;
         beginOrganicPath(ctx, 0, liftY, plugR * 0.96, plugR * 0.86, p.shape, 1.15);
         ctx.fill();
 
-        ctx.fillStyle = 'rgba(255, 238, 218, 0.24)';
+        ctx.fillStyle = 'rgba(244, 225, 196, 0.10)';
         ctx.beginPath();
         ctx.arc(-plugR * 0.25, liftY - plugR * 0.25, plugR * 0.26, 0, Math.PI * 2);
         ctx.fill();
@@ -4583,10 +3989,11 @@
 
       const haloR = r * (1.75 + swell * 0.16);
       const haloG = ctx.createRadialGradient(0, 0, r * 0.12, 0, 0, haloR);
-      const redA = (isCreamy ? 0.30 : 0.44 + swell * 0.18) * healFade;
-      haloG.addColorStop(0, `rgba(196, 46, 52, ${redA})`);
-      haloG.addColorStop(0.52, `rgba(212, 78, 76, ${redA * 0.52})`);
-      haloG.addColorStop(1, 'rgba(212, 78, 76, 0)');
+      const redA = (isCreamy ? 0.18 : 0.27 + swell * 0.12) * healFade;
+      haloG.addColorStop(0, `rgba(173, 103, 92, ${redA})`);
+      haloG.addColorStop(0.40, `rgba(191, 126, 108, ${redA * 0.42})`);
+      haloG.addColorStop(0.76, 'rgba(191, 126, 108, 0)');
+      haloG.addColorStop(1, 'rgba(191, 126, 108, 0)');
       ctx.fillStyle = haloG;
       beginOrganicPath(ctx, 0, 0, haloR * 1.05, haloR * 0.96, p.shape, 1.1);
       ctx.fill();
@@ -4595,16 +4002,18 @@
 
       const domeR = r * (0.96 + swell * 0.12);
       const shG = ctx.createRadialGradient(2.2, 2.8, r * 0.15, 2.2, 2.8, domeR * 1.12);
-      shG.addColorStop(0, 'rgba(98, 36, 30, 0.26)');
-      shG.addColorStop(1, 'rgba(98, 36, 30, 0)');
+      shG.addColorStop(0, 'rgba(119, 83, 61, 0.14)');
+      shG.addColorStop(0.70, 'rgba(119, 83, 61, 0)');
+      shG.addColorStop(1, 'rgba(119, 83, 61, 0)');
       ctx.fillStyle = shG;
       beginOrganicPath(ctx, 2.2, 2.8, domeR, domeR * 0.95, p.shape, 0.9);
       ctx.fill();
 
-      const slopeG = ctx.createRadialGradient(-domeR * 0.28, -domeR * 0.28, domeR * 0.1, 0, 0, domeR);
-      slopeG.addColorStop(0, isCreamy ? 'rgba(255, 166, 168, 0.76)' : `rgba(232, 108, 102, ${0.74 + swell * 0.15})`);
-      slopeG.addColorStop(0.7, isCreamy ? 'rgba(222, 110, 118, 0.52)' : 'rgba(182, 56, 56, 0.60)');
-      slopeG.addColorStop(1, 'rgba(176, 52, 54, 0)');
+      const slopeG = ctx.createRadialGradient(0, 0, domeR * 0.1, 0, 0, domeR);
+      slopeG.addColorStop(0, isCreamy ? 'rgba(230, 182, 157, 0.58)' : `rgba(219, 156, 136, ${0.56 + swell * 0.10})`);
+      slopeG.addColorStop(0.56, isCreamy ? 'rgba(197, 138, 117, 0.32)' : 'rgba(177, 108, 96, 0.35)');
+      slopeG.addColorStop(0.84, 'rgba(177, 108, 96, 0)');
+      slopeG.addColorStop(1, 'rgba(177, 108, 96, 0)');
       ctx.fillStyle = slopeG;
       beginOrganicPath(ctx, 0, 0, domeR * 1.04, domeR * 0.96, p.shape, 0.95);
       ctx.fill();
@@ -4616,27 +4025,29 @@
       const liftY = -swell * 1.8;
 
       const ringG = ctx.createRadialGradient(0, liftY, headR * 0.7, 0, liftY, headR * 1.22);
-      ringG.addColorStop(0, 'rgba(168, 28, 36, 0)');
-      ringG.addColorStop(0.68, 'rgba(168, 28, 36, 0.55)');
-      ringG.addColorStop(1, 'rgba(168, 28, 36, 0)');
+      ringG.addColorStop(0, 'rgba(158, 103, 81, 0)');
+      ringG.addColorStop(0.68, 'rgba(158, 103, 81, 0.23)');
+      ringG.addColorStop(1, 'rgba(158, 103, 81, 0)');
       ctx.fillStyle = ringG;
       beginOrganicPath(ctx, 0, liftY, headR * 1.22, headR * 1.14, p.shape, 1.15);
       ctx.fill();
 
-      const pusG = ctx.createLinearGradient(-headR * 0.5, liftY - headR, headR * 0.5, liftY + headR);
-      pusG.addColorStop(0, '#fffff6');
-      pusG.addColorStop(0.55, '#f8e9b2');
-      pusG.addColorStop(1, '#dfc070');
+      const pusG = ctx.createRadialGradient(-headR * 0.20, liftY - headR * 0.24, 0, 0, liftY, headR * 1.08);
+      pusG.addColorStop(0, 'rgba(247, 237, 214, 0.94)');
+      pusG.addColorStop(0.40, 'rgba(235, 221, 193, 0.90)');
+      pusG.addColorStop(0.78, 'rgba(206, 186, 153, 0.64)');
+      pusG.addColorStop(1, 'rgba(191, 156, 129, 0.06)');
       ctx.fillStyle = pusG;
       beginOrganicPath(ctx, 0, liftY, headR * 1.04, headR * 0.96, p.shape, 1.25, 0.3);
       ctx.fill();
 
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.82)';
-      ctx.lineWidth = 1.3;
-      ctx.lineCap = 'round';
+      const sheenG = ctx.createRadialGradient(-headR * 0.22, liftY - headR * 0.28, 0, -headR * 0.22, liftY - headR * 0.28, headR * 0.63);
+      sheenG.addColorStop(0, 'rgba(255, 248, 231, 0.22)');
+      sheenG.addColorStop(1, 'rgba(255, 248, 231, 0)');
+      ctx.fillStyle = sheenG;
       ctx.beginPath();
-      ctx.arc(0, liftY, headR * 0.66, Math.PI * 1.08, Math.PI * 1.56);
-      ctx.stroke();
+      ctx.arc(-headR * 0.22, liftY - headR * 0.28, headR * 0.63, 0, Math.PI * 2);
+      ctx.fill();
     }
 
     function renderRealCyst(p, isCreamy, healFade) {
@@ -4646,11 +4057,12 @@
       const haloRx = r * (2.25 + swell * 0.20);
       const haloRy = r * (1.88 + swell * 0.18);
       const haloG = ctx.createRadialGradient(0, 0, r * 0.18, 0, 0, haloRx);
-      const redA = (isCreamy ? 0.42 : 0.64 + swell * 0.20 + p.traumaLevel * 0.14) * healFade;
-      haloG.addColorStop(0, `rgba(146, 20, 32, ${redA})`);
-      haloG.addColorStop(0.48, `rgba(188, 44, 52, ${redA * 0.65})`);
-      haloG.addColorStop(0.82, `rgba(206, 78, 76, ${redA * 0.22})`);
-      haloG.addColorStop(1, 'rgba(206, 78, 76, 0)');
+      const redA = (isCreamy ? 0.26 : 0.38 + swell * 0.13 + p.traumaLevel * 0.12) * healFade;
+      haloG.addColorStop(0, `rgba(155, 88, 82, ${redA})`);
+      haloG.addColorStop(0.36, `rgba(180, 107, 96, ${redA * 0.48})`);
+      haloG.addColorStop(0.64, `rgba(191, 123, 106, ${redA * 0.10})`);
+      haloG.addColorStop(0.76, 'rgba(191, 123, 106, 0)');
+      haloG.addColorStop(1, 'rgba(191, 123, 106, 0)');
       ctx.fillStyle = haloG;
       beginOrganicPath(ctx, 0, 0, haloRx, haloRy, p.shape, 0.95);
       ctx.fill();
@@ -4662,22 +4074,25 @@
       const liftY = -swell * 2.4;
 
       const shG = ctx.createRadialGradient(3.8, 4.6, r * 0.2, 3.8, 4.6, domeRx * 1.18);
-      shG.addColorStop(0, 'rgba(82, 20, 22, 0.34)');
-      shG.addColorStop(1, 'rgba(82, 20, 22, 0)');
+      shG.addColorStop(0, 'rgba(108, 73, 58, 0.17)');
+      shG.addColorStop(0.70, 'rgba(108, 73, 58, 0)');
+      shG.addColorStop(1, 'rgba(108, 73, 58, 0)');
       ctx.fillStyle = shG;
       beginOrganicPath(ctx, 3.6, 4.4, domeRx, domeRy, p.shape, 0.85);
       ctx.fill();
 
-      const moundG = ctx.createRadialGradient(-domeRx * 0.26, liftY - domeRy * 0.26, r * 0.08, 0, liftY, domeRx);
+      const moundG = ctx.createRadialGradient(-domeRx * 0.12, liftY - domeRy * 0.12, r * 0.08, 0, liftY, domeRx);
       if (isCreamy) {
-        moundG.addColorStop(0, '#ff9aa8');
-        moundG.addColorStop(0.65, '#df586e');
-        moundG.addColorStop(1, 'rgba(196, 62, 82, 0)');
+        moundG.addColorStop(0, 'rgba(231, 173, 153, 0.68)');
+        moundG.addColorStop(0.43, 'rgba(190, 119, 108, 0.49)');
+        moundG.addColorStop(0.78, 'rgba(170, 103, 92, 0)');
+        moundG.addColorStop(1, 'rgba(170, 103, 92, 0)');
       } else {
-        moundG.addColorStop(0, `rgba(226, 80, 82, ${0.86 + swell * 0.10})`);
-        moundG.addColorStop(0.55, `rgba(176, 32, 42, ${0.84 + swell * 0.10})`);
-        moundG.addColorStop(0.86, 'rgba(136, 20, 30, 0.48)');
-        moundG.addColorStop(1, 'rgba(126, 18, 26, 0)');
+        moundG.addColorStop(0, `rgba(219, 146, 130, ${0.68 + swell * 0.08})`);
+        moundG.addColorStop(0.43, `rgba(181, 106, 98, ${0.58 + swell * 0.10})`);
+        moundG.addColorStop(0.68, 'rgba(149, 85, 81, 0.12)');
+        moundG.addColorStop(0.78, 'rgba(149, 85, 81, 0)');
+        moundG.addColorStop(1, 'rgba(149, 85, 81, 0)');
       }
       ctx.fillStyle = moundG;
       beginOrganicPath(ctx, 0, liftY, domeRx, domeRy, p.shape, 0.9);
@@ -4689,7 +4104,7 @@
           const d = r * (0.32 + (i % 3) * 0.20);
           const px = Math.cos(a) * d;
           const py = liftY + Math.sin(a) * d * 0.85;
-          ctx.fillStyle = 'rgba(96, 14, 22, 0.30)';
+          ctx.fillStyle = 'rgba(119, 77, 66, 0.11)';
           ctx.beginPath();
           ctx.arc(px, py, 1.0, 0, Math.PI * 2);
           ctx.fill();
@@ -4702,10 +4117,10 @@
       const hy = liftY + p.headOffsetY;
       const coreR = r * (0.28 + swell * 0.12);
       const deepG = ctx.createRadialGradient(hx, hy, 0.6, hx, hy, coreR * 1.45);
-      const pusHintAlpha = p.pierced ? 0.85 : (0.34 + swell * 0.42);
-      deepG.addColorStop(0, `rgba(252, 228, 166, ${pusHintAlpha})`);
-      deepG.addColorStop(0.58, `rgba(228, 148, 112, ${pusHintAlpha * 0.52})`);
-      deepG.addColorStop(1, 'rgba(182, 38, 46, 0)');
+      const pusHintAlpha = p.pierced ? 0.72 : (0.30 + swell * 0.32);
+      deepG.addColorStop(0, `rgba(230, 211, 174, ${pusHintAlpha})`);
+      deepG.addColorStop(0.58, `rgba(207, 157, 129, ${pusHintAlpha * 0.42})`);
+      deepG.addColorStop(1, 'rgba(176, 107, 91, 0)');
       ctx.fillStyle = deepG;
       ctx.beginPath();
       ctx.arc(hx, hy, coreR * 1.45, 0, Math.PI * 2);
@@ -4715,7 +4130,7 @@
         ctx.save();
         ctx.translate(hx, hy);
         ctx.rotate(p.targetAngle + Math.PI * 0.5);
-        ctx.strokeStyle = isCreamy ? '#d4425c' : '#680814';
+        ctx.strokeStyle = isCreamy ? '#a36b5f' : '#75483f';
         ctx.lineWidth = 1.5;
         ctx.lineCap = 'round';
         ctx.beginPath();
@@ -4725,12 +4140,13 @@
         ctx.restore();
       }
 
-      ctx.strokeStyle = `rgba(255, 238, 236, ${0.34 + swell * 0.22})`;
-      ctx.lineWidth = 1.9;
-      ctx.lineCap = 'round';
+      const sheenG = ctx.createRadialGradient(-domeRx * 0.26, liftY - domeRy * 0.26, 0, -domeRx * 0.26, liftY - domeRy * 0.26, domeRy * 0.55);
+      sheenG.addColorStop(0, `rgba(247, 217, 196, ${0.13 + swell * 0.08})`);
+      sheenG.addColorStop(1, 'rgba(247, 217, 196, 0)');
+      ctx.fillStyle = sheenG;
       ctx.beginPath();
-      ctx.arc(0, liftY, domeRy * 0.65, Math.PI * 1.08, Math.PI * 1.50);
-      ctx.stroke();
+      ctx.arc(-domeRx * 0.26, liftY - domeRy * 0.26, domeRy * 0.55, 0, Math.PI * 2);
+      ctx.fill();
     }
 
     function renderViscousPusDollop(cx, cy, r, isCreamy) {
@@ -5338,23 +4754,24 @@
 
       clientListEl.innerHTML = '';
       CLIENTS.forEach((c, idx) => {
-        const card = document.createElement('div');
+        const card = document.createElement('button');
+        card.type = 'button';
         card.className = 'client-card' + (idx === state.clientIndex % CLIENTS.length ? ' active-client' : '');
         card.innerHTML = `
-          <div class="patient-avatar">${c.avatar}</div>
+          <div class="patient-avatar" aria-hidden="true">${c.initial}</div>
           <div class="client-meta">
             <div class="client-title">${c.name}</div>
             <div class="client-desc">${c.quote}</div>
           </div>
-          <div class="client-reward">诊金 ¥${c.bounty}</div>
+          <div class="client-reward">¥${c.bounty}</div>
         `;
         card.addEventListener('click', () => {
           state.clientIndex = idx;
           state.targetDensity = 0;
           clinicModalEl.classList.remove('open');
           state.paused = false;
-          selectTool('squeeze');
           generateLevel(0);
+          selectTool('steam');
         });
         clientListEl.appendChild(card);
       });
@@ -5367,7 +4784,7 @@
         row.className = 'upgrade-row';
         row.innerHTML = `
           <div class="client-meta">
-            <div class="client-title">${u.icon} ${u.name}</div>
+            <div class="client-title">${u.name}</div>
             <div class="client-desc">${u.desc}</div>
           </div>
         `;
@@ -5399,7 +4816,7 @@
       const dmg = Math.round(state.damage);
       const client = currentClient();
       let rank = 'S';
-      let title = `${client.name}：五星好评！`;
+      let title = `${client.name}的护理记录`;
       let subtitle = client.happyQuote;
       let tipBonus = 80;
 
@@ -5407,17 +4824,17 @@
         rank = 'S';
       } else if (dmg <= 32) {
         rank = 'A';
-        title = `${client.name}：非常满意！`;
+        title = `${client.name}的护理记录`;
         tipBonus = 40;
       } else if (dmg <= 58) {
         rank = 'B';
-        title = `${client.name}：稍微有点痛`;
-        subtitle = '“挤得挺干净，就是有几下没热敷硬按有点疼…”';
+        title = `${client.name}的护理记录`;
+        subtitle = '清理完成。下次可以多热敷一会儿，再轻一些。';
         tipBonus = 10;
       } else {
         rank = 'C';
-        title = `${client.name}：脸快肿成包啦`;
-        subtitle = '“下次一定记得先热敷、大痘先用粉刺针破口呀！”';
+        title = `${client.name}的护理记录`;
+        subtitle = '有几处刺激比较明显，下次试试更轻缓的操作。';
         tipBonus = 0;
       }
 
@@ -5439,7 +4856,7 @@
 
       const resDmgEl = document.getElementById('res-damage');
       resDmgEl.textContent = `${dmg}%`;
-      resDmgEl.style.color = dmg <= 20 ? '#4cd9a4' : dmg <= 50 ? '#ffca63' : '#ff5c70';
+      resDmgEl.style.color = dmg <= 20 ? 'var(--green)' : dmg <= 50 ? 'var(--accent-gold)' : 'var(--accent-danger)';
 
       document.getElementById('res-breakdown').textContent = `白头${wCount} · 黑头${bCount} · 大痘${cCount}`;
       document.getElementById('res-perfect').textContent = `${state.perfectOps} 次`;
@@ -5458,33 +4875,37 @@
 
       if (toolName === 'swab' && state.currentTool === 'swab') {
         state.swabStain = { pus: 0, blood: 0, sebum: 0 };
-        setHint('🧼 已更换一根全新无菌消毒棉签！', 'good');
+        setHint('已换好新棉签，继续轻轻擦拭。', 'good');
         return;
       }
 
       state.currentTool = toolName;
+      const names = { steam: '热喷 · 温热软化', needle: '粉刺针 · 精准破口', squeeze: '轻柔挤压 · 缓缓向内', tweezers: '细胞夹 · 匀速夹取', swab: '清洁棉签 · 细致擦拭', ice_brush: '舒缓冰膜 · 完成护理' };
+      document.getElementById('active-tool-name').textContent = names[toolName] || '护理工具';
       releasePointer();
 
       document.querySelectorAll('.tool-btn').forEach((btn) => {
-        btn.classList.toggle('selected', btn.dataset.tool === toolName);
+        const selected = btn.dataset.tool === toolName;
+        btn.classList.toggle('selected', selected);
+        btn.setAttribute('aria-pressed', String(selected));
       });
 
       if (toolName === 'steam') {
         viewportWrap.style.cursor = 'pointer';
-        setHint('♨️ 热喷软化：按住喷洒温热雾气凝结微水露蒸开毛孔，拔栓丝滑无痛！', 'good');
+        setHint('按住皮肤缓缓移动，先让护理区域充分热敷。', 'good');
       } else if (toolName === 'needle') {
         viewportWrap.style.cursor = 'crosshair';
-        setHint('📍 粉刺针：按住可激活上方 2.2X 光学瞄准镜，精准挑破大痘浅黄脓尖', 'normal');
+        setHint('按住打开局部放大镜，对准深层痘的浅色尖端，松开完成破口。', 'normal');
       } else if (toolName === 'squeeze') {
         viewportWrap.style.cursor = 'grab';
-        setHint('🤏 手指挤压：双指在瑕疵两侧向内推挤（黑头挤冒头后可换【细胞夹】慢拔）', 'normal');
+        setHint('在瑕疵旁按住，向中心缓缓推；双指也可向内捏合。', 'normal');
       } else if (toolName === 'tweezers') {
         viewportWrap.style.cursor = 'crosshair';
-        setHint('🥢 超尖细胞夹：借助 2.2X 放大镜夹住冒头黑头匀速外拉，整根飞入右上角弯盘！', 'good');
+        setHint('夹住已经露头的黑头，慢慢向外拖动，留意张力变化。', 'good');
       } else if (toolName === 'swab') {
         viewportWrap.style.cursor = 'pointer';
         state.swabStain = { pus: 0, blood: 0, sebum: 0 };
-        setHint('🧼 消毒棉签：擦净排空后的脂栓、组织液与血珠（再点一次可换新棉签）', 'good');
+        setHint('轻轻擦净残留；再点一次棉签，即可换新。', 'good');
       }
     }
 
@@ -5496,6 +4917,7 @@
       document.getElementById('tool-swab').addEventListener('click', () => selectTool('swab'));
 
       window.addEventListener('keydown', (e) => {
+        if (document.querySelector('.modal-backdrop.open') || e.altKey || e.ctrlKey || e.metaKey || e.target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
         if (e.key === '1') selectTool('steam');
         else if (e.key === '2') selectTool('needle');
         else if (e.key === '3') selectTool('squeeze');
@@ -5561,7 +4983,8 @@
       styleBtn.addEventListener('click', () => {
         state.styleMode = state.styleMode === 'realistic' ? 'creamy' : 'realistic';
         const isCreamy = state.styleMode === 'creamy';
-        styleLabel.textContent = isCreamy ? '🍑 奶油肌' : '🔬 写实肌';
+        styleLabel.textContent = isCreamy ? '柔和肌理' : '自然肌理';
+        styleBtn.setAttribute('aria-pressed', String(isCreamy));
         styleBtn.classList.toggle('active-mode', isCreamy);
         renderSkinTexture();
       });
@@ -5570,12 +4993,14 @@
       const soundIcon = document.getElementById('sound-icon');
       soundBtn.addEventListener('click', () => {
         sound.muted = !sound.muted;
+        soundBtn.setAttribute('aria-pressed', String(!sound.muted));
+        soundBtn.setAttribute('aria-label', sound.muted ? '开启音效' : '关闭音效');
         if (sound.muted) {
           sound.setTension(0);
-          soundIcon.textContent = '🔇';
+          soundIcon.textContent = '音效关';
         } else {
           sound.unlock();
-          soundIcon.textContent = '🔊';
+          soundIcon.textContent = '音效开';
         }
       });
 
@@ -5597,8 +5022,8 @@
 
       document.getElementById('btn-reset').addEventListener('click', () => {
         sound.unlock();
-        selectTool('squeeze');
         generateLevel(state.targetDensity);
+        selectTool('steam');
       });
 
       document.querySelectorAll('.preset-btn').forEach((btn) => {
@@ -5612,15 +5037,58 @@
       document.getElementById('btn-next-face').addEventListener('click', () => {
         sound.unlock();
         state.clientIndex = (state.clientIndex + 1) % CLIENTS.length;
-        selectTool('squeeze');
         generateLevel(state.targetDensity);
+        selectTool('steam');
+      });
+    }
+
+    // Observe the existing modal state so every entry point shares focus handling.
+    function bindModalAccessibility() {
+      let previousFocus = null;
+      let activeModal = null;
+      const panels = ['.studio-header', '.studio-layout', '.studio-footer'].map(s => document.querySelector(s));
+      const syncModal = () => {
+        const open = document.querySelector('.modal-backdrop.open');
+        if (open === activeModal) return;
+        if (open) {
+          if (!activeModal) previousFocus = document.activeElement;
+          activeModal = open;
+          panels.forEach(panel => { panel.inert = true; });
+          const first = open.querySelector('button:not([disabled]), [tabindex="0"]');
+          if (first) first.focus({ preventScroll: true });
+        } else {
+          activeModal = null;
+          panels.forEach(panel => { panel.inert = false; });
+          if (previousFocus && previousFocus.isConnected) previousFocus.focus({ preventScroll: true });
+          previousFocus = null;
+        }
+      };
+      document.querySelectorAll('.modal-backdrop').forEach(modal => {
+        new MutationObserver(syncModal).observe(modal, { attributes: true, attributeFilter: ['class'] });
+      });
+      window.addEventListener('keydown', e => {
+        const open = document.querySelector('.modal-backdrop.open');
+        if (!open) return;
+        if (e.key === 'Escape' && open !== resultModalEl) {
+          e.preventDefault();
+          open.classList.remove('open');
+          state.paused = false;
+          releasePointer();
+        }
+        if (e.key === 'Tab') {
+          const items = [...open.querySelectorAll('button:not([disabled]), [tabindex="0"]')].filter(el => el.getClientRects().length);
+          if (!items.length) return;
+          const first = items[0], last = items[items.length - 1];
+          if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+          else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        }
       });
     }
 
     function resizeCanvas() {
       const rect = viewportWrap.getBoundingClientRect();
-      const newW = Math.max(280, Math.floor(rect.width));
-      const newH = Math.max(320, Math.floor(rect.height));
+      const newW = Math.max(1, Math.floor(rect.width));
+      const newH = Math.max(1, Math.floor(rect.height));
       const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
 
       state.width = newW;
@@ -5655,11 +5123,12 @@
 
     window.addEventListener('load', () => {
       bindUIControls();
+      bindModalAccessibility();
       bindCanvasInteractions();
       persistSaveData();
       resizeCanvas();
       generateLevel(0);
-      selectTool('squeeze');
+      selectTool('steam');
 
       window.addEventListener('resize', () => {
         resizeCanvas();
