@@ -568,6 +568,15 @@
       </div>
     </div>
 
+    <div id="storage-gate-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="storage-gate-title" aria-describedby="storage-gate-copy">
+      <div class="modal-card">
+        <div class="modal-header"><h2 id="storage-gate-title" class="modal-title">护理已在另一页面打开</h2><p id="storage-gate-copy" class="modal-subtitle">这页已暂停。你可以回到原页面，也可以在这里接着最新进度继续。</p></div>
+        <p id="storage-gate-status" class="guide-row" role="status" aria-live="polite">切换后，原页面会暂停，护理进度和收入会一起保留。</p>
+        <button id="btn-continue-here" class="primary-btn" type="button">在这里继续</button>
+        <button id="btn-cancel-handoff" class="secondary-btn" type="button" hidden>取消等待</button>
+      </div>
+    </div>
+
     <!-- 25X 战利品弯盘放大检视弹窗 -->
     <div id="tray-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="tray-modal-title">
       <div class="modal-card"><button class="modal-close" type="button" data-close-modal="tray-modal" aria-label="关闭弹窗"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
@@ -1369,9 +1378,23 @@
     } catch (_) {}
 
     const careRecords = loadCareRecords();
-    let lastSavedCareRecords = '';
-    const savedValueCache = new Map();
     const SESSION_KEY = 'pimple_clinic_session_v2';
+    const PROFILE_KEY = 'pimple_clinic_profile_v3';
+    const CARE_OWNER_KEY = 'pimple_clinic_owner_v1';
+    const CARE_HANDOFF_KEY = 'pimple_clinic_handoff_v1';
+    const CARE_LOCK_NAME = 'pimple-clinic-active-care';
+    const careControl = {
+      id: typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
+      owned: false, hydrating: false, volatile: false, acquiredAt: 0,
+      releaseLock: null, request: null, heartbeat: null, waitTimer: null,
+      unsavedDraft: null, conflict: false, resumeModal: null
+    };
+    let careControlReady = Promise.resolve(false);
+    let profileRevision = 0;
+    let lastProfileRaw = null;
+    let lastProfileContent = '';
+    let lastResourceJSON = '';
+    let practiceGuideStatus = '';
     const SESSION_FIELDS = [
       'width', 'height', 'faceSeed', 'styleMode', 'clientIndex', 'targetDensity', 'currentTool',
       'score', 'combo', 'perfectOps', 'damage', 'trophiesPlucked', 'coreSeedsCollected',
@@ -1383,38 +1406,329 @@
     ];
     let sessionSaveEnabled = false;
     let sessionSaveTimer = null;
-    let lastSessionJSON = '';
 
-    function saveCurrentSession() {
-      if (sessionSaveTimer) { clearTimeout(sessionSaveTimer); sessionSaveTimer = null; }
-      if (!sessionSaveEnabled || !state.pimples.length) return;
+    function currentSessionEnvelope() {
+      if (state.settled || !state.pimples.length) return null;
+      const data = {};
+      for (const key of SESSION_FIELDS) if (state[key] !== undefined) data[key] = state[key];
+      return { version: 2, data };
+    }
+
+    function currentProfileResources() {
+      return { coins: state.coins, upgrades: state.upgrades, records: careRecords, guide: practiceGuideStatus };
+    }
+
+    function careOwnershipIsCurrent() {
+      if (!careControl.owned) return false;
+      if (careControl.volatile) return true;
       try {
-        if (state.settled) {
-          localStorage.removeItem(SESSION_KEY);
-          lastSessionJSON = '';
-          return;
-        }
-        const data = {};
-        for (const key of SESSION_FIELDS) {
-          if (state[key] !== undefined) data[key] = state[key];
-        }
-        // Config is shared immutable data; active pointers and audio never resume.
-        const json = JSON.stringify({ version: 2, data }, (key, value) => key === 'cfg' ? undefined : value);
-        if (json !== lastSessionJSON) {
-          localStorage.setItem(SESSION_KEY, json);
-          lastSessionJSON = json;
-        }
-      } catch (_) { /* Storage can be unavailable; the current game remains playable. */ }
+        const owner = JSON.parse(localStorage.getItem(CARE_OWNER_KEY) || 'null');
+        return owner?.id === careControl.id && localStorage.getItem(PROFILE_KEY) === lastProfileRaw;
+      } catch (_) { return false; }
+    }
+
+    function ensureCareControl() {
+      if (careControl.hydrating) return true;
+      if (careOwnershipIsCurrent()) return true;
+      if (careControl.owned) pauseForOtherPage();
+      return false;
+    }
+
+    function saveCurrentSession(force = false) {
+      if (sessionSaveTimer) { clearTimeout(sessionSaveTimer); sessionSaveTimer = null; }
+      if (!sessionSaveEnabled || careControl.hydrating || !ensureCareControl()) return false;
+      if (careControl.volatile) return true;
+      let content;
+      try {
+        const resources = currentProfileResources();
+        content = JSON.stringify({ ...resources, session: currentSessionEnvelope() }, (key, value) => key === 'cfg' ? undefined : value);
+        if (!force && content === lastProfileContent) { careControl.unsavedDraft = null; careControl.conflict = false; return true; }
+        const nextRevision = profileRevision + 1;
+        const raw = JSON.stringify({ version: 3, revision: nextRevision, writer: careControl.id, ...JSON.parse(content) });
+        // The active page holds the origin-wide Web Lock. One write commits the
+        // session, payment, upgrades and completion record together.
+        localStorage.setItem(PROFILE_KEY, raw);
+        profileRevision = nextRevision;
+        lastProfileRaw = raw;
+        lastProfileContent = content;
+        lastResourceJSON = JSON.stringify(resources);
+        careControl.unsavedDraft = null;
+        careControl.conflict = false;
+        return true;
+      } catch (_) {
+        if (content) careControl.unsavedDraft = { content, baseline: lastProfileRaw };
+        setHint('这次进度暂未保存，请先保留当前页面；稍后操作时会再次尝试。', 'warn');
+        return false;
+      }
     }
 
     function queueSessionSave() {
-      if (!sessionSaveEnabled || sessionSaveTimer) return;
+      if (!sessionSaveEnabled || careControl.hydrating || !careControl.owned || sessionSaveTimer) return;
       sessionSaveTimer = setTimeout(saveCurrentSession, 800);
     }
 
-    function restoreCurrentSession() {
+    function readCareProfile() {
+      const raw = localStorage.getItem(PROFILE_KEY);
+      if (raw !== null) {
+        if (raw.length > 1500000) throw new Error('Profile is too large');
+        const profile = JSON.parse(raw);
+        if (!profile || profile.version !== 3 || !Number.isSafeInteger(profile.revision) || profile.revision < 0
+          || !Number.isFinite(profile.coins) || profile.coins < 0 || profile.coins > 1e9
+          || !profile.upgrades || typeof profile.upgrades !== 'object' || Array.isArray(profile.upgrades)) throw new Error('Invalid profile');
+        return { raw, profile };
+      }
+      // Old keys are migration inputs only. Older game pages cannot overwrite
+      // the canonical profile after this version has saved it.
+      let coins = Number(localStorage.getItem('pimple_clinic_coins')) || 0;
+      coins = Number.isFinite(coins) ? Math.max(0, Math.min(1e9, coins)) : 0;
+      let upgrades = {};
+      try { upgrades = JSON.parse(localStorage.getItem('pimple_clinic_upgrades') || '{}'); } catch (_) {}
+      let session = null;
+      try { session = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch (_) {}
+      return { raw: null, profile: { version: 3, revision: 0, coins, upgrades, records: loadCareRecords(), guide: localStorage.getItem('pimple_clinic_guide_v1') || '', session } };
+    }
+
+    function hydrateCareProfile(snapshot) {
+      careControl.hydrating = true;
+      sessionSaveEnabled = false;
       try {
-        const raw = localStorage.getItem(SESSION_KEY);
+        const profile = snapshot.profile;
+        lastProfileRaw = snapshot.raw;
+        profileRevision = profile.revision;
+        lastProfileContent = '';
+        lastResourceJSON = '';
+        state.coins = profile.coins;
+        for (const key of Object.keys(state.upgrades)) state.upgrades[key] = profile.upgrades?.[key] === true;
+        const records = loadCareRecords(profile.records || null);
+        careRecords.bests = records.bests;
+        careRecords.history = records.history;
+        practiceGuideStatus = ['skipped', 'completed'].includes(profile.guide) ? profile.guide : '';
+        document.querySelectorAll('.modal-backdrop.open').forEach(modal => modal.classList.remove('open'));
+        state.keyboardCare.visible = false;
+        state.keyboardCare.hintKey = '';
+        const session = profile.session ? JSON.stringify(profile.session) : null;
+        if (!restoreCurrentSession(session)) {
+          state.clientIndex = 0;
+          state.targetDensity = 0;
+          generateLevel(0);
+          selectTool('steam');
+        }
+        renderClinicModalContents();
+        renderScene(false);
+      } finally { careControl.hydrating = false; }
+    }
+
+    function updateHandoffButtons(waiting) {
+      document.getElementById('btn-continue-here').disabled = waiting;
+      document.getElementById('btn-continue-here').textContent = waiting ? '正在接续护理…' : careControl.conflict ? '使用已保存进度' : '在这里继续';
+      document.getElementById('btn-cancel-handoff').hidden = !waiting;
+    }
+
+    function showCareGate(message = '这页已暂停。你可以回到原页面，也可以在这里接着最新进度继续。') {
+      state.paused = true;
+      document.querySelectorAll('.modal-backdrop.open').forEach(modal => modal.classList.remove('open'));
+      document.getElementById('storage-gate-copy').textContent = careControl.conflict
+        ? '这页还有未保存的操作，另一页面已经保存了更新。当前操作仍保留在这页，请先不要刷新。' : message;
+      document.getElementById('storage-gate-status').textContent = careControl.conflict
+        ? '选择“使用已保存进度”会放弃这页未保存的操作，接着另一页面的最新进度继续。'
+        : '切换后，原页面会暂停，护理进度和收入会一起保留。';
+      document.getElementById('storage-gate-modal').classList.add('open');
+      updateHandoffButtons(Boolean(careControl.request?.takeover));
+    }
+
+    function pauseForOtherPage(message) {
+      // Disable every writer before releasePointer or modal cleanup can save.
+      careControl.owned = false;
+      sessionSaveEnabled = false;
+      if (sessionSaveTimer) { clearTimeout(sessionSaveTimer); sessionSaveTimer = null; }
+      if (careControl.heartbeat) { clearInterval(careControl.heartbeat); careControl.heartbeat = null; }
+      releasePointer();
+      try {
+        const owner = JSON.parse(localStorage.getItem(CARE_OWNER_KEY) || 'null');
+        if (owner?.id === careControl.id) localStorage.removeItem(CARE_OWNER_KEY);
+      } catch (_) {}
+      const release = careControl.releaseLock;
+      careControl.releaseLock = null;
+      if (release) release();
+      showCareGate(message);
+    }
+
+    function activateCareControl() {
+      try {
+        const snapshot = readCareProfile();
+        if (careControl.unsavedDraft) {
+          if (snapshot.raw !== careControl.unsavedDraft.baseline) {
+            careControl.conflict = true;
+            pauseForOtherPage();
+            return false;
+          }
+          snapshot.profile = { ...snapshot.profile, ...JSON.parse(careControl.unsavedDraft.content) };
+        }
+        careControl.acquiredAt = Date.now();
+        localStorage.setItem(CARE_OWNER_KEY, JSON.stringify({ id: careControl.id, updatedAt: careControl.acquiredAt }));
+        careControl.owned = true;
+        hydrateCareProfile(snapshot);
+        sessionSaveEnabled = true;
+        state.paused = false;
+        saveCurrentSession(true);
+        if (!navigator.locks?.request) {
+          careControl.heartbeat = setInterval(() => {
+            if (ensureCareControl()) {
+              try { localStorage.setItem(CARE_OWNER_KEY, JSON.stringify({ id: careControl.id, updatedAt: Date.now() })); } catch (_) {}
+            }
+          }, 5000);
+        }
+        return true;
+      } catch (_) {
+        pauseForOtherPage('这份护理记录暂时无法读取。请先保留原页面，稍后在这里重新尝试。');
+        return false;
+      }
+    }
+
+    function notifyCareHandoff(request) {
+      try {
+        request.notifiedOwner = JSON.parse(localStorage.getItem(CARE_OWNER_KEY) || 'null')?.id || null;
+        localStorage.setItem(CARE_HANDOFF_KEY, JSON.stringify({ id: careControl.id, token: request.token, createdAt: Date.now() }));
+      } catch (_) {}
+      if (careControl.waitTimer) clearTimeout(careControl.waitTimer);
+      careControl.waitTimer = setTimeout(() => {
+        if (careControl.request === request) document.getElementById('storage-gate-status').textContent = '正在等待原页面保存。若原页面没有响应，关闭它后即可继续，也可以取消等待。';
+      }, 1800);
+    }
+
+    function acquireCareControl(takeover = false) {
+      if (careControl.request) return careControl.request.ready;
+      const request = { takeover, token: `${careControl.id}-${Date.now()}`, controller: new AbortController() };
+      request.ready = new Promise(resolve => { request.resolve = resolve; });
+      careControl.request = request;
+      const finishRequest = granted => {
+        if (careControl.waitTimer) { clearTimeout(careControl.waitTimer); careControl.waitTimer = null; }
+        if (careControl.request === request) careControl.request = null;
+        updateHandoffButtons(false);
+        request.resolve(granted);
+      };
+      if (takeover) { showCareGate('正在保存原页面的护理，随后会在这里继续。'); updateHandoffButtons(true); }
+
+      if (navigator.locks?.request) {
+        const options = takeover ? { signal: request.controller.signal } : { ifAvailable: true };
+        navigator.locks.request(CARE_LOCK_NAME, options, async lock => {
+          if (!lock || careControl.request !== request) {
+            showCareGate(); finishRequest(false); return;
+          }
+          const held = new Promise(resolve => { careControl.releaseLock = resolve; });
+          const granted = activateCareControl();
+          finishRequest(granted);
+          if (granted) await held;
+        }).catch(error => {
+          if (careControl.request !== request) return;
+          showCareGate(error.name === 'AbortError' ? undefined : '暂时无法接续这份护理，请保留原页面并稍后重试。');
+          finishRequest(false);
+        });
+        if (takeover) notifyCareHandoff(request);
+      } else {
+        // Older/offline environments use a cooperative lease and a revision
+        // fence; they never auto-take an unexpired owner's saved progress.
+        const attempt = () => {
+          if (careControl.request !== request) return;
+          let owner = null;
+          try { owner = JSON.parse(localStorage.getItem(CARE_OWNER_KEY) || 'null'); } catch (_) {}
+          if (!owner || owner.id === careControl.id || Date.now() - owner.updatedAt > 15000) finishRequest(activateCareControl());
+          else if (takeover) request.poll = setTimeout(attempt, 500);
+          else { showCareGate(); finishRequest(false); }
+        };
+        attempt();
+        if (takeover && careControl.request === request) notifyCareHandoff(request);
+      }
+      return request.ready;
+    }
+
+    function cancelCareHandoff() {
+      const request = careControl.request;
+      if (!request) return;
+      careControl.request = null;
+      request.controller.abort();
+      if (request.poll) clearTimeout(request.poll);
+      if (careControl.waitTimer) { clearTimeout(careControl.waitTimer); careControl.waitTimer = null; }
+      try {
+        const message = JSON.parse(localStorage.getItem(CARE_HANDOFF_KEY) || 'null');
+        if (message?.token === request.token) localStorage.removeItem(CARE_HANDOFF_KEY);
+      } catch (_) {}
+      request.resolve(false);
+      showCareGate();
+    }
+
+    function startCareStorage() {
+      try {
+        const probe = `${CARE_OWNER_KEY}:probe:${careControl.id}`;
+        localStorage.setItem(probe, '1');
+        localStorage.removeItem(probe);
+      } catch (_) {
+        careControl.volatile = true;
+        careControl.owned = true;
+        let snapshot;
+        try { snapshot = readCareProfile(); } catch (_) {
+          snapshot = { raw: null, profile: { revision: 0, coins: state.coins, upgrades: state.upgrades, records: careRecords, guide: '', session: null } };
+        }
+        hydrateCareProfile(snapshot);
+        sessionSaveEnabled = true;
+        state.paused = false;
+        setHint('当前浏览器无法保存进度。这次仍可正常护理，请先保留当前页面。', 'warn');
+        return Promise.resolve(true);
+      }
+      return acquireCareControl(false);
+    }
+
+    function bindCareStorage() {
+      document.getElementById('btn-continue-here').addEventListener('click', () => {
+        if (careControl.conflict) { careControl.unsavedDraft = null; careControl.conflict = false; }
+        careControlReady = acquireCareControl(true);
+      });
+      document.getElementById('btn-cancel-handoff').addEventListener('click', cancelCareHandoff);
+      for (const type of ['click', 'mousedown', 'touchstart', 'keydown']) {
+        document.addEventListener(type, event => {
+          if (event.target.closest?.('#storage-gate-modal')) return;
+          if (!ensureCareControl()) { event.preventDefault(); event.stopImmediatePropagation(); }
+        }, { capture: true, passive: false });
+      }
+      window.addEventListener('storage', event => {
+        if ([CARE_OWNER_KEY, PROFILE_KEY, null].includes(event.key) && careControl.owned && !careOwnershipIsCurrent()) pauseForOtherPage();
+        if (event.key === CARE_OWNER_KEY && careControl.request?.takeover) {
+          try {
+            const owner = JSON.parse(localStorage.getItem(CARE_OWNER_KEY) || 'null');
+            if (owner && owner.id !== careControl.id && owner.id !== careControl.request.notifiedOwner) notifyCareHandoff(careControl.request);
+          } catch (_) {}
+        }
+        if (event.key !== CARE_HANDOFF_KEY || !careControl.owned) return;
+        try {
+          const request = JSON.parse(event.newValue || 'null');
+          if (request && request.id !== careControl.id && request.createdAt >= careControl.acquiredAt
+            && Date.now() - request.createdAt < 15000 && localStorage.getItem(CARE_HANDOFF_KEY) === event.newValue) {
+            if (saveCurrentSession()) pauseForOtherPage('护理已在另一页面继续。这页已暂停，最新进度已经保存。');
+          }
+        } catch (_) {}
+      });
+      window.addEventListener('pagehide', () => {
+        careControl.resumeModal = document.querySelector('.modal-backdrop.open:not(#storage-gate-modal)')?.id || null;
+        cancelCareHandoff();
+        if (careControl.owned) { saveCurrentSession(); pauseForOtherPage(); }
+      });
+      window.addEventListener('pageshow', event => {
+        if (!event.persisted || careControl.owned) return;
+        if (careControl.volatile) {
+          careControl.owned = true;
+          sessionSaveEnabled = true;
+          document.getElementById('storage-gate-modal').classList.remove('open');
+          const modal = careControl.resumeModal && document.getElementById(careControl.resumeModal);
+          if (modal) modal.classList.add('open');
+          state.paused = Boolean(modal);
+          setHint('已回到这次护理。当前浏览器仍无法保存，请先保留这个页面。', 'warn');
+          careControlReady = Promise.resolve(true);
+        } else careControlReady = acquireCareControl(false);
+      });
+    }
+
+    function restoreCurrentSession(raw) {
+      try {
         if (!raw || raw.length > 700000) return false;
         const saved = JSON.parse(raw);
         const data = saved && saved.version === 2 && saved.data;
@@ -1493,7 +1807,6 @@
         trophyCountEl.textContent = `已收集 ${state.trophiesPlucked + state.coreSeedsCollected} 颗`;
         updateHUD();
         setHint('已接着上次的护理进度。准备好后，继续慢慢操作。', 'good');
-        lastSessionJSON = raw;
         return true;
       } catch (_) { return false; }
     }
@@ -1504,18 +1817,7 @@
     }
 
     function persistSaveData() {
-      try {
-        const values = {
-          pimple_clinic_coins: String(state.coins),
-          pimple_clinic_upgrades: JSON.stringify(state.upgrades)
-        };
-        for (const [key, value] of Object.entries(values)) {
-          if (savedValueCache.get(key) !== value) {
-            localStorage.setItem(key, value);
-            savedValueCache.set(key, value);
-          }
-        }
-      } catch (_) {}
+      if (sessionSaveEnabled && !careControl.hydrating && careControl.owned && JSON.stringify(currentProfileResources()) !== lastResourceJSON) saveCurrentSession();
       updateText(bestScoreLabelEl, `本档最高 ${state.bestScore}`);
       updateText(coinValEl, `¥ ${state.coins}`);
       queueSessionSave();
@@ -1571,10 +1873,10 @@
       return `${density ? `轻松 · ${density} 处` : '轻松 · 顾客原案'} · ${inputMode === 'keyboard' ? '键盘辅助' : '触控 / 鼠标'}`;
     }
 
-    function loadCareRecords() {
+    function loadCareRecords(provided) {
       const empty = { version: 2, bests: {}, history: [] };
       try {
-        const saved = JSON.parse(localStorage.getItem(CARE_RECORDS_KEY) || 'null');
+        const saved = provided === undefined ? JSON.parse(localStorage.getItem(CARE_RECORDS_KEY) || 'null') : provided;
         if (!saved || saved.version !== 2 || !Array.isArray(saved.history) || !saved.bests || typeof saved.bests !== 'object') return empty;
         const validClient = id => CLIENTS.some(c => c.id === id);
         const validNumber = n => Number.isFinite(n) && n >= 0 && n <= 1e9;
@@ -1632,6 +1934,7 @@
     }
 
     function recordCompletedCare() {
+      if (!ensureCareControl()) return null;
       normalizeRunStats();
       const existing = careRecords.history.find(record => record.runId === state.runId);
       if (existing) {
@@ -1666,13 +1969,6 @@
       state.bestScore = careRecords.bests[key].bestScore;
       careRecords.history.unshift(record);
       careRecords.history.length = Math.min(60, careRecords.history.length);
-      try {
-        const value = JSON.stringify(careRecords);
-        if (value !== lastSavedCareRecords) {
-          localStorage.setItem(CARE_RECORDS_KEY, value);
-          lastSavedCareRecords = value;
-        }
-      } catch (_) {}
       persistSaveData();
       return record;
     }
@@ -2138,6 +2434,7 @@
     }
 
     function generateLevel(overrideDensity = 0) {
+      if (!ensureCareControl()) return;
       state.runId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 11)}`;
       state.runDensity = overrideDensity;
       // Assistance belongs to the current treatment; a fresh run is classified anew.
@@ -2625,16 +2922,16 @@
     }
 
     function startPracticeGuide(force = false) {
-      let seen = false;
-      try { seen = Boolean(localStorage.getItem('pimple_clinic_guide_v1')); } catch (_) {}
+      const seen = Boolean(practiceGuideStatus);
       const ids = ['blackhead', 'whitehead', 'cyst'].map(type => state.pimples.find(p => p.type === type && p.state < P_STATE.HEALING)?.id).filter(id => id !== undefined);
       state.practiceGuide = { active: Boolean(ids.length && (force || !seen)), ids, step: 0 };
       updatePracticeGuide();
     }
 
     function finishPracticeGuide(skipped = false) {
+      if (!ensureCareControl()) return;
       if (state.practiceGuide) state.practiceGuide.active = false;
-      try { localStorage.setItem('pimple_clinic_guide_v1', skipped ? 'skipped' : 'completed'); } catch (_) {}
+      practiceGuideStatus = skipped ? 'skipped' : 'completed';
       document.getElementById('practice-guide').hidden = true;
       if (!skipped) setHint('引导已完成。接下来按自己的节奏，完成剩下的护理。', 'good');
       saveCurrentSession();
@@ -3489,6 +3786,7 @@
     }
 
     function startKeyboardCare(key) {
+      if (!ensureCareControl()) return;
       if (state.keyboardCare.active || state.pointer.active || state.paused || state.settled || state.iceFinishing || document.hidden) return;
       const target = currentKeyboardTarget();
       if (!target) return;
@@ -4106,6 +4404,7 @@
     }
 
     function enterIceBrushingStage() {
+      if (!ensureCareControl()) return;
       selectTool('ice_brush');
       state.iceBrushingMode = true;
       iceFinishBtnEl.classList.remove('show');
@@ -4116,6 +4415,7 @@
     }
 
     function triggerIceMaskFinale() {
+      if (!ensureCareControl()) return;
       if (state.iceFinishing || state.settled) return;
       state.iceFinishing = true;
       state.iceBrushingMode = false;
@@ -4143,6 +4443,7 @@
      * ============================================================================
      */
     function updateSimulation(dt) {
+      if (!ensureCareControl()) return;
       if (state.paused) return;
       updateKeyboardCare(dt);
 
@@ -6076,7 +6377,7 @@
           btn.textContent = `¥${u.cost} 升级`;
           btn.disabled = !canAfford;
           btn.addEventListener('click', () => {
-            if (state.coins >= u.cost && !state.upgrades[u.key]) {
+            if (ensureCareControl() && state.coins >= u.cost && !state.upgrades[u.key]) {
               state.coins -= u.cost;
               state.upgrades[u.key] = true;
               sound.playCleanChime();
@@ -6198,6 +6499,7 @@
     }
 
     function closeStudioModal(modal) {
+      if (modal.id === 'storage-gate-modal' || !careControl.owned) return;
       modal.classList.remove('open');
       if (modal === clinicModalEl && state.settled) resultModalEl.classList.add('open');
       state.paused = Boolean(document.querySelector('.modal-backdrop.open'));
@@ -6393,7 +6695,7 @@
       window.addEventListener('keydown', e => {
         const open = document.querySelector('.modal-backdrop.open');
         if (!open) return;
-        if (e.key === 'Escape' && open !== resultModalEl) {
+        if (e.key === 'Escape' && open !== resultModalEl && open.id !== 'storage-gate-modal') {
           e.preventDefault();
           closeStudioModal(open);
         }
@@ -6442,7 +6744,7 @@
 
       // Keep the last frame while a modal is open or the tab is hidden.
       // Active scenes redraw on the next frame after resume, resize or a tool/style change.
-      if (!document.hidden && !state.paused && !state.settled) {
+      if (!document.hidden && careControl.owned && !state.paused && !state.settled) {
         updateSimulation(dt);
         renderScene(false);
       }
@@ -6455,14 +6757,9 @@
       bindModalAccessibility();
       bindCanvasInteractions();
       bindKeyboardCare();
-      persistSaveData();
+      bindCareStorage();
       resizeCanvas();
-      if (!restoreCurrentSession()) {
-        generateLevel(0);
-        selectTool('steam');
-      }
-      sessionSaveEnabled = true;
-      saveCurrentSession();
+      careControlReady = startCareStorage();
 
       // Teaching and compact layouts can change the board without a window resize.
       if (typeof ResizeObserver === 'function') {

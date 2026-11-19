@@ -39,7 +39,7 @@ function finishFixture(game, score = 1000) {
   assert.equal(game.state('state.settled'), true);
 }
 
-function records(game) { return JSON.parse(game.w.localStorage.getItem('pimple_clinic_records_v2')); }
+function records(game) { return JSON.parse(game.w.localStorage.getItem('pimple_clinic_profile_v3')).records; }
 
 test('whitehead has one owner, one tray entry and one reward at each extraction/collection step', async t => {
   const g = await gameFor(t); newRun(g);

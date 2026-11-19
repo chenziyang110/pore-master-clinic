@@ -49,8 +49,8 @@ test('incomplete collection, residue and geometry snapshots are rejected before 
   const first=await createGame({seed:19});first.frame();first.evaluate('state.score=125;saveCurrentSession();');
   const saved=first.storage();first.close();
   for (const corrupt of [data=>{delete data.collectionLedger;},data=>{data.surfaceResidues=[null];},data=>{delete data.pimples.find(p=>p.type==='cyst').headOffsetX;}]) {
-    const broken=JSON.parse(saved.pimple_clinic_session_v2);corrupt(broken.data);
-    const g=await createGame({storage:{...saved,pimple_clinic_session_v2:JSON.stringify(broken)}});
+    const broken=JSON.parse(saved.pimple_clinic_profile_v3);corrupt(broken.session.data);
+    const g=await createGame({storage:{...saved,pimple_clinic_profile_v3:JSON.stringify(broken)}});
     try {g.frame();assert.equal(g.state('state.score'),0);assert.deepEqual(g.runtimeErrors,[]);} finally {g.close();}
   }
 });
