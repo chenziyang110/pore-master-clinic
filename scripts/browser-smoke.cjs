@@ -453,6 +453,47 @@ async function runViewport(cdp, origin, viewport, report) {
     if (!viewport.geometryOnly) await checkpoint('02-game-level-1', null);
     await checkBoardStability({ send, evaluate, viewport, label, report });
     if (viewport.geometryOnly) return;
+    if (viewport.name === 'desktop') {
+      // One real-browser audio gate: trusted mouse clicks must respect mute
+      // and may start the ordinary UI sound scope while the wardrobe is open.
+      const trustedClick = async selector => {
+        const point = await evaluate(`(() => {
+          const button=document.querySelector(${JSON.stringify(selector)});
+          if(!button||button.disabled||button.closest('[hidden], [inert]')||!button.getClientRects().length
+            ||getComputedStyle(button).visibility!=='visible')throw new Error('Audio control is unavailable');
+          const box=button.getBoundingClientRect(),point={x:(box.left+box.right)/2,y:(box.top+box.bottom)/2};
+          if(!button.contains(document.elementFromPoint(point.x,point.y)))throw new Error('Audio control is covered');
+          return point;
+        })()`);
+        await send('Input.dispatchMouseEvent',{type:'mouseMoved',...point,pointerType:'mouse',button:'none',buttons:0});
+        await send('Input.dispatchMouseEvent',{type:'mousePressed',...point,pointerType:'mouse',button:'left',buttons:1,clickCount:1});
+        await send('Input.dispatchMouseEvent',{type:'mouseReleased',...point,pointerType:'mouse',button:'left',buttons:0,clickCount:1});
+      };
+      const initialMuted=await evaluate('sound.muted');
+      if(!initialMuted)await trustedClick('#btn-sound');
+      await trustedClick('#btn-wardrobe');
+      const muted=await evaluate(`({muted:sound.muted,uiVoices:[...sound.voices].filter(voice=>voice.scope==='ui').length,
+        pressed:document.getElementById('btn-sound').getAttribute('aria-pressed'),
+        wardrobeOpen:document.getElementById('wardrobe-modal').classList.contains('open')})`);
+      assert.deepEqual(muted,{muted:true,uiVoices:0,pressed:'false',wardrobeOpen:true},'trusted wardrobe click stays silent when muted');
+      await trustedClick('#btn-close-wardrobe');
+      await trustedClick('#btn-sound');
+      await waitFor('[...sound.voices].every(voice=>voice.scope!=="ui")&&!sound.resumePending','sound toggle feedback to finish');
+      await trustedClick('#btn-wardrobe');
+      const enabled=await evaluate(`(async()=>{
+        if(sound.resumePending)await sound.resumePending;
+        return {muted:sound.muted,context:sound.ctx?.state,uiVoices:[...sound.voices].filter(voice=>voice.scope==='ui').length,
+          pressed:document.getElementById('btn-sound').getAttribute('aria-pressed'),
+          wardrobeOpen:document.getElementById('wardrobe-modal').classList.contains('open')};
+      })()`);
+      assert.equal(enabled.muted,false);
+      assert.equal(enabled.context,'running','a trusted activation resumes the real AudioContext');
+      assert.ok(enabled.uiVoices>0,'the actual wardrobe button starts UI sound voices');
+      assert.equal(enabled.pressed,'true');assert.equal(enabled.wardrobeOpen,true);
+      report.audio.push({viewport:label,initialMuted,muted,enabled});
+      await trustedClick('#btn-close-wardrobe');
+      if(initialMuted)await trustedClick('#btn-sound');
+    }
     await click('#btn-wardrobe');
     const unknownWardrobe = await evaluate(`(() => {
       const collection=document.getElementById('wardrobe-collection');
@@ -550,18 +591,19 @@ async function runViewport(cdp, origin, viewport, report) {
     await checkpoint('10-full-outfit', 'wardrobe-modal');
     await click('#btn-close-wardrobe');
     await click('#btn-start-adventure');
-    // Visual-only fixture: show both shared-opening stages at once and hold
-    // squeeze active. Mechanics and resume behavior use real-input Node tests.
+    // Visual-only fixture: show paired contents, a remaining whitehead and a
+    // four-blackhead bundle together. Mechanics and resume use real-input tests.
     const shared = await evaluate(`(() => {
       wardrobeProgress.level=6;generateLevel(0);state.paused=false;selectTool('squeeze');
       finishPracticeGuide(true);clearGiftPresentation();
-      state.pimples=state.pimples.filter(p=>p.type==='blackhead').slice(0,2);
-      const [together,sequential]=state.pimples;
+      state.pimples=state.pimples.filter(p=>p.type==='blackhead').slice(0,3);
+      const [together,sequential,bundle]=state.pimples;
+      if(!bundle)throw new Error('The shared-opening screenshot requires three blackhead care points');
       state.pimples.forEach((p,index)=>{
-        p.linkedPore=false;p.giftId=null;p.steamed=1;p.pierced=true;
-        p.sharedPore={mode:index?'sequential':'together',phase:'blackhead'};
+        p.linkedPore=false;p.giftId=null;p.steamed=1;p.pierced=true;p.blackheadCount=index===2?4:1;
+        p.sharedPore=index===2?null:{mode:index?'sequential':'together',phase:'blackhead'};
         p.state=P_STATE.EXTRUDING;p.extrudeProgress=.62;p.wormTotalLen=74;
-        p.x=state.width*(index ? 0.65 : 0.35);p.y=state.height*.6;
+        p.x=state.width*[.22,.50,.78][index];p.y=state.height*.6;
         p.nx=p.x/state.width;p.ny=p.y/state.height;
         p.pressure=.42;p.swellVisual=.42;p.bloodDropSize=0;
       });
@@ -569,22 +611,52 @@ async function runViewport(cdp, origin, viewport, report) {
       sequential.pusRemaining=.24;
       startMirrorPinch({x:together.x+38,y:together.y});
       state.pointer.squeezeForce=.42;state.pointer.rawForce=.42;
-      updateHUD();setHint('同一个洞口：黑白一起取出，或取出黑头后继续清理白头。');
+      updateHUD();setHint('同一个洞口：黑白一起取出、取走黑头后剩下白头，也可能挤出多根黑头。');
       window.sharedShotSimulation=updateSimulation;updateSimulation=()=>{};
       // Inspect the actual tool renderer before repainting the scene. With
       // active squeeze it must leave a transparent layer, without any fingers.
       ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,canvas.width,canvas.height);ctx.restore();
       renderRealisticHandsAndTools();
       const toolPixels=ctx.getImageData(0,0,canvas.width,canvas.height).data.some((value,index)=>index%4===3&&value>0);
+      // Observe the real bundle renderer; every strand must keep a pale body,
+      // a separate dark terminal cap and exactly the same source opening.
+      const strands=[],drawFilament=renderRealisticSebumFilament;
+      const probe=document.createElement('canvas');probe.width=probe.height=200;
+      const probeCtx=probe.getContext('2d',{willReadFrequently:true});
+      renderRealisticSebumFilament=(targetCtx,points,...args)=>{
+        const tip=points[points.length-1],middle=points[Math.floor(points.length*.5)];
+        probeCtx.setTransform(1,0,0,1,0,0);probeCtx.clearRect(0,0,200,200);probeCtx.translate(100,100);
+        drawFilament(probeCtx,points,...args);
+        const pixel=point=>Array.from(probeCtx.getImageData(Math.floor(point.x+100),Math.floor(point.y+100),1,1).data);
+        strands.push({root:{x:points[0].x,y:points[0].y},tip:{x:tip.x,y:tip.y},
+          darkTip:tip.hasDarkCap===true,bodyPixel:pixel(middle),tipPixel:pixel(tip),
+          inCanvas:points.every(point=>bundle.x+point.x>=0&&bundle.x+point.x<=state.width
+            &&bundle.y+point.y>=0&&bundle.y+point.y<=state.height)});
+        return drawFilament(targetCtx,points,...args);
+      };
+      try{renderPimple(bundle,state.styleMode==='creamy');}finally{renderRealisticSebumFilament=drawFilament;}
       renderScene(false);requestSceneFrame();
       return {active:state.pointer.active,tool:state.currentTool,mode:state.pointer.mode,toolPixels,
-        pores:state.pimples.map(p=>({id:p.id,type:p.type,state:p.state,shared:p.sharedPore,mouths:getPimpleMouths(p)}))};
+        bundleCount:bundle.blackheadCount,bundleStrands:strands,
+        pores:state.pimples.map(p=>({id:p.id,type:p.type,state:p.state,shared:p.sharedPore,
+          blackheadCount:p.blackheadCount,mouths:getPimpleMouths(p)}))};
     })()`);
     assert.equal(shared.active,true,`${label}: shared-opening screenshot holds squeeze active`);
     assert.equal(shared.tool,'squeeze');
     assert.equal(shared.toolPixels,false,`${label}: squeezing draws no finger overlay`);
-    assert.deepEqual(shared.pores.map(p=>[p.shared.mode,p.shared.phase,p.mouths.length]),
-      [['together','blackhead',1],['sequential','whitehead',1]],`${label}: both shared-opening stages use one opening`);
+    assert.deepEqual(shared.pores.map(p=>[p.shared?.mode||'bundle',p.shared?.phase||'blackhead',p.mouths.length]),
+      [['together','blackhead',1],['sequential','whitehead',1],['bundle','blackhead',1]],`${label}: all three contents use one opening each`);
+    assert.equal(shared.bundleCount,4,`${label}: the third opening contains four blackheads`);
+    assert.equal(shared.bundleStrands.length,4,`${label}: all four blackheads reach the actual filament renderer`);
+    assert.ok(shared.bundleStrands.every(strand=>strand.darkTip&&strand.inCanvas
+      &&strand.bodyPixel.slice(0,3).reduce((sum,value)=>sum+value,0)/3>170
+      &&strand.tipPixel.slice(0,3).reduce((sum,value)=>sum+value,0)/3<110
+      &&strand.bodyPixel[3]>180&&strand.tipPixel[3]>180),
+      `${label}: four dark tips and pale bodies remain inside the mobile canvas`);
+    assert.ok(shared.bundleStrands.every(strand=>JSON.stringify(strand.root)===JSON.stringify(shared.bundleStrands[0].root)),
+      `${label}: the four strands grow from one opening`);
+    assert.equal(new Set(shared.bundleStrands.map(strand=>JSON.stringify(strand.tip))).size,4,
+      `${label}: the four tips stay visually separated`);
     report.sharedPores.push({viewport:label,...shared});
     await checkpoint('11-shared-openings-squeeze', null);
     await evaluate('updateSimulation=window.sharedShotSimulation;delete window.sharedShotSimulation;releasePointer();');
@@ -596,7 +668,7 @@ async function runViewport(cdp, origin, viewport, report) {
 
 async function main() {
   await fsp.mkdir(OUTPUT, { recursive: true });
-  const report = { viewports: VIEWPORTS, screens: [], fonts: [], geometry: [], giftFlights: [], sharedPores: [], failures: [] };
+  const report = { viewports: VIEWPORTS, screens: [], fonts: [], geometry: [], giftFlights: [], sharedPores: [], audio: [], failures: [] };
   let server, child, cdp, profileDirectory;
   try {
     const executable = [process.env.CHROME_BIN, '/usr/bin/google-chrome', '/usr/bin/chromium'].find(file => file && fs.existsSync(file));

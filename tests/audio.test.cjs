@@ -20,6 +20,7 @@ function installAudio(w, {rejectResume = false, stallFirstResume = false, asyncR
       if (kind === 'gain') this.gain = new Param(1);
       if (kind === 'oscillator' || kind === 'filter') this.frequency = new Param(440);
       if (kind === 'filter') this.Q = new Param(1);
+      if (kind === 'panner') this.pan = new Param();
       if (kind === 'compressor') for (const field of ['threshold','knee','ratio','attack','release']) this[field] = new Param();
       if (kind === 'buffer') this.buffer = null;
       ctx.nodes.push(this);
@@ -41,6 +42,7 @@ function installAudio(w, {rejectResume = false, stallFirstResume = false, asyncR
     createBufferSource() { return new Node(this, 'buffer'); }
     createBiquadFilter() { return new Node(this, 'filter'); }
     createDynamicsCompressor() { return new Node(this, 'compressor'); }
+    createStereoPanner() { return new Node(this, 'panner'); }
     createBuffer(channels, length) { return {getChannelData:() => new Float32Array(length)}; }
     resume() {
       this.resumes++;
@@ -280,3 +282,168 @@ test('pending one-shots are bounded, expire quickly, and do not survive a failed
   assert.equal(g.state('sound.voices.size'), 1, 'only the fresh needle feedback follows the retry');
   assert.deepEqual(g.runtimeErrors, []);
 });
+
+test('home and wardrobe rendering or synthetic clicks never unlock audio', async t => {
+  let contexts;
+  const g = await createGame({seed:39, stayHome:true, setupWindow:w => { contexts = installAudio(w); }});
+  t.after(g.close);
+  g.click('btn-home-wardrobe');
+  g.evaluate(`wardrobeProgress.unlocked=['dress_sky','mask_pearl'];renderWardrobe();`);
+  g.d.querySelector('[data-equip="dress_sky"]').click();
+  g.d.querySelector('[data-equip="mask_pearl"]').click();
+  g.click('btn-close-wardrobe');
+  g.click('btn-start-adventure');
+  g.evaluate('sound.playGiftFound();renderWardrobe();');
+  assert.equal(contexts.length,0,'normal initialization and programmatic events stay silent');
+  assert.equal(g.state('sound.ctx'),null);
+  assert.deepEqual(g.runtimeErrors,[]);
+});
+
+test('a trusted wardrobe activation sounds while paused without unlocking care effects', async t => {
+  let contexts;
+  const g = await createGame({seed:41, stayHome:true, setupWindow:w => { contexts = installAudio(w); }});
+  t.after(g.close);
+  // jsdom cannot manufacture trusted DOM events. Pass an explicit trusted
+  // activation fixture to the same handlers; browser QA uses actual clicks.
+  g.evaluate(`window.audioGesture={isTrusted:true,type:'click'};openWardrobe(window.audioGesture);`);
+  assert.equal(contexts.length,1);
+  assert.equal(g.state('state.paused'),true);
+  assert.equal(g.state('sound.canPlay()'),false);
+  assert.equal(g.state('sound.blocked'),true,'UI activation does not clear the care block');
+  assert.ok(g.state('sound.voices.size')>0);
+  assert.equal(g.state('[...sound.voices].every(voice=>voice.scope==="ui")'),true);
+  contexts[0].advance(1);
+  g.evaluate('sound.playPop();sound.playGiftFound();sound.setTension(1);sound.playSteam();');
+  assert.equal(g.state('sound.voices.size'),0,'paused care and delayed gift effects cannot ride the UI scope');
+  const slots = ['dress','skin','hair','shoes'];
+  g.evaluate(`wardrobeProgress.unlocked=['dress_sky','mask_pearl','bow_rose','shoes_rose'];renderWardrobe();`);
+  for (const [index,id] of ['dress_sky','mask_pearl','bow_rose','shoes_rose'].entries()) {
+    g.evaluate(`equipWardrobeItem(${JSON.stringify(id)},window.audioGesture);`);
+    assert.equal(g.state(`wardrobeProgress.equipped.${slots[index]}`),id);
+    assert.equal(g.state('[...sound.voices].every(voice=>voice.scope==="ui")'),true);
+    assert.equal(g.state('sound.voices.size'),2,'each outfit action uses a small layered cue');
+    contexts[0].advance(1);
+  }
+  await waitForAudioIdle();
+  assert.equal(contexts[0].state,'suspended','UI-only activity also returns to an idle graph');
+  assert.deepEqual(g.runtimeErrors,[]);
+});
+
+test('wardrobe activation replaces a pending care resume without resurrecting its sound', async t => {
+  let contexts;
+  const g = await createGame({seed:43, setupWindow:w => { contexts = installAudio(w,{manualResume:true}); }});
+  t.after(g.close);
+  g.evaluate('sound.unlock();sound.playCleanChime(true);');
+  assert.equal(g.state('sound.pendingEffects.length'),1);
+  g.evaluate(`openWardrobe({isTrusted:true,type:'click'});`);
+  assert.equal(contexts[0].pendingResumes.length,2);
+  assert.equal(g.state('sound.pendingEffects.length'),1);
+  assert.equal(g.state('sound.pendingEffects[0].scope'),'ui');
+  contexts[0].finishResume(); await tick();
+  assert.equal(g.state('sound.voices.size'),0,'the stale care resume does not play or consume the UI cue');
+  contexts[0].finishResume(); await tick();
+  assert.equal(g.state('sound.voices.size'),2);
+  assert.equal(g.state('[...sound.voices].every(voice=>voice.scope==="ui")'),true);
+  assert.equal(g.state('sound.pendingEffects.length'),0);
+  assert.deepEqual(g.runtimeErrors,[]);
+});
+
+test('UI feedback awaiting resume is cancelled by mute, blur, background, help and handoff', async t => {
+  const transitions = {
+    muted:g=>g.click('btn-sound'),
+    blurred:g=>g.w.dispatchEvent(new g.w.Event('blur')),
+    hidden:g=>{Object.defineProperty(g.d,'hidden',{configurable:true,value:true});g.d.dispatchEvent(new g.w.Event('visibilitychange'));},
+    help:g=>{g.click('btn-close-wardrobe');g.click('btn-help');},
+    handoff:g=>g.evaluate('pauseForOtherPage();')
+  };
+  for(const [name,transition] of Object.entries(transitions))await t.test(name,async t=>{
+    let contexts;
+    const g=await createGame({seed:47,setupWindow:w=>{contexts=installAudio(w,{manualResume:true});}});
+    t.after(g.close);
+    g.evaluate(`openWardrobe({isTrusted:true,type:'click'});`);
+    assert.equal(g.state('sound.pendingEffects[0].scope'),'ui');
+    transition(g);
+    contexts[0].finishResume();await tick();
+    assert.equal(g.state('sound.pendingEffects.length'),0);
+    assert.equal(g.state('sound.voices.size'),0);
+    assert.equal(contexts[0].state,'suspended');
+    assert.deepEqual(g.runtimeErrors,[]);
+  });
+});
+
+test('steam sustains one shared noise voice and fades on release or a missing input refresh', async t => {
+  let contexts;
+  const g=await createGame({seed:51,setupWindow:w=>{contexts=installAudio(w);}});
+  t.after(g.close);
+  g.evaluate('sound.unlock();sound.playSteam(.1);');
+  const audio=contexts[0];
+  const source=audio.nodes.find(node=>node.kind==='buffer'&&node.started!==undefined);
+  assert.ok(source.loop);
+  for(let i=0;i<30;i++){
+    audio.advance(.05);
+    g.evaluate('sound.playSteam(.9);');
+    assert.equal(g.state('sound.voices.size'),1);
+  }
+  assert.equal(audio.nodes.filter(node=>node.kind==='buffer'&&node.started!==undefined).length,1,
+    'holding steam reuses the source and shared noise buffer');
+  const panner=audio.nodes.find(node=>node.kind==='panner');
+  assert.ok(Math.abs(panner.pan.value)<=.2,'the spatial image stays near the center');
+  g.evaluate('releasePointer();');
+  assert.ok(source.end<=audio.currentTime+.041);
+  audio.advance(.05);
+  assert.equal(g.state('sound.voices.size'),0);
+  g.evaluate('sound.playSteam(.5);');
+  audio.advance(.34);
+  assert.equal(g.state('sound.voices.size'),0,'a lost release cannot leave a looping hiss running');
+  await waitForAudioIdle();
+  assert.equal(audio.state,'suspended');
+  assert.deepEqual(g.runtimeErrors,[]);
+});
+
+test('a gift cue follows its first real discovery and stays bounded with dense care feedback', async t => {
+  let contexts;
+  const g=await createGame({seed:53,setupWindow:w=>{contexts=installAudio(w);}});
+  t.after(g.close);
+  g.evaluate(`wardrobeProgress.level=3;generateLevel(0);state.paused=false;
+    state.pimples[0].giftId='necklace_star';state.pimples[0].state=P_STATE.OOZING;
+    sound.unlock();revealWardrobeFind(state.pimples[0]);`);
+  assert.equal(g.state('sound.voices.size'),4);
+  assert.equal(g.state('[...sound.voices].every(voice=>voice.scope==="care")'),true);
+  g.evaluate('revealWardrobeFind(state.pimples[0]);');
+  assert.equal(g.state('sound.voices.size'),4,'the same discovery does not chime twice');
+  g.evaluate('for(let i=0;i<25;i++){sound.playPop("core_plug");sound.playGiftFound();}');
+  assert.equal(g.state('sound.voices.size'),12);
+  const audio=contexts[0];
+  assert.equal(audio.nodes.filter(node=>node.connections.includes(audio.destination)).length,1);
+  assert.equal(audio.nodes.find(node=>node.connections.includes(audio.destination)).kind,'compressor');
+  for(const node of audio.nodes.filter(node=>node.kind==='gain')) {
+    const attacks=node.gain.events.filter(event=>event[0]==='linear');
+    assert.ok(attacks.every(event=>event[1]<=.15),'effect peaks use the quieter mix before the shared limiter');
+  }
+  audio.advance(2);
+  assert.equal(g.state('sound.voices.size'),0);
+  assert.ok(audio.nodes.filter(node=>node.kind==='panner').every(node=>node.disconnected));
+  assert.deepEqual(g.runtimeErrors,[]);
+});
+
+test('new UI audio keeps its bounded pending lifetime and works without stereo-panner support', async t => {
+  let contexts,clock=0;
+  const g=await createGame({seed:59,stayHome:true,setupWindow:w=>{
+    contexts=installAudio(w,{manualResume:true});
+    delete w.AudioContext.prototype.createStereoPanner;
+    Object.defineProperty(w.performance,'now',{configurable:true,value:()=>clock});
+  }});
+  t.after(g.close);
+  g.evaluate(`openWardrobe({isTrusted:true,type:'click'});`);
+  clock=251;
+  contexts[0].finishResume();await tick();
+  assert.equal(g.state('sound.voices.size'),0,'an old UI click is not replayed when resume takes too long');
+  contexts[0].suspend();
+  g.evaluate(`sound.playUI('outfit',{isTrusted:true,type:'click'},{slot:'hair'});`);
+  clock+=20;
+  contexts[0].finishResume();await tick();
+  assert.equal(g.state('sound.voices.size'),2);
+  assert.equal(contexts[0].nodes.filter(node=>node.kind==='panner').length,0);
+  assert.deepEqual(g.runtimeErrors,[]);
+});
+

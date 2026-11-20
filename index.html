@@ -1131,6 +1131,7 @@
         this.muted = false;
         try { this.muted = localStorage.getItem(AUDIO_PREFERENCE_KEY) === 'off'; } catch (_) {}
         this.blocked = false;
+        this.uiBlocked = true;
         this.master = null;
         this.masterAudible = false;
         this.voices = new Set();
@@ -1139,6 +1140,7 @@
         this.tensionOsc = null;
         this.tensionGain = null;
         this.noiseBuffer = null;
+        this.steamVoice = null;
         this.idleTimer = null;
         this.resumePending = null;
         this.pendingEffects = [];
@@ -1155,10 +1157,14 @@
         document.addEventListener('keydown', event => { if (!event.repeat) this.unlock(); }, true);
       }
 
-      unlock(userGesture = true) {
-        if (this.muted || document.hidden || (this.canPlay && !this.canPlay())) return false;
-        if (userGesture) this.blocked = false;
-        if (this.blocked || (!this.ctx && !userGesture)) return false;
+      unlock(userGesture = true, scope = 'care') {
+        const gate = scope === 'ui' ? this.canPlayUI : this.canPlay;
+        if (this.muted || document.hidden || (gate && !gate())) return false;
+        if (userGesture) {
+          if (scope === 'ui') this.uiBlocked = false;
+          else this.blocked = false;
+        }
+        if ((scope === 'ui' ? this.uiBlocked : this.blocked) || (!this.ctx && !userGesture)) return false;
         clearTimeout(this.idleTimer);
         this.idleTimer = null;
         if (!this.ctx || this.ctx.state === 'closed') {
@@ -1167,6 +1173,7 @@
           try {
             for (const voice of [...this.voices]) this._releaseVoice(voice);
             this.tensionLevel = 0;
+            this.steamVoice = null;
             this.resumePending = null;
             this._discardPendingEffects();
             this.ctx = new AudioCtx();
@@ -1203,12 +1210,17 @@
           try {
             const pending = Promise.resolve(context.resume()).then(() => {
               if (context !== this.ctx) return;
-              if (!this._mayPlay()) {
+              // A stale care resume must never suspend a newer wardrobe sound,
+              // nor wake the processor after a page has become silent.
+              if (generation !== this.effectGeneration) {
+                if (!this._mayPlay('care') && !this._mayPlay('ui')) this._suspend();
+                return;
+              }
+              if (!this._mayPlay(scope)) {
                 this._discardPendingEffects();
                 this._suspend();
                 return;
               }
-              if (generation !== this.effectGeneration) return;
               if (context.state === 'running') this._flushPendingEffects(generation);
               else this._discardPendingEffects();
             }).catch(() => {
@@ -1224,8 +1236,10 @@
         return this.ctx.state === 'running';
       }
 
-      _mayPlay() {
-        return !this.muted && !this.blocked && !document.hidden && (!this.canPlay || this.canPlay());
+      _mayPlay(scope = 'care') {
+        const gate = scope === 'ui' ? this.canPlayUI : this.canPlay;
+        const blocked = scope === 'ui' ? this.uiBlocked : this.blocked;
+        return !this.muted && !blocked && !document.hidden && (!gate || gate());
       }
 
       _discardPendingEffects() {
@@ -1233,23 +1247,25 @@
         this.pendingEffects = [];
       }
 
-      _playOnce(play, key = '') {
-        if (this.unlock(false)) { play(); return; }
-        if (!this.ctx || !this.resumePending || !this._mayPlay()) return;
+      _playOnce(play, key = '', scope = 'care', userGesture = false) {
+        if (this.unlock(userGesture, scope)) { play(); return true; }
+        if (!this.ctx || !this.resumePending || !this._mayPlay(scope)) return false;
         // Keep brief feedback through a normal async resume, but never accumulate
         // continuous tool noise or replay a backlog after an interruption.
         const now = performance.now();
         this.pendingEffects = this.pendingEffects.filter(effect => effect.generation === this.effectGeneration && now - effect.at <= this.pendingEffectMaxAge);
-        if (key && this.pendingEffects.some(effect => effect.key === key)) return;
+        if (key && this.pendingEffects.some(effect => effect.key === key && effect.scope === scope)) return false;
         if (this.pendingEffects.length >= this.maxPendingEffects) this.pendingEffects.shift();
-        this.pendingEffects.push({play, key, at:now, generation:this.effectGeneration});
+        this.pendingEffects.push({play, key, scope, at:now, generation:this.effectGeneration});
+        return true;
       }
 
       _flushPendingEffects(generation) {
         const effects = this.pendingEffects;
         this.pendingEffects = [];
         for (const effect of effects) {
-          if (generation !== this.effectGeneration || !this._mayPlay()) break;
+          if (generation !== this.effectGeneration) break;
+          if (!this._mayPlay(effect.scope)) continue;
           if (effect.generation === generation && performance.now() - effect.at <= this.pendingEffectMaxAge) effect.play();
         }
       }
@@ -1264,6 +1280,7 @@
 
       pause() {
         this.blocked = true;
+        this.uiBlocked = true;
         this.tensionLevel = 0;
         this._discardPendingEffects();
         this.resumePending = null;
@@ -1277,6 +1294,7 @@
         this.master.gain.setTargetAtTime(0.0001, now, 0.005);
         this.masterAudible = false;
         for (const voice of [...this.voices]) {
+          voice.end = now + 0.02;
           try { voice.source.stop(now + 0.02); } catch (_) {}
         }
         this.idleTimer = setTimeout(() => {
@@ -1292,7 +1310,7 @@
       }
 
       _idleSoon() {
-        if (!this.ctx || this.ctx.state !== 'running' || this.blocked || this.voices.size || this.tensionLevel > 0.04 || this.idleTimer !== null) return;
+        if (!this.ctx || this.ctx.state !== 'running' || (this.blocked && this.uiBlocked) || this.voices.size || this.tensionLevel > 0.04 || this.idleTimer !== null) return;
         this.idleTimer = setTimeout(() => {
           this.idleTimer = null;
           if (!this.voices.size && this.tensionLevel <= 0.04) this._suspend();
@@ -1301,12 +1319,13 @@
 
       _releaseVoice(voice) {
         if (!this.voices.delete(voice)) return;
+        if (voice === this.steamVoice) this.steamVoice = null;
         voice.source.onended = null;
         for (const node of voice.nodes) { try { node.disconnect(); } catch (_) {} }
         this._idleSoon();
       }
 
-      _startVoice(source, gain, filter, start, duration, offset = 0) {
+      _startVoice(source, gain, filter, start, duration, offset = 0, pan = 0, scope = 'care') {
         // Reap already ended voices even if the main thread received onended late.
         for (const voice of [...this.voices]) {
           if (voice.end <= this.ctx.currentTime) this._releaseVoice(voice);
@@ -1317,13 +1336,19 @@
         const nodes = filter ? [source, filter, gain] : [source, gain];
         source.connect(filter || gain);
         if (filter) filter.connect(gain);
-        gain.connect(this.master);
-        const voice = {source, nodes, end:start + duration};
+        let panner = null;
+        if (typeof this.ctx.createStereoPanner === 'function') {
+          panner = this.ctx.createStereoPanner();
+          panner.pan.value = Math.max(-.2, Math.min(.2, pan));
+          gain.connect(panner); panner.connect(this.master); nodes.push(panner);
+        } else gain.connect(this.master);
+        const voice = {source, gain, filter, panner, scope, nodes, end:start + duration};
         this.voices.add(voice);
         source.onended = () => this._releaseVoice(voice);
-        if ('buffer' in source) source.start(start, offset, duration);
+        if ('buffer' in source && source.loop) { source.start(start, offset); source.stop(start + duration); }
+        else if ('buffer' in source) source.start(start, offset, duration);
         else { source.start(start); source.stop(start + duration); }
-        return true;
+        return voice;
       }
 
       _envelope(gain, start, peak, duration, attack = 0.004) {
@@ -1369,12 +1394,12 @@
         this.tensionLevel = clamped;
         const now = this.ctx.currentTime;
         this.tensionOsc.frequency.setTargetAtTime(55 + clamped * 82, now, 0.04);
-        this.tensionGain.gain.setTargetAtTime(clamped > 0.04 ? 0.012 + clamped * 0.072 : 0.0001, now, 0.04);
+        this.tensionGain.gain.setTargetAtTime(clamped > 0.04 ? 0.007 + clamped * 0.038 : 0.0001, now, 0.04);
         if (!clamped) this._idleSoon();
       }
 
-      _noise(kind, interval, frequency, peak, duration, attack, q) {
-        if (!this.unlock(false) || !this.noiseBuffer) return;
+      _noise(kind, interval, frequency, peak, duration, attack, q, pan = 0, scope = 'care') {
+        if (!this.unlock(false, scope) || !this.noiseBuffer) return;
         const now = this.ctx.currentTime;
         if (now - this[kind] < interval) return;
         this[kind] = now;
@@ -1384,23 +1409,62 @@
         filter.frequency.setValueAtTime(frequency, now);
         filter.Q.value = q;
         this._envelope(gain, now, peak, duration - 0.01, attack);
-        this._startVoice(src, gain, filter, now, duration, Math.random() * 0.5);
+        return this._startVoice(src, gain, filter, now, duration, Math.random() * 0.5, pan, scope);
       }
 
-      playSteam() { this._noise('lastSteamTime', 0.09, 2400 + Math.random() * 400, 0.085, 0.13, 0.03, 0.9); }
-      playViscousOoze() { this._noise('lastOozeTickTime', 0.14, 680 + Math.random() * 260, 0.11, 0.12, 0.03, 3.2); }
-      playWipe() { this._noise('lastWipeSoundTime', 0.085, 1650 + Math.random() * 350, 0.13, 0.09, 0.02, 1.6); }
+      playSteam(position = .5) {
+        if (!this.unlock(false) || !this.noiseBuffer) return;
+        const now = this.ctx.currentTime;
+        const pan = Math.max(-.16, Math.min(.16, (Number(position) - .5) * .32 || 0));
+        let voice = this.steamVoice;
+        if (!voice || !this.voices.has(voice) || voice.end <= now) {
+          const source = this.ctx.createBufferSource(), filter = this.ctx.createBiquadFilter(), gain = this.ctx.createGain();
+          source.buffer = this.noiseBuffer; source.loop = true;
+          filter.type = 'bandpass'; filter.frequency.value = 1900; filter.Q.value = .65;
+          gain.gain.setValueAtTime(.0001, now);
+          gain.gain.linearRampToValueAtTime(.072, now + .06);
+          voice = this._startVoice(source, gain, filter, now, .32, .12, pan);
+          if (!voice) return;
+          this.steamVoice = voice;
+        } else {
+          voice.gain.gain.cancelScheduledValues(now);
+          voice.gain.gain.setTargetAtTime(.072, now, .035);
+          voice.panner?.pan.setTargetAtTime(pan, now, .08);
+        }
+        // Each input refresh extends one loop rather than stacking noise grains.
+        // A missed release still expires quickly if input stops arriving.
+        voice.gain.gain.setTargetAtTime(.0001, now + .23, .025);
+        voice.end = now + .32;
+        voice.source.stop(voice.end);
+      }
 
-      _tone(frequencies, peak, duration, type = 'sine', delay = 0, filterFrequency = 0) {
-        if (!this.unlock(false)) return;
+      stopSteam() {
+        const voice = this.steamVoice;
+        if (!voice || !this.ctx || !this.voices.has(voice)) return;
+        const now = this.ctx.currentTime;
+        voice.gain.gain.cancelScheduledValues(now);
+        voice.gain.gain.setTargetAtTime(.0001, now, .009);
+        voice.end = now + .04;
+        try { voice.source.stop(voice.end); } catch (_) {}
+        this.steamVoice = null;
+      }
+
+      playViscousOoze() {
+        const voice = this._noise('lastOozeTickTime', .16, 490 + Math.random() * 170, .065, .16, .035, 2.2);
+        if (voice) this._tone([[190, 0], [270, .045], [125, .105]], .026, .13, 'sine', 0, 800);
+      }
+      playWipe() { this._noise('lastWipeSoundTime', .1, 1450 + Math.random() * 220, .085, .14, .035, 1.1); }
+
+      _tone(frequencies, peak, duration, type = 'sine', delay = 0, filterFrequency = 0, pan = 0, scope = 'care') {
+        if (!this.unlock(false, scope)) return;
         const now = this.ctx.currentTime + delay, osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
         osc.type = type;
         osc.frequency.setValueAtTime(frequencies[0][0], now);
         for (const [freq, time] of frequencies.slice(1)) osc.frequency.exponentialRampToValueAtTime(freq, now + time);
-        this._envelope(gain, now, peak, duration - 0.005);
+        this._envelope(gain, now, peak, duration - 0.005, Math.min(.012, duration / 5));
         let filter = null;
         if (filterFrequency) { filter = this.ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = filterFrequency; }
-        this._startVoice(osc, gain, filter, now, duration);
+        this._startVoice(osc, gain, filter, now, duration, 0, pan, scope);
       }
 
       playIceGelSpread() {
@@ -1411,26 +1475,69 @@
         this._tone([[920 + Math.random() * 450, 0], [1480, 0.07]], 0.045, 0.085);
       }
 
-      playTweezerClamp() { this._playOnce(() => this._tone([[2600, 0], [1400, 0.025]], 0.09, 0.035)); }
-      playPierce() { this._playOnce(() => this._tone([[2100, 0], [680, 0.038]], 0.12, 0.048)); }
+      playTweezerClamp() { this._playOnce(() => this._tone([[1850, 0], [1100, .032]], .055, .052, 'sine', 0, 3200)); }
+      playPierce() { this._playOnce(() => this._tone([[1650, 0], [520, .045]], .065, .06, 'sine', 0, 2800)); }
       playTrayClink() {
-        this._playOnce(() => [2380, 3560].forEach((freq, index) => this._tone([[freq, 0]], 0.055, 0.15, 'sine', index * 0.015)));
+        this._playOnce(() => [1760, 2640].forEach((freq, index) => this._tone([[freq, 0]], .038, .19, 'sine', index * .018, 4000, index ? .08 : -.08)));
       }
 
       playPop(kind = 'whitehead') {
         this._playOnce(() => {
-          if (kind === 'whitehead') this._tone([[980, 0], [175, 0.062]], 0.24, 0.08);
+          if (kind === 'whitehead') this._tone([[720, 0], [170, .075]], .135, .10, 'sine', 0, 1900);
           else if (kind === 'blackhead' || kind === 'tweeze_pluck') {
-            this._tone([[kind === 'tweeze_pluck' ? 310 : 240, 0], [kind === 'tweeze_pluck' ? 680 : 480, 0.042], [185, 0.095]], 0.22, 0.11);
-          } else if (kind === 'core_plug') this._tone([[520, 0], [95, 0.125]], 0.28, 0.14, 'triangle');
-          else this._tone([[380, 0], [110, 0.10]], 0.24, 0.12, 'triangle');
-          if (kind !== 'blackhead' && kind !== 'tweeze_pluck') this._noise('lastPopNoiseTime', 0, kind === 'whitehead' ? 1600 : 980, 0.16, 0.08, 0.004, 2.6);
+            this._tone([[kind === 'tweeze_pluck' ? 270 : 220, 0], [kind === 'tweeze_pluck' ? 580 : 430, .042], [165, .095]], .13, .12, 'sine', 0, 1900);
+          } else if (kind === 'core_plug') this._tone([[430, 0], [100, .125]], .14, .15, 'triangle', 0, 850);
+          else this._tone([[330, 0], [115, .10]], .13, .14, 'triangle', 0, 800);
+          if (kind !== 'blackhead' && kind !== 'tweeze_pluck') this._noise('lastPopNoiseTime', 0, kind === 'whitehead' ? 1250 : 820, .07, .11, .018, 2);
         });
       }
 
       playCleanChime(isIceFinale = false) {
         const notes = isIceFinale ? [523.25, 659.25, 783.99, 1046.5, 1318.5] : [587.33, 783.99, 1046.5];
-        this._playOnce(() => notes.forEach((freq, index) => this._tone([[freq, 0]], 0.075, 0.30, 'sine', index * 0.06)));
+        this._playOnce(() => notes.forEach((freq, index) => this._tone([[freq, 0]], .052, .32, 'sine', index * .065, 3200, (index - 2) * .035)));
+      }
+
+      playGiftFound(position = .5) {
+        const pan = Math.max(-.15, Math.min(.15, (Number(position) - .5) * .3 || 0));
+        this._playOnce(() => [659.25, 880, 1108.73, 1567.98].forEach((freq, index) =>
+          this._tone([[freq, 0]], index === 3 ? .019 : .042, .42, 'sine', index * .075, 4200, pan)), 'gift');
+      }
+
+      playUI(kind, event, item = null) {
+        // Only the trusted activation passed by a visible UI control can open
+        // this scope. Loading, programmatic .click(), rendering and timers cannot.
+        if (!event || event.isTrusted !== true || !['click', 'keydown'].includes(event.type) || event.repeat
+          || this.muted || document.hidden || (this.canPlayUI && !this.canPlayUI())) return false;
+        this.pause();
+        return this._playOnce(() => {
+          const tone = (notes, peak, duration, delay = 0, pan = 0) => this._tone(notes, peak, duration, 'sine', delay, 3200, pan, 'ui');
+          const brush = (frequency, peak = .055, duration = .18) =>
+            this._noise('lastUIBrushTime', 0, frequency, peak, duration, .035, .9, -.06, 'ui');
+          if (kind === 'outfit') {
+            if (item?.apply) {
+              brush(item.slot === 'lips' ? 920 : 1550, .05, .20);
+              tone([[420, 0], [620, .12]], .025, .18, .035, .05);
+            } else if (item && ['dress', 'hairstyle'].includes(item.slot)) {
+              brush(1180, .06, .22);
+              tone([[235, 0], [180, .10]], .028, .13, .055);
+            } else if (item?.slot === 'shoes') {
+              tone([[340, 0], [155, .06]], .048, .09);
+              tone([[390, 0], [175, .06]], .033, .09, .07, .08);
+            } else {
+              tone([[1480, 0], [940, .055]], .04, .09, 0, -.06);
+              tone([[1975, 0]], .018, .17, .045, .06);
+            }
+          } else if (kind === 'enter') {
+            tone([[392, 0]], .04, .20, 0, -.06);
+            tone([[523.25, 0]], .033, .23, .07, .06);
+          } else if (kind === 'home' || kind === 'close') {
+            brush(1000, .035, .14);
+            tone([[392, 0], [330, .07]], .025, .13, .025);
+          } else {
+            brush(1350, .035, .13);
+            tone([[660, 0], [880, .065]], .025, .14, .025, .05);
+          }
+        }, 'ui:' + kind, 'ui', true);
       }
 
       playWarnHurt() {
@@ -1438,7 +1545,7 @@
           const now = this.ctx.currentTime;
           if (now - this.lastWarnSoundTime < 0.34) return;
           this.lastWarnSoundTime = now;
-          this._tone([[118, 0], [64, 0.12]], 0.10, 0.14, 'triangle', 0, 220);
+          this._tone([[118, 0], [78, .12]], .055, .16, 'triangle', 0, 220);
         }, 'warning');
       }
     }
@@ -1458,6 +1565,11 @@
      */
     const sound = new SoundEngine();
     sound.canPlay = () => careControl.owned && !state.paused && !state.settled && !document.hidden;
+    sound.canPlayUI = () => {
+      if (!careControl.owned || document.hidden) return false;
+      const modal = document.querySelector('.modal-backdrop.open');
+      return !modal || ['home-modal', 'wardrobe-modal', 'result-modal'].includes(modal.id);
+    };
 
     const canvas = document.getElementById('skin-canvas');
     const defaultCanvasLabel = canvas.getAttribute('aria-label');
@@ -1844,6 +1956,7 @@ function wardrobeItemIllustration(itemId) {
       if (!item || !ensureCareControl()) return false;
       state.discoveredGifts.push(id);
       animateWardrobeFind(p, item);
+      sound.playGiftFound(p.x / state.width);
       const notice = document.getElementById('gift-discovery');
       notice.innerHTML = wardrobeItemIllustration(id) + '<div><strong>你的运气超棒！</strong><p>从痘痘里发现了' + item.name + '。<br>完成这一关，带回去给她试试看。</p></div>';
       notice.hidden = !motionPreference?.matches;
@@ -1875,7 +1988,7 @@ function wardrobeItemIllustration(itemId) {
       renderWardrobe();
     }
 
-    function equipWardrobeItem(id) {
+    function equipWardrobeItem(id, event) {
       if (!ensureCareControl()) return false;
       const item = WARDROBE_ITEMS.find(item => item.id === id);
       const resetSlot = typeof id === 'string' && id.startsWith('reset:') ? id.slice(6) : '';
@@ -1893,6 +2006,7 @@ function wardrobeItemIllustration(itemId) {
       if (focusedItem) document.querySelector('#wardrobe-modal [data-equip="' + focusedItem + '"]')?.focus({ preventScroll: true });
       document.getElementById('wardrobe-status').textContent = item?.id === 'mask_pearl' ? '敷好啦，她的肤色变得白皙透亮了。'
         : item ? (item.apply ? '用好啦，' : '换好啦，') + item.name + '很适合她。' : '已经恢复啦。';
+      sound.playUI('outfit', event, item);
       return true;
     }
 
@@ -1926,18 +2040,20 @@ function wardrobeItemIllustration(itemId) {
       }
     }
 
-    function showAdventureHome() {
+    function showAdventureHome(event) {
       if (!careControl.owned) return;
       releasePointer();
       document.querySelectorAll('.modal-backdrop.open').forEach(modal => modal.classList.remove('open'));
       state.paused = true;
       renderWardrobe();
       document.getElementById('home-modal').classList.add('open');
+      sound.pause();
+      sound.playUI('home', event);
       saveCurrentSession(true);
       requestSceneFrame();
     }
 
-    function startAdventure() {
+    function startAdventure(event) {
       if (!ensureCareControl()) return;
       adventureEntered = true;
       if (state.settled) {
@@ -1949,11 +2065,12 @@ function wardrobeItemIllustration(itemId) {
       state.paused = Boolean(document.querySelector('.modal-backdrop.open'));
       resizeCanvasIfChanged();
       renderScene(false);
+      sound.playUI('enter', event);
       saveCurrentSession(true);
       requestSceneFrame();
     }
 
-    function openWardrobe() {
+    function openWardrobe(event) {
       if (!ensureCareControl()) return;
       wardrobeReturnModal = document.querySelector('.modal-backdrop.open');
       wardrobeReturnModal?.classList.remove('open');
@@ -1961,14 +2078,17 @@ function wardrobeItemIllustration(itemId) {
       renderWardrobe();
       document.getElementById('wardrobe-status').textContent = '';
       document.getElementById('wardrobe-modal').classList.add('open');
+      sound.pause();
+      sound.playUI('open', event);
       requestSceneFrame();
     }
 
-    function closeWardrobe() {
+    function closeWardrobe(event) {
       document.getElementById('wardrobe-modal').classList.remove('open');
       if (wardrobeReturnModal) wardrobeReturnModal.classList.add('open');
       wardrobeReturnModal = null;
       state.paused = Boolean(document.querySelector('.modal-backdrop.open'));
+      sound.playUI('close', event);
       requestSceneFrame();
     }
 
@@ -2610,7 +2730,7 @@ function wardrobeItemIllustration(itemId) {
           && Number.isInteger(p.id) && Number.isInteger(p.state) && p.state >= P_STATE.INTACT && p.state <= P_STATE.HEALED
           && pimpleNumbers.every(key => Number.isFinite(p[key])) && pimpleBooleans.every(key => typeof p[key] === 'boolean')
           && p.radius > 0 && p.shape && ['p1', 'p2', 'p3', 'a1', 'a2', 'rot'].every(k => Number.isFinite(p.shape[k]))
-          && validSharedPore(p);
+          && validSharedPore(p) && validBlackheadCount(p);
         if (!data.pimples.every(validPimple) || new Set(data.pimples.map(p => p.id)).size !== data.pimples.length) return false;
         if (data.initialPimples !== undefined && (!Array.isArray(data.initialPimples) || !data.initialPimples.every(validPimple))) return false;
         if (!['realistic', 'creamy'].includes(data.styleMode)) return false;
@@ -2633,7 +2753,11 @@ function wardrobeItemIllustration(itemId) {
         if (!data.collectionLedger || Array.isArray(data.collectionLedger) || typeof data.collectionLedger !== 'object') return false;
         const ledger = data.collectionLedger;
         if (!Object.values(ledger).every(item => item && ['skin', 'flight', 'tray'].includes(item.location)
-          && ['blackhead', 'seed'].includes(item.kind) && item.rewards && typeof item.rewards === 'object')) return false;
+          && ['blackhead', 'seed'].includes(item.kind) && item.rewards && typeof item.rewards === 'object'
+          && (item.blackheadCount === undefined || (Number.isInteger(item.blackheadCount) && item.blackheadCount >= 1 && item.blackheadCount <= 4
+            && (item.blackheadCount === 1 || (item.kind === 'blackhead' && item.pairedWhitehead !== true)))))) return false;
+        if (data.pimples.some(p => ledger[`blackhead:${p.id}`]
+          && normalizedBlackheadCount(ledger[`blackhead:${p.id}`].blackheadCount) !== getBlackheadCount(p))) return false;
         if (!data.flyingTrophies.every(item => numbers(item, ['sx', 'sy', 'tx', 'ty', 'progress', 'duration', 'wormLen', 'rot']) && item.duration > 0
           && ledger[item.collectionId]?.location === 'flight' && ledger[item.collectionId].kind === item.kind)) return false;
         if (!data.trophyTrayItems.every(item => numbers(item, ['wormLen', 'ox', 'oy', 'rot']) && ledger[item.collectionId]?.location === 'tray')) return false;
@@ -2666,6 +2790,7 @@ function wardrobeItemIllustration(itemId) {
         const hydrate = p => ({ ...p, cfg: CONFIG.TYPES[p.type.toUpperCase()], pressure: 0, tentOffsetX: 0, tentOffsetY: 0,
           linkedPore: !p.sharedPore && p.type === 'blackhead' && p.linkedPore === true,
           sharedPore: p.sharedPore ? { mode: p.sharedPore.mode, phase: p.sharedPore.phase } : null,
+          blackheadCount: getBlackheadCount(p),
           giftId: allowedGifts.includes(p.giftId) ? p.giftId : null,
           bloodDropSize: p.type === 'blackhead' ? 0 : Math.min(1.6, p.bloodDropSize) });
         state.pimples = state.pimples.map(hydrate);
@@ -3550,6 +3675,7 @@ function wardrobeItemIllustration(itemId) {
           sharedPore: state.runLevel >= 4 && typeKey === 'blackhead' && idx === 1
             ? { mode: state.runLevel >= 6 && state.runLevel % 2 === 0 ? 'sequential' : 'together', phase: 'blackhead' }
             : null,
+          blackheadCount: state.runLevel >= 5 && typeKey === 'blackhead' && idx === 2 ? 2 + (state.runLevel - 5) % 3 : 1,
           giftId: null,
           cfg,
           x: 0,
@@ -3803,6 +3929,7 @@ function wardrobeItemIllustration(itemId) {
       if (state.collectionLedger[collectionId]) return false;
       const source = state.pimples.find(p => trophyIdFor(p) === collectionId);
       state.collectionLedger[collectionId] = { kind, location: 'skin', rewards: {},
+        blackheadCount: kind === 'blackhead' ? getBlackheadCount(source) : 1,
         pairedWhitehead: kind === 'blackhead' && source?.sharedPore?.mode === 'together' };
       return true;
     }
@@ -3831,6 +3958,7 @@ function wardrobeItemIllustration(itemId) {
       if (item && item.location !== 'skin') return false;
       const source = state.pimples.find(p => trophyIdFor(p) === id);
       state.collectionLedger[id] = { ...item, kind, location: 'flight', rewards: item ? item.rewards : {},
+        blackheadCount: kind === 'blackhead' ? normalizedBlackheadCount(item?.blackheadCount ?? getBlackheadCount(source)) : 1,
         pairedWhitehead: item?.pairedWhitehead === true || (kind === 'blackhead' && source?.sharedPore?.mode === 'together') };
       if (motionPreference?.matches) {
         finalizeTrophyInTray(kind, wormLen, id);
@@ -3904,6 +4032,10 @@ function wardrobeItemIllustration(itemId) {
     function toolGuidanceFor(tool, selected = currentPointerCareTarget()) {
       if (selected?.kind === 'pimple') {
         const p = selected.item;
+        const count = getBlackheadCount(p);
+        if (count > 1 && tool === 'steam') return `同一个洞口里有 ${count} 根黑头。先充分热敷，再一起缓缓取出。`;
+        if (count > 1 && tool === 'squeeze') return `同一个洞口里有 ${count} 根黑头。从两侧轻推，它们会一起露出。`;
+        if (count > 1 && tool === 'tweezers' && canTweezePimple(p)) return `这 ${count} 根黑头共用一个洞口。夹住后慢慢向外拉，一次取出整组。`;
         if (p.sharedPore?.phase === 'whitehead' && (tool === 'squeeze' || tool === 'tweezers')) return '黑头已取出，同一个洞口里还有白头；继续轻挤，或夹住白色部分缓缓拉出。';
         if (p.sharedPore?.phase === 'blackhead' && tool === 'squeeze') return p.sharedPore.mode === 'together'
           ? '这个洞口里有黑头和白头。从两侧轻推，两种内容会一起露出。'
@@ -4258,7 +4390,8 @@ function wardrobeItemIllustration(itemId) {
     }
 
     function getPimpleMouths(p) {
-      const x = p.x + (p.sharedPore ? 0 : p.tentOffsetX || 0), y = p.y + (p.sharedPore ? 0 : p.tentOffsetY || 0);
+      const fixedMouth = p.sharedPore || getBlackheadCount(p) > 1;
+      const x = p.x + (fixedMouth ? 0 : p.tentOffsetX || 0), y = p.y + (fixedMouth ? 0 : p.tentOffsetY || 0);
       return getPimpleMouthOffsets(p).map(mouth => ({ x: x + mouth.x, y: y + mouth.y }));
     }
 
@@ -4314,6 +4447,53 @@ function wardrobeItemIllustration(itemId) {
           y: root.y + (point.y - root.y) * .68 + ny * spread,
           distFromRoot: point.distFromRoot * .68, distFromTip: point.distFromTip * .68, hasDarkCap: false };
       });
+    }
+
+    function blackheadBundleCurves(points, count, fanStep = null) {
+      count = normalizedBlackheadCount(count);
+      if (!points?.length) return [];
+      if (count === 1) return [points];
+      const root = points[0], tip = points[points.length - 1];
+      const length = Math.hypot(tip.x - root.x, tip.y - root.y) || 1;
+      const nx = -(tip.y - root.y) / length, ny = (tip.x - root.x) / length;
+      const spacing = fanStep ?? Math.min(7, Math.max(4.5, tip.distFromRoot * .12));
+      return Array.from({ length: count }, (_, strand) => {
+        const slot = strand - (count - 1) * .5;
+        const angle = slot * .20, scale = 1 - Math.abs(slot) * .07;
+        const cos = Math.cos(angle), sin = Math.sin(angle);
+        let travelled = 0;
+        const curve = points.map((point, index) => {
+          const dx = (point.x - root.x) * scale, dy = (point.y - root.y) * scale;
+          const spread = slot * spacing * Math.sin(index / Math.max(1, points.length - 1) * Math.PI * .5);
+          return { x: root.x + dx * cos - dy * sin + nx * spread,
+            y: root.y + dx * sin + dy * cos + ny * spread,
+            hasDarkCap: point.hasDarkCap !== false };
+        });
+        curve.forEach((point, index) => {
+          if (index) travelled += Math.hypot(point.x - curve[index - 1].x, point.y - curve[index - 1].y);
+          point.distFromRoot = travelled;
+        });
+        for (const point of curve) point.distFromTip = travelled - point.distFromRoot;
+        return curve;
+      });
+    }
+
+    function renderBlackheadBundle(targetCtx, points, thickness, count, isCreamy, shadowOff = 2.2, fanStep = null) {
+      const strands = blackheadBundleCurves(points, count, fanStep);
+      const width = strands.length > 1 ? Math.max(1.35, thickness * .72) : thickness;
+      for (const strand of strands) renderRealisticSebumFilament(targetCtx, strand, width, isCreamy, shadowOff);
+    }
+
+    function renderCollectedBlackheadBundle(collectionId, flying = false) {
+      const count = normalizedBlackheadCount(state.collectionLedger[collectionId]?.blackheadCount);
+      if (count === 1) return false;
+      const points = Array.from({ length: 9 }, (_, index) => ({ x: 0, y: 5 - index / 8 * 13,
+        distFromRoot: index / 8 * 13, distFromTip: (1 - index / 8) * 13, hasDarkCap: true }));
+      ctx.save();
+      if (!flying) ctx.scale(.65, .65);
+      renderBlackheadBundle(ctx, points, 1.5, count, state.styleMode === 'creamy', .5, 1.8);
+      ctx.restore();
+      return true;
     }
 
     function dropExtractedBlackheadOnSkin(p) {
@@ -4403,6 +4583,20 @@ function wardrobeItemIllustration(itemId) {
 
     // Two contents share one saved target, one opening and one completion gate.
     // Sequential contents use the existing blackhead:id / seed:id reward ledger.
+    function normalizedBlackheadCount(value) {
+      return Number.isInteger(value) && value >= 2 && value <= 4 ? value : 1;
+    }
+
+    function getBlackheadCount(p) {
+      return p?.type === 'blackhead' && !p.linkedPore && !p.sharedPore ? normalizedBlackheadCount(p.blackheadCount) : 1;
+    }
+
+    function validBlackheadCount(p) {
+      if (p.blackheadCount === undefined) return true;
+      return Number.isInteger(p.blackheadCount) && p.blackheadCount >= 1 && p.blackheadCount <= 4
+        && (p.blackheadCount === 1 || (p.type === 'blackhead' && !p.linkedPore && !p.sharedPore));
+    }
+
     function validSharedPore(p) {
       const shared = p.sharedPore;
       if (shared == null) return true;
@@ -4465,7 +4659,9 @@ function wardrobeItemIllustration(itemId) {
         if (pluckedCleanly) {
           p.state = P_STATE.HEALING;
           p.healProgress = 0;
-          setHint(p.sharedPore?.mode === 'together' ? '同一个洞口里的黑头和白头已一起取出，这一处干净啦。' : '已经完整取出，这一处干净啦。', 'good');
+          setHint(p.sharedPore?.mode === 'together' ? '同一个洞口里的黑头和白头已一起取出，这一处干净啦。'
+            : getBlackheadCount(p) > 1 ? `同一个洞口里的 ${getBlackheadCount(p)} 根黑头已一起取出，这一处干净啦。`
+            : '已经完整取出，这一处干净啦。', 'good');
         } else {
           setHint('黑头已露出。用细胞夹取出，或用清洁棉签擦净。', 'good');
         }
@@ -4496,7 +4692,7 @@ function wardrobeItemIllustration(itemId) {
 
     // 工具 1：♨️ 热喷（生成云雾 + 在皮肤表面真实凝结细密晶莹小水珠！）
     function handleSteamSpray(pt, dt = 0.03) {
-      sound.playSteam();
+      sound.playSteam(pt.x / state.width);
       setPatientMood('😌');
       const speedMult = state.upgrades.steamer ? 2.0 : 1.0;
 
@@ -4704,15 +4900,16 @@ function wardrobeItemIllustration(itemId) {
       let minD = CONFIG.INTERACTION.TWEEZER_GRAB_PX;
       for (const p of state.pimples) {
         if (p.state === P_STATE.HEALED || p.state === P_STATE.HEALING) continue;
-        let tipX = p.x;
-        let tipY = p.y;
+        let tipDistance = Math.hypot(pt.x - p.x, pt.y - p.y);
         if (p.type === 'blackhead' && p.state === P_STATE.EXTRUDING && p.extrudeProgress > 0.1) {
           const curve = computeRealisticBlackheadCurve(p, p.extrudeProgress, p.x, p.y);
-          const tip = curve[curve.length - 1];
-          tipX = tip.x;
-          tipY = tip.y;
+          const strands = blackheadBundleCurves(curve, getBlackheadCount(p));
+          tipDistance = Math.min(...strands.map(strand => {
+            const tip = strand[strand.length - 1];
+            return Math.hypot(pt.x - tip.x, pt.y - tip.y);
+          }));
         }
-        const d = Math.min(distanceToPimple(p, pt.x, pt.y), Math.hypot(pt.x - tipX, pt.y - tipY));
+        const d = Math.min(distanceToPimple(p, pt.x, pt.y), tipDistance);
         if (d < minD) {
           minD = d;
           target = p;
@@ -4793,8 +4990,9 @@ function wardrobeItemIllustration(itemId) {
       // A full-length drag can be a fraction of a floating-point pixel short.
       if (1 - tw.pullRatio < 1e-8) tw.pullRatio = 1;
 
-      p.tentOffsetX = p.sharedPore ? 0 : (pullVecX / pullVecLen) * tw.pullRatio * 4.2;
-      p.tentOffsetY = p.sharedPore ? 0 : (pullVecY / pullVecLen) * tw.pullRatio * 4.2;
+      const fixedMouth = p.sharedPore || getBlackheadCount(p) > 1;
+      p.tentOffsetX = fixedMouth ? 0 : (pullVecX / pullVecLen) * tw.pullRatio * 4.2;
+      p.tentOffsetY = fixedMouth ? 0 : (pullVecY / pullVecLen) * tw.pullRatio * 4.2;
 
       if (p.type === 'blackhead') {
         p.extrudeProgress = Math.min(1, Math.max(p.extrudeProgress, 0.25 + tw.pullRatio * 0.75));
@@ -4990,7 +5188,7 @@ function wardrobeItemIllustration(itemId) {
       if (target.kind === 'residue') return '皮肤残留';
       if (target.kind === 'splatter') return '镜片飞溅';
       const p = target.item;
-      const name = p.sharedPore && p.sharedPore.phase !== 'done'
+      const name = getBlackheadCount(p) > 1 ? `同洞 ${getBlackheadCount(p)} 根黑头` : p.sharedPore && p.sharedPore.phase !== 'done'
         ? p.sharedPore.phase === 'whitehead' ? '同洞剩余白头' : '同洞黑头和白头'
         : {blackhead: '黑头', whitehead: '白头', cyst: '深层目标'}[p.type];
       const status = p.iced ? '已敷膜' : p.state >= P_STATE.HEALING ? '已清理'
@@ -5664,6 +5862,7 @@ function wardrobeItemIllustration(itemId) {
     }
 
     function releasePointer() {
+      sound.stopSteam();
       state.keyboardCare.active = false;
       state.keyboardCare.key = null;
       if (state.tweezers.clampedPimple) {
@@ -6006,6 +6205,7 @@ function wardrobeItemIllustration(itemId) {
         triggerHaptic(14);
         setHint(p.sharedPore?.mode === 'together'
           ? '同一个洞口里的黑头和白头一起露出了。继续轻挤，或用细胞夹一起取出。'
+          : getBlackheadCount(p) > 1 ? `同一个洞口里的 ${getBlackheadCount(p)} 根黑头一起露出了。继续轻挤，或用细胞夹一起取出。`
           : '黑头已露头。现在可以换细胞夹缓慢取出。', 'good');
       } else if (p.type === 'cyst') {
         p.pusRemaining = 0.82;
@@ -6505,14 +6705,16 @@ function wardrobeItemIllustration(itemId) {
         ctx.translate(-25 + item.ox, -7 + item.oy);
         ctx.rotate(item.rot);
         if (item.kind === 'blackhead') {
-          ctx.fillStyle = '#f5e49c';
-          ctx.beginPath();
-          ctx.ellipse(0, 1.6, 2.2, 4.5, 0, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = '#241108';
-          ctx.beginPath();
-          ctx.arc(0, -2.6, 1.75, 0, Math.PI * 2);
-          ctx.fill();
+          if (!renderCollectedBlackheadBundle(item.collectionId)) {
+            ctx.fillStyle = '#f5e49c';
+            ctx.beginPath();
+            ctx.ellipse(0, 1.6, 2.2, 4.5, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#241108';
+            ctx.beginPath();
+            ctx.arc(0, -2.6, 1.75, 0, Math.PI * 2);
+            ctx.fill();
+          }
           if (state.collectionLedger[item.collectionId]?.pairedWhitehead === true) {
             ctx.fillStyle = '#fff6df';
             ctx.beginPath(); ctx.ellipse(4.2, 1.4, 1.8, 3.7, -.35, 0, Math.PI * 2); ctx.fill();
@@ -6541,14 +6743,16 @@ function wardrobeItemIllustration(itemId) {
         ctx.scale(sc, sc);
 
         if (ft.kind === 'blackhead') {
-          ctx.fillStyle = '#f5e49c';
-          ctx.beginPath();
-          ctx.ellipse(0, 2.2, 2.8, 6.2, 0, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = '#241108';
-          ctx.beginPath();
-          ctx.arc(0, -3.6, 2.3, 0, Math.PI * 2);
-          ctx.fill();
+          if (!renderCollectedBlackheadBundle(ft.collectionId, true)) {
+            ctx.fillStyle = '#f5e49c';
+            ctx.beginPath();
+            ctx.ellipse(0, 2.2, 2.8, 6.2, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#241108';
+            ctx.beginPath();
+            ctx.arc(0, -3.6, 2.3, 0, Math.PI * 2);
+            ctx.fill();
+          }
           if (state.collectionLedger[ft.collectionId]?.pairedWhitehead === true) {
             ctx.fillStyle = '#fff6df';
             ctx.beginPath(); ctx.ellipse(5.5, 2, 2.4, 5.2, -.35, 0, Math.PI * 2); ctx.fill();
@@ -6763,7 +6967,7 @@ function wardrobeItemIllustration(itemId) {
         const pts = computeRealisticBlackheadCurve(p, p.extrudeProgress, 0, 0, pullLocal);
         const thick = Math.max(2.1, p.radius * 0.21);
         if (p.linkedPore === true) renderLinkedBlackheadBridge(p, isCreamy, thick);
-        renderRealisticSebumFilament(ctx, pts, thick, isCreamy, 1.5 + p.extrudeProgress * 2.2);
+        renderBlackheadBundle(ctx, pts, thick, getBlackheadCount(p), isCreamy, 1.5 + p.extrudeProgress * 2.2);
         if (p.sharedPore?.mode === 'together') renderSharedPoreContents(p, isCreamy, pts);
 
         ctx.save();
@@ -6870,6 +7074,21 @@ function wardrobeItemIllustration(itemId) {
           if (p.pierced || p.steamed >= .75) {
             ctx.fillStyle = 'rgba(241,224,181,.75)';
             beginOrganicPath(ctx, mouth.x, lift + .45, cap * 1.08, cap * aspect * 1.14, p.shape, 1.5); ctx.fill();
+          }
+          const count = getBlackheadCount(p);
+          if (count > 1) {
+            const tipR = poreR * (count === 2 ? .38 : .30);
+            for (let strand = 0; strand < count; strand++) {
+              const angle = strand / count * Math.PI * 2 - Math.PI * .5;
+              const tx = mouth.x + Math.cos(angle) * poreR * .48;
+              const ty = lift + Math.sin(angle) * poreR * .42;
+              const tip = ctx.createLinearGradient(tx - tipR, ty - tipR, tx + tipR, ty + tipR);
+              tip.addColorStop(0, isCreamy ? '#6a5540' : '#514031');
+              tip.addColorStop(1, '#2e251d');
+              ctx.fillStyle = tip;
+              ctx.beginPath(); ctx.ellipse(tx, ty, tipR, tipR * .82, angle, 0, Math.PI * 2); ctx.fill();
+            }
+            continue;
           }
           const plug = ctx.createLinearGradient(mouth.x - cap, lift - cap, mouth.x + cap, lift + cap);
           plug.addColorStop(0, isCreamy ? '#76634e' : '#594939');
@@ -7212,7 +7431,8 @@ function wardrobeItemIllustration(itemId) {
         ctx.globalAlpha = Math.max(0, res.alpha);
 
         if (res.kind === 'worm' && res.pts) {
-          renderRealisticSebumFilament(ctx, res.pts, res.thickness, isCreamy, 1.5);
+          renderBlackheadBundle(ctx, res.pts, res.thickness,
+            state.collectionLedger[res.collectionId]?.blackheadCount, isCreamy, 1.5);
           if (state.collectionLedger[res.collectionId]?.pairedWhitehead === true) {
             renderRealisticSebumFilament(ctx, sharedWhiteheadCurve(res.pts), res.thickness * 1.1, isCreamy, 1.5);
           }
@@ -7976,7 +8196,7 @@ function wardrobeItemIllustration(itemId) {
       document.getElementById('btn-close-wardrobe').addEventListener('click', closeWardrobe);
       document.getElementById('wardrobe-modal').addEventListener('click', event => {
         const button = event.target.closest('[data-equip]');
-        if (button && !button.disabled) equipWardrobeItem(button.dataset.equip);
+        if (button && !button.disabled) equipWardrobeItem(button.dataset.equip, event);
       });
       document.querySelectorAll('[data-tool-guidance]').forEach(element => { element.textContent = TOOL_GUIDANCE[element.dataset.toolGuidance]; });
       document.getElementById('btn-skip-practice').addEventListener('click', () => {
@@ -8110,9 +8330,10 @@ function wardrobeItemIllustration(itemId) {
         soundIcon.textContent = sound.muted ? '音效关' : '音效开';
       };
       renderSoundPreference();
-      soundBtn.addEventListener('click', () => {
+      soundBtn.addEventListener('click', event => {
         sound.setMuted(!sound.muted);
         if (!sound.muted) sound.unlock();
+        if (!sound.muted) sound.playUI('toggle', event);
         renderSoundPreference();
       });
       window.addEventListener('storage', event => {
