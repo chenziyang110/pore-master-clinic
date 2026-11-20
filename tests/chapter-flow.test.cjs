@@ -21,13 +21,16 @@ test('the first five adventure levels award only their bound random finds throug
   // This integration gate exercises inputs, physics, UI navigation and
   // accounting. Pixel rendering is covered by the dedicated canvas tests.
   g.evaluate('renderScene=()=>{};');
-  const giftsByRound=[[],[],['contacts_ocean','bracelet_pearl'],[],['mask_pearl']];
+  const foods=JSON.parse(g.state('JSON.stringify(FOOD_ITEMS.slice(0,2).map(item=>item.id))'));
+  const giftsByRound=[[foods[0]],[],[foods[1],'contacts_ocean'],[foods[0]],['mask_pearl']];
   const expectedOwned=new Set();
+  const expectedPantry={};
   for(let round=0;round<5;round++) {
     assert.equal(g.state('state.runLevel'),round+1);
     if(round<2)assert.equal(g.state('state.pimples.every(p=>p.type==="blackhead")'),true);
     // Keep the five-round physics gate deterministic while allowing any real
-    // run to draw zero, one or two surprises. Never grant ownership directly.
+    // run to find common consumable food and an occasional permanent outfit.
+    // Never grant ownership or food inventory directly.
     g.evaluate(`state.discoveredGifts=[];
       state.pimples.forEach((p,index)=>{p.giftId=${JSON.stringify(giftsByRound[round])}[index]||null;});
       state.initialPimples.forEach(p=>{p.giftId=state.pimples.find(item=>item.id===p.id).giftId;});`);
@@ -49,10 +52,20 @@ test('the first five adventure levels award only their bound random finds throug
     assert.equal(record.runId,g.state('state.runId'));
     assert.equal(g.state('wardrobeProgress.level'),round+2);
     const unlocked=JSON.parse(g.state('JSON.stringify(wardrobeProgress.unlocked)'));
-    for(const id of giftsByRound[round])expectedOwned.add(id);
+    const expectedOutfits=giftsByRound[round].filter(id=>!id.startsWith('food_'));
+    const expectedFood=giftsByRound[round].filter(id=>id.startsWith('food_'));
+    for(const id of expectedOutfits)expectedOwned.add(id);
+    for(const id of expectedFood)expectedPantry[id]=(expectedPantry[id]||0)+1;
     assert.deepEqual([...unlocked].sort(),[...expectedOwned].sort());
-    assert.deepEqual([...record.wardrobeGifts].sort(),[...giftsByRound[round]].sort());
-    if(giftsByRound[round].length)assert.match(g.d.getElementById('result-modal').textContent,/运气超棒/);
+    assert.deepEqual([...record.wardrobeGifts].sort(),[...expectedOutfits].sort());
+    assert.deepEqual([...record.foodGifts].sort(),[...expectedFood].sort());
+    assert.deepEqual(JSON.parse(g.state('JSON.stringify(wardrobeProgress.pantry)')),expectedPantry);
+    assert.equal(g.state('wardrobeProgress.hunger'),Math.min(100,38+12*(round+1)));
+    if(expectedOutfits.length)assert.match(g.d.getElementById('result-modal').textContent,/运气超棒/);
+    for(const id of expectedFood) {
+      const name=g.state(`FOOD_ITEMS.find(item=>item.id===${JSON.stringify(id)}).name`);
+      assert.ok(g.d.getElementById('result-modal').textContent.includes(name),'the result names its consumable food');
+    }
     g.click('btn-next-face');await new Promise(setImmediate);g.frame();
   }
   assert.equal(g.state('state.runLevel'),6);
