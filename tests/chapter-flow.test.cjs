@@ -35,18 +35,26 @@ test('the first five adventure levels award only their bound random finds throug
       state.pimples.forEach((p,index)=>{p.giftId=${JSON.stringify(giftsByRound[round])}[index]||null;});
       state.initialPimples.forEach(p=>{p.giftId=state.pimples.find(item=>item.id===p.id).giftId;});`);
     g.d.getElementById('skin-canvas').focus();
-    const targets=g.state('state.pimples.map(p=>({id:p.id,type:p.type}))');
+    const targets=g.state('state.pimples.map(p=>({id:p.id,type:p.type,contents:p.sharedPore?.mode==="sequential"?2:1}))');
     for(const p of targets) {
       select(g,p.id);key(g,'1');hold(g,3);
-      if(p.type==='blackhead') {key(g,'4');hold(g,3.6);}
-      else {
-        if(p.type==='cyst') {key(g,'2');hold(g,.1,'Enter');}
-        key(g,'3');hold(g,p.type==='cyst'?8:4);
-        key(g,'5');hold(g,3);
+      // A random sequential opening may expose a white core after its first
+      // black plug. Re-read the real target state between bounded care passes.
+      for(let pass=0;pass<3;pass++) {
+        const current=g.state(`state.pimples.find(item=>item.id===${JSON.stringify(p.id)})`);
+        if(current.state>=g.state('P_STATE.HEALING'))break;
+        select(g,p.id);
+        if(current.state>=g.state('P_STATE.OOZING')) {key(g,'5');hold(g,3);}
+        else if(current.type==='blackhead') {key(g,'4');hold(g,3.6);}
+        else {
+          if(current.type==='cyst'&&!current.pierced) {key(g,'2');hold(g,.1,'Enter');}
+          key(g,'3');hold(g,current.type==='cyst'?8:4);
+          key(g,'5');hold(g,3);
+        }
       }
       assert.ok(g.state(`state.pimples.find(p=>p.id===${JSON.stringify(p.id)}).state>=P_STATE.HEALING`),`level ${round+1} ${p.type} can be cleaned`);
     }
-    assert.equal(g.state('state.trophiesPlucked+state.coreSeedsCollected'),targets.length);
+    assert.equal(g.state('state.trophiesPlucked+state.coreSeedsCollected'),targets.reduce((total,p)=>total+p.contents,0));
     g.click('btn-ice-quick');g.frame(65);
     const record=g.state('careRecords.history[0]');
     assert.equal(record.runId,g.state('state.runId'));

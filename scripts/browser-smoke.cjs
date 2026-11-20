@@ -9,6 +9,7 @@ const http = require('node:http');
 const os = require('node:os');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
+const { roundFixtureSource } = require('../tests/round-fixture.cjs');
 
 const ROOT = path.resolve(__dirname, '..');
 const OUTPUT = path.join(ROOT, 'qa-output');
@@ -544,9 +545,8 @@ async function runViewport(cdp, origin, viewport, report) {
     for (const [level, gift, slot, sequence] of [[4, foodGift, 'food', '04'], [7, 'dress_sky', 'dress', '06']]) {
       // Bind a known random outcome to an actual care point for stable QA.
       // Reveal, flight animation and the ice/settlement award are production paths.
+      await evaluate(roundFixtureSource({level}));
       const flight = await evaluate(`(() => {
-        wardrobeProgress.level = ${level}; state.clientIndex = (${level}-1) % CLIENTS.length;
-        generateLevel(0); state.paused=false; selectTool('steam');
         state.discoveredGifts=[];
         state.pimples.forEach(p=>{p.giftId=null;});
         const source=state.pimples[0];source.giftId=${JSON.stringify(gift)};
@@ -689,8 +689,9 @@ async function runViewport(cdp, origin, viewport, report) {
     // Visual-only fixture: show paired contents, a remaining whitehead, a
     // giant uneven bundle and a large whitehead's cleared pit together.
     // Mechanics and resume use separate real-input tests.
+    await evaluate(roundFixtureSource({level:6}));
     const shared = await evaluate(`(() => {
-      wardrobeProgress.level=6;generateLevel(0);state.paused=false;selectTool('squeeze');
+      selectTool('squeeze');
       finishPracticeGuide(true);clearGiftPresentation();
       const blackheads=state.pimples.filter(p=>p.type==='blackhead').slice(0,3);
       const largeWhitehead=state.pimples.find(p=>p.type==='whitehead');
@@ -773,6 +774,38 @@ async function runViewport(cdp, origin, viewport, report) {
     report.sharedPores.push({viewport:label,...shared});
     await checkpoint('11-shared-openings-squeeze', null);
     await evaluate('updateSimulation=window.sharedShotSimulation;delete window.sharedShotSimulation;releasePointer();');
+    if(viewport.name==='phone') {
+      const regions=await evaluate('TREATMENT_REGIONS.map(region=>({id:region.id,label:region.label}))');
+      assert.equal(regions.length,5);
+      let boardBounds=null;
+      for(const [index,region] of regions.entries()) {
+        await evaluate(roundFixtureSource({level:8,region:region.id,keepPlan:true}));
+        await evaluate('finishPracticeGuide(true);renderSkinTexture();renderScene(false);updateHUD();');
+        const geometry=()=>evaluate(`(() => {
+          const box=canvas.getBoundingClientRect();
+          return {board:{left:box.left,top:box.top,width:box.width,height:box.height,
+            bufferWidth:canvas.width,bufferHeight:canvas.height},
+            targets:state.pimples.map(p=>({id:p.id,x:p.x,y:p.y,radius:p.radius}))};
+        })()`);
+        await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
+        const baseline=await geometry();
+        if(boardBounds)assert.deepEqual(baseline.board,boardBounds,'switching treatment regions keeps the same canvas space');
+        else boardBounds=baseline.board;
+        assert.equal(await evaluate('currentTreatmentRegion().id'),region.id);
+        const points=await evaluate(`(() => {
+          const bounds=canvas.getBoundingClientRect(),p=state.pimples[0];
+          return [{x:bounds.left+p.x/state.width*bounds.width,y:bounds.top+p.y/state.height*bounds.height},
+            {x:bounds.left+3,y:bounds.top+3}];
+        })()`);
+        for(const point of points) {
+          await send('Input.dispatchMouseEvent',{type:'mouseMoved',...point,pointerType:'mouse',button:'none',buttons:0});
+          await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
+          assert.deepEqual(await geometry(),baseline,`${region.id}: guidance hover never moves the board or targets`);
+        }
+        report.regions.push({viewport:label,region:region.id,label:region.label,geometryStable:true,geometry:baseline});
+        await checkpoint(`${String(12+index).padStart(2,'0')}-region-${region.id}`,null);
+      }
+    }
   } finally {
     for (const error of cdp.errors.get(sessionId) || []) report.failures.push(`${label}: runtime error: ${error}`);
     await cdp.send('Target.disposeBrowserContext', { browserContextId }).catch(() => {});
@@ -781,7 +814,7 @@ async function runViewport(cdp, origin, viewport, report) {
 
 async function main() {
   await fsp.mkdir(OUTPUT, { recursive: true });
-  const report = { viewports: VIEWPORTS, screens: [], fonts: [], geometry: [], giftFlights: [], feeding: [], sharedPores: [], audio: [], failures: [] };
+  const report = { viewports: VIEWPORTS, screens: [], fonts: [], geometry: [], giftFlights: [], feeding: [], sharedPores: [], regions: [], audio: [], failures: [] };
   let server, child, cdp, profileDirectory;
   try {
     const executable = [process.env.CHROME_BIN, '/usr/bin/google-chrome', '/usr/bin/chromium'].find(file => file && fs.existsSync(file));

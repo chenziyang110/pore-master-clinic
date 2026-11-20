@@ -1,6 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {createGame, createStorageHub} = require('./harness.cjs');
+const {setupRound} = require('./round-fixture.cjs');
 
 const PROFILE = 'pimple_clinic_profile_v3';
 const plain = value => JSON.parse(JSON.stringify(value));
@@ -14,9 +15,8 @@ async function game(t, options = {}) {
 }
 
 function fixture(g, ids, level = 3) {
-  g.evaluate(`document.querySelectorAll('.modal-backdrop.open').forEach(m=>m.classList.remove('open'));
-    wardrobeProgress.level=${level};generateLevel(0);state.paused=false;
-    state.discoveredGifts=[];state.pimples.forEach(p=>p.giftId=null);
+  setupRound(g,{level});
+  g.evaluate(`
     ${JSON.stringify(ids)}.forEach((id,index)=>state.pimples[index].giftId=id);
     state.initialPimples.forEach(p=>p.giftId=state.pimples.find(q=>q.id===p.id).giftId);
     saveCurrentSession(true);`);
