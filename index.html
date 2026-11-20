@@ -493,8 +493,9 @@
     #app-shell .treatment-panel { flex: 1; width: 100%; min-height: 0; padding-top: 16px; }
     #app-shell #viewport-wrap { flex: 1; min-height: 100px; margin: 0 20px; }
     #app-shell .tool-section { padding: 10px 20px 12px; }
-    #app-shell .tool-section-head { min-height: 28px; margin: 0; }
-    #app-shell .hint-banner { min-height: 34px; margin: 4px 0 8px; }
+    /* Guidance changes must never resize the canvas or interrupt a held tool. */
+    #app-shell .tool-section-head { height: 44px; min-height: 44px; margin: 0; }
+    #app-shell .hint-banner { height: 44px; min-height: 0; margin: 4px 0 8px; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
     #app-shell .tool-step, #app-shell .shortcut-note, #app-shell .tool-badge { display: none; }
     #app-shell .tool-btn { min-height: 65px; }
     #app-shell .studio-footer { display: flex; flex-shrink: 0; min-height: 46px; height: auto; padding: 0 20px max(6px, var(--safe-bottom)); justify-content: center; border-top: 1px solid var(--line); }
@@ -502,6 +503,16 @@
     .game-utilities button { border: 0; background: transparent; color: var(--muted); padding: 10px 8px; min-height: 44px; font-size: 12px; }
     #game-settings-slots { display: contents; }
     #game-settings-slots .icon-btn { min-height: 44px; }
+    @media (min-width: 761px) and (min-height: 601px), (min-width: 1101px) and (min-height: 501px) {
+      #app-shell #practice-guide { height: 44px; min-height: 44px; max-height: 44px; }
+      /* Keep the lesson's slot after completion, without invisible focus targets. */
+      #app-shell #practice-guide[hidden] { display: flex !important; visibility: hidden; }
+      #app-shell #practice-label { max-height: 100%; overflow-y: auto; }
+    }
+    @media (max-width: 760px), (max-width: 1100px) and (orientation: landscape) and (max-height: 600px) {
+      /* The compact dock already reserves its two grid rows. Fill its hint cell. */
+      #app-shell .hint-banner { height: var(--dock-guidance); margin: 0; }
+    }
     .story-modal { background: #f4f1e8; padding: max(16px, var(--safe-top)) max(16px, var(--safe-right)) max(16px, var(--safe-bottom)) max(16px, var(--safe-left)); }
     .story-modal .modal-card { width: min(940px, 100%); max-width: 940px; max-height: calc(100dvh - 32px); padding: 34px; border: 1px solid #dcded1; border-radius: 24px; background: #fcfaf4; box-shadow: 0 20px 80px #48533c0a; }
     .story-brand { color: #718068; font-size: 12px; letter-spacing: 3px; margin-bottom: 26px; }
@@ -591,7 +602,7 @@
     @media (max-height: 500px) and (orientation: landscape) {
       #app-shell .studio-header { height: 38px; min-height: 38px; }
       #app-shell .tool-section-head { display: none; }
-      #app-shell .hint-banner { min-height: 20px; margin: 0 0 4px; font-size: 11px; }
+      #app-shell .hint-banner { height: var(--dock-guidance, 44px); min-height: 0; margin: 0; font-size: 11px; }
       #app-shell .tool-btn { min-height: 44px; padding: 4px; flex-direction: row; gap: 6px; }
       #app-shell .tool-desc { display: none; }
       #app-shell .studio-footer { min-height: 36px; padding-bottom: 0; }
