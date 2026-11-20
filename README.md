@@ -2,7 +2,9 @@
 
 慢慢清理，发现小惊喜。闯关收集发饰与裙子，为首页穿着补丁旧裙的小女孩搭配一身喜欢的衣服。
 
-**公开试玩：[https://pore-master-clinic.vercel.app/](https://pore-master-clinic.vercel.app/)**
+**公开试玩：[https://pore-dressup-n7q4.candid-otter-5800.chatgpt.site/](https://pore-dressup-n7q4.candid-otter-5800.chatgpt.site/)**
+
+当前公开站点已发布小女孩换装版本，可直接用手机浏览器打开。
 
 原生 HTML、CSS、Canvas 2D 与 Web Audio API 实现，游戏和换装插画都在 `index.html` 内。插画使用内联 SVG，没有外部图片、字体、音频或运行时依赖，可直接离线打开。
 
