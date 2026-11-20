@@ -841,7 +841,7 @@
     <div id="wardrobe-modal" class="modal-backdrop story-modal" role="dialog" aria-modal="true" aria-labelledby="wardrobe-title">
       <div class="modal-card"><button id="btn-close-wardrobe" class="story-close" type="button" aria-label="关闭衣橱">×</button>
         <div class="modal-header"><h2 id="wardrobe-title" class="wardrobe-heading">她的小心愿</h2></div>
-        <div class="wardrobe-layout"><div class="girl-stage"><div id="wardrobe-dream-scene" class="dream-scene"></div><div id="wardrobe-girl" class="girl-portrait"></div><p class="girl-caption">今天也喜欢你。</p><div id="wardrobe-hunger" class="appetite-box"></div></div>
+        <div class="wardrobe-layout"><div class="girl-stage"><div id="wardrobe-dream-scene" class="dream-scene"></div><div id="wardrobe-girl" class="girl-portrait"></div><p id="wardrobe-girl-caption" class="girl-caption">今天也喜欢你。</p><div id="wardrobe-hunger" class="appetite-box"></div></div>
           <div><div class="wardrobe-tabs" role="tablist" aria-label="女孩的小收藏"><button id="wardrobe-tab-outfits" type="button" role="tab" aria-selected="true" aria-controls="wardrobe-outfits-panel">心愿册</button><button id="wardrobe-tab-food" type="button" role="tab" aria-selected="false" aria-controls="wardrobe-food-panel" tabindex="-1">美食篮</button></div>
             <section id="wardrobe-outfits-panel" role="tabpanel" aria-labelledby="wardrobe-tab-outfits"><h3 id="wardrobe-owned-title" class="wardrobe-section-title" hidden>已经拥有</h3><div id="wardrobe-collection" class="wardrobe-items"></div><div id="wardrobe-reset" class="wardrobe-reset" hidden><button type="button" data-equip="reset:all">恢复最初装扮</button></div><h3 id="wardrobe-wish-title" class="wardrobe-section-title">想变漂亮</h3><div id="wardrobe-preview" class="wardrobe-wishes"></div><div id="dream-preview"></div><div id="wardrobe-coming-soon" class="wardrobe-coming-soon" hidden><strong>敬请期待</strong></div></section>
             <section id="wardrobe-food-panel" role="tabpanel" aria-labelledby="wardrobe-tab-food" hidden><p class="food-intro">一份美味，吃掉一点小饥饿。</p><div id="wardrobe-food-collection" class="food-items"></div><p id="wardrobe-food-empty" class="food-empty">等一份小美味掉进篮子里。</p></section>
@@ -2228,6 +2228,7 @@ function foodIllustration(itemId) {
       const dressed = wardrobeProgress.equipped.dress !== 'patched';
       document.getElementById('home-girl-caption').textContent = dressed ? '「今天也要漂漂亮亮！」'
         : wardrobeProgress.equipped.hair !== 'none' ? '「和你一起，真开心。」' : '「一起实现小心愿吧。」';
+      document.getElementById('wardrobe-girl-caption').textContent = '今天也喜欢你。';
       const permanentCount = wardrobeProgress.unlocked.length + wardrobeProgress.dreams.length;
       document.getElementById('home-progress-note').textContent = permanentCount ? '已实现 ' + permanentCount + ' 个小心愿' : '今天会遇到什么小惊喜？';
       document.getElementById('btn-start-adventure').textContent = state.legacyCareSession && !state.settled ? '继续上次护理'
@@ -2348,6 +2349,7 @@ function foodIllustration(itemId) {
       persistSaveData(); renderWardrobe();
       document.getElementById('wardrobe-status').textContent = '谢谢你的款待！';
       document.getElementById('home-girl-caption').textContent = '「谢谢你的款待！」';
+      document.getElementById('wardrobe-girl-caption').textContent = '「谢谢你的款待！」';
       const next = document.querySelector('[data-feed="' + id + '"]:not(:disabled)') || document.getElementById('wardrobe-tab-food');
       next.focus({preventScroll: true});
       if (feedingAnimationTimer) clearTimeout(feedingAnimationTimer);
@@ -4352,9 +4354,9 @@ function foodIllustration(itemId) {
 
     const TOOL_GUIDANCE = {
       steam: '按住热敷，软软的就能夹啦。',
-      needle: '对准尖端，松开挑开；移出画布可取消。',
+      needle: '对准尖端，松开挑开；移出操作区可取消。',
       squeeze: '轻轻向中间推，双指也能捏。',
-      tweezers: '软化或露头后夹住，慢慢往外拉。',
+      tweezers: '黑头软化就能夹；白头与深层先轻挤到露头，再慢慢拉。',
       swab: '轻轻擦干净；再点棉签换新。'
     };
 

@@ -608,8 +608,30 @@ async function runViewport(cdp, origin, viewport, report) {
         assert.match(after.message,/谢谢你的款待/);
         assert.ok(after.shownHunger.includes(String(after.hunger)),`${label}: the hunger display follows the meal`);
         assert.deepEqual(after.outfits,[],`${label}: food never becomes a permanent outfit`);
-        report.feeding.push({viewport:label,itemId:gift,before,after});
         await evaluate('document.querySelector("#wardrobe-modal .modal-card").scrollTop=0;document.getElementById("btn-close-wardrobe").focus({preventScroll:true});');
+        const caption=await evaluate(`(() => {
+          const node=document.getElementById('wardrobe-girl-caption');
+          if(!node)throw new Error('The girl needs a visible meal response');
+          const visible=()=>{
+            const box=node.getBoundingClientRect();let left=0,top=0,right=innerWidth,bottom=innerHeight;
+            for(let parent=node;parent;parent=parent.parentElement){
+              const style=getComputedStyle(parent),bounds=parent.getBoundingClientRect();
+              if(style.visibility!=='visible'||Number(style.opacity)===0||parent.hidden)return false;
+              if(/hidden|clip|scroll|auto/.test(style.overflowX)){left=Math.max(left,bounds.left);right=Math.min(right,bounds.right);}
+              if(/hidden|clip|scroll|auto/.test(style.overflowY)){top=Math.max(top,bounds.top);bottom=Math.min(bottom,bounds.bottom);}
+            }
+            return box.width>0&&box.height>0&&box.left>=left&&box.right<=right&&box.top>=top&&box.bottom<=bottom
+              &&node.contains(document.elementFromPoint((box.left+box.right)/2,(box.top+box.bottom)/2));
+          };
+          const scrolledIntoView=!visible();
+          if(scrolledIntoView)node.scrollIntoView({block:'center',inline:'nearest'});
+          return {text:node.textContent,visible:visible(),scrolledIntoView};
+        })()`);
+        assert.match(caption.text,/谢谢你的款待/);
+        assert.equal(caption.visible,true,`${label}: the portrait-side thanks is visible and unobscured in the meal screenshot`);
+        if(viewport.name!=='phone-landscape')assert.equal(caption.scrolledIntoView,false,
+          `${label}: ordinary portrait and desktop layouts show the thanks immediately`);
+        report.feeding.push({viewport:label,itemId:gift,before,after,caption});
         await checkpoint('05-food-thank-you','wardrobe-modal');
       } else {
         await click('#wardrobe-tab-outfits');

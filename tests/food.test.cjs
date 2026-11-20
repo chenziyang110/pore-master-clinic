@@ -77,6 +77,8 @@ test('food emerges from its assigned pore, is granted once on completion, and is
   assert.equal(g.state(`wardrobeProgress.pantry[${JSON.stringify(food.id)}]`),1);
   assert.equal(g.state('wardrobeProgress.hunger'),50-food.satiety);
   assert.equal(g.d.getElementById('wardrobe-status').textContent,'谢谢你的款待！');
+  assert.match(g.d.getElementById('wardrobe-girl-caption').textContent,/谢谢你的款待/,
+    'the girl thanks the player beside her portrait, as well as in the live status');
   const profile=JSON.parse(g.w.localStorage.getItem(PROFILE));
   assert.equal(profile.wardrobe.pantry[food.id],1);
   assert.equal(profile.wardrobe.hunger,50-food.satiety,'consumption and hunger use the same profile write');
