@@ -1908,23 +1908,30 @@ function girlIllustration(equipped = {}) {
   const p=dressupSvgPaints(skin,eyes),c=dressupSkinPalette(skin),dressed=dress!=='patched';
   const names={patched:'杏粉补丁旧裙',dress_sky:'蓝色公主裙',dress_peach:'蜜桃花边裙',dress_lilac:'紫藤花裙子',bow_rose:'莓果蝴蝶结',clip_star:'小星星发夹',band_lilac:'丁香花发箍',crown_snow:'白雪公主的王冠',mask_pearl:'珍珠面膜护理后的肤色',mascara_cocoa:'可可色睫毛',contacts_hazel:'榛棕色眼眸',contacts_ocean:'海蓝色眼眸',lipstick_rose:'玫瑰唇色',lipstick_peach:'蜜桃唇色',hairstyle_bob:'短波波发型',hairstyle_twintails:'双马尾发型',shoes_rose:'粉色蝴蝶结鞋',shoes_maryjane:'黑色玛丽珍鞋',shoes_crystal:'水晶鞋',bracelet_pearl:'珍珠手链',necklace_star:'星星项链'};
   const description=[dress,hair,skin,lashes,eyes,lips,hairstyle,shoes,bracelet,necklace].filter(id=>Object.prototype.hasOwnProperty.call(names,id)).map(id=>names[id]).join('、');
-  return `<svg class="dressup-girl" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 380" role="img" aria-label="女孩的装扮：${description}" focusable="false">${p.defs}
+  return `<svg class="dressup-girl" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 420" role="img" aria-label="女孩的装扮：${description}" focusable="false">${p.defs}
+    <g class="girl-proportion-refit" transform="translate(9 10) scale(.94 1.12)">
     <ellipse cx="155" cy="360" rx="60" ry="6.5" fill="#c9b5bc" opacity=".17"/>
     <ellipse cx="151" cy="182" rx="101" ry="155" fill="${p.glow}"/>
     <g fill="#d4dde0" opacity=".42"><ellipse cx="70" cy="321" rx="2" ry="2.5"/><ellipse cx="232" cy="306" rx="1.5" ry="2"/></g>
     ${dressed?'<g fill="#e8ce9a"><path d="M74 80l1.6 4.3 4.3 1.6-4.3 1.6-1.6 4.3-1.6-4.3-4.3-1.6 4.3-1.6Z M230 126l1.5 4 4 1.5-4 1.5-1.5 4-1.5-4-4-1.5 4-1.5Z"/><circle cx="215" cy="40" r="1.4"/><circle cx="71" cy="228" r="1.2"/></g>':''}
-    <g data-dressup-slot="skin" data-equipped="${skin}" data-part="legs"><path d="M127 252C128 278 130 302 128 321L123 338Q132 344 142 338L146 302L149 254ZM156 254L158 294C160 310 167 326 169 337Q177 343 187 336C178 314 175 294 177 251Z" fill="${p.skin}" stroke="${c.line}" stroke-width=".75"/><path d="M135 273L137 301M166 274Q164 295 174 321" fill="none" stroke="#fff3e4" stroke-width="2.7" opacity=".38" stroke-linecap="round"/><path d="M130 305Q134 307 139 305M166 305L173 308" fill="none" stroke="${c.shade}" stroke-width=".6" opacity=".35" stroke-linecap="round"/></g>
+    <g data-dressup-slot="skin" data-equipped="${skin}" data-part="legs"><path d="M127 249Q139 254 149 253L144 287Q141 317 137 350L134 380Q127 385 117 380L119 350Q121 318 119 289L118 257ZM155 253Q166 254 178 249L179 286Q177 315 184 347L194 378Q188 386 178 382L164 352Q153 322 151 291L149 255Z" fill="${p.skin}" stroke="${c.line}" stroke-width=".9" stroke-linejoin="round"/><path d="M129 276Q130 312 126 346L124 372M165 278Q164 312 175 345L185 372" fill="none" stroke="#fff3e4" stroke-width="3" opacity=".46" stroke-linecap="round"/><path d="M119 351Q126 354 137 350M177 352Q185 354 190 350" fill="none" stroke="${c.shade}" stroke-width=".8" opacity=".35" stroke-linecap="round"/></g>
     <path d="M126 324Q132 327 143 324L141 339Q130 343 122 338ZM166 324Q175 329 182 324L187 337Q178 343 170 338Z" fill="#fff4e9" stroke="#dcc6be" stroke-width=".6"/>
     <path d="M126 324Q133 327 143 324M166 324Q175 329 182 324" fill="none" stroke="#fffdf4" stroke-width="2" stroke-linecap="round"/>
     ${dressupShoesMarkup(shoes,p)}
     <g transform="translate(151 68) scale(1.08 1.06) translate(-151 -68) rotate(-4 150 64)">${dressupHairstyleMarkup(hairstyle,'back',false,p)}</g>
-    <g data-dressup-slot="skin" data-equipped="${skin}" data-part="arms"><path d="M124 125C117 125 113 132 111 143C109 155 108 169 106 181L101 205C98 211 98 215 100 219C101 222 104 225 107 225Q110 224 110 222Q113 221 112 218L112 210Q119 193 121 178L130 145Z" fill="${p.skin}" stroke="${c.line}" stroke-width=".75" stroke-linejoin="round"/><path d="M176 124C184 123 188 130 191 141C192 153 194 164 201 171L210 177L216.8 174.2Q220.5 171.5 222 173Q223 174.6 219.5 177.7L226.2 175.8Q228.6 175.3 228.4 177Q227.9 178.2 223 181L227.3 180Q229.5 179.8 229.1 181.3Q228.4 182.8 224 185.1Q220.2 188.6 215 192C212 194 209 193 206 191L191 180C181 173 179 160 173 145Z" fill="${p.skin}" stroke="${c.line}" stroke-width=".75" stroke-linejoin="round"/><path d="M102 212Q101 217 105 220M107 212L108 220M214 180Q216 179 218 181M219.5 182L223.5 180M219.5 185L224 184" fill="none" stroke="${c.nose}" stroke-width=".55" stroke-linecap="round"/><path d="M115 151L112 178M186 144Q187 161 196 172" fill="none" stroke="#fff1df" stroke-width="1.8" opacity=".44" stroke-linecap="round"/></g>
+    <g data-dressup-slot="skin" data-equipped="${skin}" data-part="arms">
+      <path d="M124 125Q115 125 111 135Q108 146 107 159L102 188Q99 202 101 213Q103 220 109 220Q114 218 113 211L115 194L124 166L133 143Z" fill="${p.skin}" stroke="${c.line}" stroke-width=".9" stroke-linejoin="round"/>
+      <path d="M176 124Q186 123 191 134Q196 148 198 162Q200 171 208 177L217 183Q222 187 219 192Q216 196 211 191L204 187Q208 194 204 197Q200 199 197 193L191 187Q194 195 189 196Q185 195 183 188L177 179Q171 170 171 156L168 140Z" fill="${p.skin}" stroke="${c.line}" stroke-width=".9" stroke-linejoin="round"/>
+      <path d="M103 204Q104 211 109 214M108 201L110 212M113 199L113 209M211 184Q214 184 216 188M205 183Q207 188 210 191M198 181Q201 186 204 190M185 178Q188 182 189 187" fill="none" stroke="${c.nose}" stroke-width=".8" stroke-linecap="round"/>
+      <path d="M115 150Q113 165 109 181M187 143Q193 160 195 168" fill="none" stroke="#fff1df" stroke-width="2.1" opacity=".48" stroke-linecap="round"/>
+      <path d="M101 214Q104 221 110 220M211 191Q215 196 219 192" fill="none" stroke="#fff4e9" stroke-width="1.1" opacity=".8" stroke-linecap="round"/>
+    </g>
     <g data-dressup-slot="skin" data-equipped="${skin}" data-part="neck"><path d="M141 94L139 115Q149 124 162 114L160 94Z" fill="${p.skin}" stroke="${c.line}" stroke-width=".65"/><path d="M141 96Q151 105 160 96L160 104Q149 111 140 104Z" fill="${c.shade}" opacity=".24"/></g>
     <g data-dressup-slot="dress" data-equipped="${dress}">${dressupGarmentMarkup(dress,p)}</g>
     ${dressupJewelryMarkup(bracelet,necklace,p)}
     <g transform="translate(151 68) scale(1.2 1.17) translate(-151 -68) rotate(-4 150 64)">
       <g data-dressup-slot="skin" data-equipped="${skin}" data-part="ears"><ellipse cx="122" cy="75" rx="5.1" ry="7.6" fill="${p.skin}" stroke="${c.line}" stroke-width=".65"/><ellipse cx="180" cy="74" rx="5.1" ry="7.6" fill="${p.skin}" stroke="${c.line}" stroke-width=".65"/><path d="M121 74Q125 72 125 77M181 73Q177 71 177 77" fill="none" stroke="${c.nose}" stroke-width=".6" stroke-linecap="round"/></g>
-      <g data-dressup-slot="skin" data-equipped="${skin}" data-part="face"><path d="M122 59C123 43 135 34 152 36C170 35 180 47 181 63L179 77C176 90 167 99 153 100C141 99 128 89 124 77Z" fill="${p.skin}" stroke="${c.line}" stroke-width=".65"/><path d="M125 75Q128 90 143 97Q129 93 124 77Z" fill="${c.shade}" opacity=".18"/><ellipse cx="129" cy="82" rx="9" ry="5.5" fill="${p.blush}"/><ellipse cx="172" cy="81" rx="9" ry="5.3" fill="${p.blush}"/></g>
+      <g data-dressup-slot="skin" data-equipped="${skin}" data-part="face"><path d="M121 59C122 41 136 32 152 34C170 33 182 47 182 64L179 79Q174 94 160 101Q152 105 145 101Q130 94 124 79Z" fill="${p.skin}" stroke="${c.line}" stroke-width=".65"/><path d="M125 75Q128 90 143 97Q129 93 124 77Z" fill="${c.shade}" opacity=".18"/><ellipse cx="129" cy="82" rx="9" ry="5.5" fill="${p.blush}"/><ellipse cx="172" cy="81" rx="9" ry="5.3" fill="${p.blush}"/></g>
       <path d="M130 61Q137 58.9 144 60.5M157 60.5Q164 58.4 171 60" fill="none" stroke="#a47a66" stroke-width=".9" stroke-linecap="round"/>
       ${dressupEyesMarkup(eyes,p)}${dressupLashesMarkup(lashes)}
       <g pointer-events="none" fill="none" stroke="#fff8e8" stroke-linecap="round" opacity=".9"><path d="M119 79l2.4-5.5 2.4 5.5 5.5 2.4-5.5 2.4-2.4 5.5-2.4-5.5-5.5-2.4Z" stroke-width="1.05"/><path d="M183 72l1.7-4 1.7 4 4 1.7-4 1.7-1.7 4-1.7-4-4-1.7Z" stroke-width=".9"/></g>
@@ -1932,6 +1939,7 @@ function girlIllustration(equipped = {}) {
       ${dressupLipsMarkup(lips,true)}
       ${dressupHairstyleMarkup(hairstyle,'front',dress==='patched'&&hair==='none',p)}
       <g data-dressup-slot="hair" data-equipped="${hair}">${dressupAccessoryMarkup(hair,false,p)}</g>
+    </g>
     </g>
   </svg>`;
 }
