@@ -1,6 +1,6 @@
 /* Real Chromium layout QA. Runs in CI with Node built-ins and the runner's Chrome.
  * Board stability uses real mouse input and animation frames, including held
- * heat treatment. Milestone fixtures skip extraction time; navigation, ice,
+ * heat treatment. Reward fixtures skip extraction time; navigation, ice,
  * rewards and outfit buttons use the actual page. */
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -454,35 +454,140 @@ async function runViewport(cdp, origin, viewport, report) {
     await checkBoardStability({ send, evaluate, viewport, label, report });
     if (viewport.geometryOnly) return;
     await click('#btn-wardrobe');
-    await checkpoint('03-wardrobe-locked', 'wardrobe-modal');
+    const unknownWardrobe = await evaluate(`(() => {
+      const collection=document.getElementById('wardrobe-collection');
+      const modal=document.getElementById('wardrobe-modal');
+      const coming=document.getElementById('wardrobe-coming-soon');
+      return {buttons:collection.querySelectorAll('button[data-equip]').length,
+        art:collection.querySelectorAll('svg').length,coming:!!coming&&!coming.hidden&&coming.textContent.includes('敬请期待'),
+        leaked:WARDROBE_ITEMS.filter(item=>modal.textContent.includes(item.name)
+          || modal.querySelector('[data-equip="'+item.id+'"]')).map(item=>item.id)};
+    })()`);
+    assert.deepEqual(unknownWardrobe,{buttons:0,art:0,coming:true,leaked:[]},`${label}: the initial wardrobe does not reveal unknown items`);
+    await checkpoint('03-wardrobe-surprises', 'wardrobe-modal');
     await click('#btn-close-wardrobe');
 
-    for (const [level, gift, sequence] of [[3, 'bow_rose', '04'], [5, 'dress_sky', '06']]) {
-      // Select a milestone and complete its extraction fixture. Rewards are
-      // still revealed by updateHUD and awarded by the ordinary ice/settlement.
-      await evaluate(`(() => {
+    for (const [level, gift, slot, sequence] of [[4, 'contacts_ocean', 'eyes', '04'], [7, 'dress_sky', 'dress', '06']]) {
+      // Bind a known random outcome to an actual care point for stable QA.
+      // Reveal, flight animation and the ice/settlement award are production paths.
+      const flight = await evaluate(`(() => {
         wardrobeProgress.level = ${level}; state.clientIndex = (${level}-1) % CLIENTS.length;
         generateLevel(0); state.paused=false; selectTool('steam');
-        const gift = state.pimples.find(p => p.giftId === ${JSON.stringify(gift)});
-        if (!gift) throw new Error('Missing milestone gift');
-        gift.state=P_STATE.OOZING; gift.bloodDropSize=0; gift.serousDropSize=0;
+        state.discoveredGifts=[];
+        state.pimples.forEach(p=>{p.giftId=null;});
+        const source=state.pimples[0];source.giftId=${JSON.stringify(gift)};
+        state.initialPimples.forEach(p=>{p.giftId=state.pimples.find(item=>item.id===p.id).giftId;});
+        if(source.sharedPore){source.sharedPore.phase='done';if(source.sharedPore.mode==='sequential'){source.type='whitehead';source.cfg=CONFIG.TYPES.WHITEHEAD;}}
+        source.state=P_STATE.OOZING;source.bloodDropSize=0;source.serousDropSize=0;
         updateHUD(); requestSceneFrame();
+        const node=document.querySelector('#gift-flight-layer .gift-flight[data-item-id="'+source.giftId+'"]');
+        if(!node)throw new Error('Revealed gift did not fly from its care point');
+        const animation=node.getAnimations()[0];
+        if(!animation)throw new Error('Normal-motion gift needs its reveal animation');
+        const bounds=canvas.getBoundingClientRect();
+        const sample=()=>{const box=node.getBoundingClientRect();return {x:(box.left+box.right)/2,y:(box.top+box.bottom)/2,width:box.width,height:box.height};};
+        animation.pause();animation.currentTime=0;const start=sample();
+        animation.currentTime=Number(animation.effect.getTiming().duration)*.95;const grown=sample();
+        animation.currentTime=0;animation.play();
+        return {itemId:node.dataset.itemId,sourceId:node.dataset.sourcePimpleId,
+          x:Number(node.dataset.sourceX),y:Number(node.dataset.sourceY),expectedId:String(source.id),
+          expectedX:source.x/state.width,expectedY:source.y/state.height,
+          expectedCenter:{x:bounds.left+source.x/state.width*bounds.width,y:bounds.top+source.y/state.height*bounds.height},
+          start,grown,owned:wardrobeProgress.unlocked.includes(source.giftId)};
       })()`);
-      assert.equal(await evaluate('document.getElementById("gift-discovery").hidden'), false, 'gift discovery is visible');
+      assert.equal(flight.itemId,gift);
+      assert.equal(flight.sourceId,flight.expectedId,`${label}: the flight names its real care point`);
+      assert.ok(Math.abs(flight.x-flight.expectedX)<1e-6&&Math.abs(flight.y-flight.expectedY)<1e-6,
+        `${label}: flight coordinates come from the revealed care point`);
+      assert.ok(Math.hypot(flight.start.x-flight.expectedCenter.x,flight.start.y-flight.expectedCenter.y)<2,
+        `${label}: the tiny gift starts inside its source opening`);
+      assert.ok(flight.grown.width>flight.start.width*4&&flight.grown.y<flight.start.y,
+        `${label}: the gift grows and flies upward`);
+      assert.equal(flight.owned,false,`${label}: animation alone does not grant ownership`);
+      report.giftFlights.push({viewport:label,level,...flight});
+      await waitFor('!document.getElementById("gift-discovery").hidden','gift announcement after its flight begins');
       await checkpoint(`${sequence}-level-${level}-discovery`, null);
-      await evaluate('state.pimples.forEach(p=>{p.state=P_STATE.HEALED;p.healProgress=1;});updateHUD();');
+      await evaluate(`state.pimples.forEach(p=>{
+        if(p.sharedPore){p.sharedPore.phase='done';if(p.sharedPore.mode==='sequential'){p.type='whitehead';p.cfg=CONFIG.TYPES.WHITEHEAD;}}
+        p.state=P_STATE.HEALED;p.healProgress=1;
+      });updateHUD();`);
       await click('#btn-ice-quick');
-      await waitFor('state.settled && document.getElementById("result-modal").classList.contains("open")', 'milestone settlement');
+      await waitFor('state.settled && document.getElementById("result-modal").classList.contains("open")', 'gift settlement');
       await checkpoint(`${String(Number(sequence) + 1).padStart(2, '0')}-level-${level}-reward`, 'result-modal');
       await click('#btn-open-wardrobe-result');
       await click(`[data-equip="${gift}"]`);
-      assert.equal(await evaluate(`wardrobeProgress.equipped.${level === 3 ? 'hair' : 'dress'}`), gift, 'outfit button equips the earned gift');
-      if (level === 5) await checkpoint('08-wardrobe-dressed', 'wardrobe-modal');
+      assert.equal(await evaluate(`wardrobeProgress.equipped.${slot}`), gift, 'outfit button equips the earned gift');
+      assert.equal(await evaluate(`(() => {
+        const owned=wardrobeProgress.unlocked.slice().sort();
+        const shown=[...document.querySelectorAll('#wardrobe-collection button[data-equip]')].map(button=>button.dataset.equip).sort();
+        return JSON.stringify(owned)===JSON.stringify(shown);
+      })()`),true,'the collection lists only items actually earned');
+      if (slot === 'dress') await checkpoint('08-wardrobe-dressed', 'wardrobe-modal');
       await click('#btn-close-wardrobe');
-      if (level === 3) await click('#btn-next-face');
+      if (slot === 'eyes') await click('#btn-next-face');
     }
     await click('#btn-result-home');
     await checkpoint('09-home-dressed', 'home-modal');
+    await click('#btn-home-wardrobe');
+    // A separate ownership fixture shows all ten visible outfit layers. The
+    // two reward scenarios above already verified that care grants ownership.
+    await evaluate('wardrobeProgress.unlocked=WARDROBE_ITEMS.map(item=>item.id);renderWardrobe();saveCurrentSession(true);');
+    const fullOutfit={hair:'bow_rose',dress:'dress_lilac',skin:'mask_pearl',lashes:'mascara_cocoa',eyes:'contacts_ocean',
+      lips:'lipstick_rose',hairstyle:'hairstyle_twintails',shoes:'shoes_maryjane',bracelet:'bracelet_pearl',necklace:'necklace_star'};
+    for(const [slot,id] of Object.entries(fullOutfit)) {
+      await click(`#wardrobe-collection [data-equip="${id}"]`);
+      assert.equal(await evaluate(`wardrobeProgress.equipped.${slot}`),id,`${label}: ${slot} is independently equipped`);
+    }
+    const outfitLayers=await evaluate(`(() => {
+      const expected=${JSON.stringify(fullOutfit)};
+      return Object.entries(expected).filter(([slot,id])=>{
+        const layers=[...document.querySelectorAll('#wardrobe-girl [data-dressup-slot="'+slot+'"]')];
+        return !layers.length||layers.some(layer=>layer.dataset.equipped!==id);
+      }).map(([slot])=>slot);
+    })()`);
+    assert.deepEqual(outfitLayers,[],`${label}: the portrait displays all equipped layers`);
+    await evaluate('document.querySelector("#wardrobe-modal .modal-card").scrollTop=0;document.getElementById("btn-close-wardrobe").focus({preventScroll:true});');
+    await checkpoint('10-full-outfit', 'wardrobe-modal');
+    await click('#btn-close-wardrobe');
+    await click('#btn-start-adventure');
+    // Visual-only fixture: show both shared-opening stages at once and hold
+    // squeeze active. Mechanics and resume behavior use real-input Node tests.
+    const shared = await evaluate(`(() => {
+      wardrobeProgress.level=6;generateLevel(0);state.paused=false;selectTool('squeeze');
+      finishPracticeGuide(true);clearGiftPresentation();
+      state.pimples=state.pimples.filter(p=>p.type==='blackhead').slice(0,2);
+      const [together,sequential]=state.pimples;
+      state.pimples.forEach((p,index)=>{
+        p.linkedPore=false;p.giftId=null;p.steamed=1;p.pierced=true;
+        p.sharedPore={mode:index?'sequential':'together',phase:'blackhead'};
+        p.state=P_STATE.EXTRUDING;p.extrudeProgress=.62;p.wormTotalLen=74;
+        p.x=state.width*(index ? 0.65 : 0.35);p.y=state.height*.6;
+        p.nx=p.x/state.width;p.ny=p.y/state.height;
+        p.pressure=.42;p.swellVisual=.42;p.bloodDropSize=0;
+      });
+      advanceSharedPore(sequential);
+      sequential.pusRemaining=.24;
+      startMirrorPinch({x:together.x+38,y:together.y});
+      state.pointer.squeezeForce=.42;state.pointer.rawForce=.42;
+      updateHUD();setHint('同一个洞口：黑白一起取出，或取出黑头后继续清理白头。');
+      window.sharedShotSimulation=updateSimulation;updateSimulation=()=>{};
+      // Inspect the actual tool renderer before repainting the scene. With
+      // active squeeze it must leave a transparent layer, without any fingers.
+      ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,canvas.width,canvas.height);ctx.restore();
+      renderRealisticHandsAndTools();
+      const toolPixels=ctx.getImageData(0,0,canvas.width,canvas.height).data.some((value,index)=>index%4===3&&value>0);
+      renderScene(false);requestSceneFrame();
+      return {active:state.pointer.active,tool:state.currentTool,mode:state.pointer.mode,toolPixels,
+        pores:state.pimples.map(p=>({id:p.id,type:p.type,state:p.state,shared:p.sharedPore,mouths:getPimpleMouths(p)}))};
+    })()`);
+    assert.equal(shared.active,true,`${label}: shared-opening screenshot holds squeeze active`);
+    assert.equal(shared.tool,'squeeze');
+    assert.equal(shared.toolPixels,false,`${label}: squeezing draws no finger overlay`);
+    assert.deepEqual(shared.pores.map(p=>[p.shared.mode,p.shared.phase,p.mouths.length]),
+      [['together','blackhead',1],['sequential','whitehead',1]],`${label}: both shared-opening stages use one opening`);
+    report.sharedPores.push({viewport:label,...shared});
+    await checkpoint('11-shared-openings-squeeze', null);
+    await evaluate('updateSimulation=window.sharedShotSimulation;delete window.sharedShotSimulation;releasePointer();');
   } finally {
     for (const error of cdp.errors.get(sessionId) || []) report.failures.push(`${label}: runtime error: ${error}`);
     await cdp.send('Target.disposeBrowserContext', { browserContextId }).catch(() => {});
@@ -491,7 +596,7 @@ async function runViewport(cdp, origin, viewport, report) {
 
 async function main() {
   await fsp.mkdir(OUTPUT, { recursive: true });
-  const report = { viewports: VIEWPORTS, screens: [], fonts: [], geometry: [], failures: [] };
+  const report = { viewports: VIEWPORTS, screens: [], fonts: [], geometry: [], giftFlights: [], sharedPores: [], failures: [] };
   let server, child, cdp, profileDirectory;
   try {
     const executable = [process.env.CHROME_BIN, '/usr/bin/google-chrome', '/usr/bin/chromium'].find(file => file && fs.existsSync(file));
