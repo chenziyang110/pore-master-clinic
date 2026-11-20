@@ -16,14 +16,21 @@ function select(g,id) {
   throw new Error('Could not select care point '+id);
 }
 
-test('the first five adventure levels unlock a hair accessory and a dress through real care inputs', {timeout:60000},async t=>{
+test('the first five adventure levels award only their bound random finds through real care inputs', {timeout:60000},async t=>{
   const g=await createGame({seed:1701});t.after(g.close);g.frame();
   // This integration gate exercises inputs, physics, UI navigation and
   // accounting. Pixel rendering is covered by the dedicated canvas tests.
   g.evaluate('renderScene=()=>{};');
+  const giftsByRound=[[],[],['contacts_ocean','bracelet_pearl'],[],['mask_pearl']];
+  const expectedOwned=new Set();
   for(let round=0;round<5;round++) {
     assert.equal(g.state('state.runLevel'),round+1);
     if(round<2)assert.equal(g.state('state.pimples.every(p=>p.type==="blackhead")'),true);
+    // Keep the five-round physics gate deterministic while allowing any real
+    // run to draw zero, one or two surprises. Never grant ownership directly.
+    g.evaluate(`state.discoveredGifts=[];
+      state.pimples.forEach((p,index)=>{p.giftId=${JSON.stringify(giftsByRound[round])}[index]||null;});
+      state.initialPimples.forEach(p=>{p.giftId=state.pimples.find(item=>item.id===p.id).giftId;});`);
     g.d.getElementById('skin-canvas').focus();
     const targets=g.state('state.pimples.map(p=>({id:p.id,type:p.type}))');
     for(const p of targets) {
@@ -42,8 +49,10 @@ test('the first five adventure levels unlock a hair accessory and a dress throug
     assert.equal(record.runId,g.state('state.runId'));
     assert.equal(g.state('wardrobeProgress.level'),round+2);
     const unlocked=JSON.parse(g.state('JSON.stringify(wardrobeProgress.unlocked)'));
-    assert.deepEqual(unlocked,round<2?[]:round<4?['bow_rose']:['bow_rose','dress_sky']);
-    if(round===2||round===4)assert.match(g.d.getElementById('result-modal').textContent,/运气超棒/);
+    for(const id of giftsByRound[round])expectedOwned.add(id);
+    assert.deepEqual([...unlocked].sort(),[...expectedOwned].sort());
+    assert.deepEqual([...record.wardrobeGifts].sort(),[...giftsByRound[round]].sort());
+    if(giftsByRound[round].length)assert.match(g.d.getElementById('result-modal').textContent,/运气超棒/);
     g.click('btn-next-face');await new Promise(setImmediate);g.frame();
   }
   assert.equal(g.state('state.runLevel'),6);
