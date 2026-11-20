@@ -1,6 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { createGame } = require('./harness.cjs');
+const { setupRound } = require('./round-fixture.cjs');
 
 const plain = value => JSON.parse(JSON.stringify(value));
 
@@ -14,11 +15,9 @@ async function game(t, options = {}) {
   return g;
 }
 
-function startLevel(g, level) {
-  g.evaluate(`wardrobeProgress.level=${level};state.runLevel=${level};generateLevel(0);
-    state.paused=false;selectTool('steam');saveCurrentSession(true);`);
-  g.frame();
-  return g.state('state.pimples.find(p => p.sharedPore)');
+function startShared(g, mode) {
+  setupRound(g,{level:6,setup:`state.pimples[0].sharedPore={mode:${JSON.stringify(mode)},phase:'blackhead'};`});
+  return g.state('state.pimples[0]');
 }
 
 function key(g, value, type = 'keydown') {
@@ -72,25 +71,25 @@ function wipe(g, p) {
   selectTarget(g, p.id); key(g, '5'); hold(g, 2); g.frame(60);
 }
 
-test('shared contents start sparingly after the introductory levels and use one stable opening', async t => {
+test('introductory boards have no shared contents and both shared modes use one stable opening', async t => {
   const g = await game(t);
-  for (const level of [1, 2, 3]) {
-    startLevel(g, level);
+  for (const level of [1, 2]) {
+    g.evaluate(`wardrobeProgress.level=${level};generateLevel(0);`);
     assert.equal(g.state('state.pimples.some(p => p.sharedPore)'), false);
   }
-  for (const level of [4, 5, 6, 7, 8]) {
-    const p = startLevel(g, level);
+  for (const mode of ['together','sequential']) {
+    const p = startShared(g, mode);
     assert.equal(g.state('state.pimples.filter(p => p.sharedPore).length'), 1);
     assert.equal(p.linkedPore, false);
     assert.equal(p.type, 'blackhead');
     assert.equal(p.sharedPore.phase, 'blackhead');
-    assert.equal(p.sharedPore.mode, level >= 6 && level % 2 === 0 ? 'sequential' : 'together');
+    assert.equal(p.sharedPore.mode, mode);
     assert.deepEqual(plain(g.state(`getPimpleMouths(state.pimples.find(p => p.id === ${p.id}))`)), [{ x: p.x, y: p.y }]);
   }
 });
 
 test('together mode exposes both contents, removes visible squeezing fingers, and collects the pair once', async t => {
-  const g = await game(t), p = startLevel(g, 4);
+  const g = await game(t), p = startShared(g, 'together');
   warm(g, p);
   squeezeUntil(g, p, () => p.state === 2 && p.extrudeProgress > .30);
   const drawn = plain(g.evaluate(`(() => {
@@ -138,7 +137,7 @@ test('together mode exposes both contents, removes visible squeezing fingers, an
 });
 
 test('a fully squeezed pair remains visible on the skin and a real swab collects both as one item', async t => {
-  const g = await game(t), p = startLevel(g, 4);
+  const g = await game(t), p = startShared(g, 'together');
   warm(g, p);
   squeezeUntil(g, p, () => p.state === 3);
   assert.equal(p.sharedPore.phase, 'done');
@@ -154,7 +153,7 @@ test('a fully squeezed pair remains visible on the skin and a real swab collects
 });
 
 test('sequential contents survive a reload after the first pluck and the second content stays interactive', async t => {
-  const g = await game(t), p = startLevel(g, 6);
+  const g = await game(t), p = startShared(g, 'sequential');
   const origin = { id: p.id, x: p.x, y: p.y, radius: p.radius };
   const run = g.state('state.runId');
   warm(g, p); pull(g, p);
@@ -207,7 +206,7 @@ test('sequential contents survive a reload after the first pluck and the second 
 });
 
 test('wiping away the first squeezed plug cannot finish the remaining whitehead; it can then be plucked normally', async t => {
-  const g = await game(t), p = startLevel(g, 6);
+  const g = await game(t), p = startShared(g, 'sequential');
   warm(g, p);
   squeezeUntil(g, p, () => p.sharedPore.phase === 'whitehead');
   assert.equal(p.state, 2);

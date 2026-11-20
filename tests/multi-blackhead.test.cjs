@@ -1,6 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { createGame } = require('./harness.cjs');
+const { setupRound } = require('./round-fixture.cjs');
 
 const plain = value => JSON.parse(JSON.stringify(value));
 const PROFILE = 'pimple_clinic_profile_v3';
@@ -15,11 +16,10 @@ async function game(t, options = {}) {
   return g;
 }
 
-function startLevel(g, level) {
-  g.evaluate(`wardrobeProgress.level=${level};state.runLevel=${level};generateLevel(0);
-    state.paused=false;selectTool('steam');saveCurrentSession(true);`);
-  g.frame();
-  return g.state('state.pimples.find(p => p.blackheadCount > 1)');
+function startBundle(g, {count=2,lengths=Array(count).fill(1),giant=false}={}) {
+  setupRound(g,{level:6,setup:`Object.assign(state.pimples[0],{blackheadCount:${count},
+    blackheadLengths:${JSON.stringify(lengths)},blackheadSize:${JSON.stringify(giant?'giant':'normal')}});`});
+  return g.state('state.pimples[0]');
 }
 
 function key(g, value, type = 'keydown') {
@@ -104,16 +104,15 @@ function assertBundle(strands, count, lengths = Array(count).fill(1)) {
   }
 }
 
-test('multiple bundles appear from level three and remain separate from other pore variants', async t => {
+test('introductory boards stay simple and two, three or four strands each use one unmixed opening', async t => {
   const g = await game(t);
   for (const level of [1, 2]) {
-    startLevel(g, level);
+    g.evaluate(`wardrobeProgress.level=${level};generateLevel(0);`);
     assert.equal(g.state('state.pimples.some(p => p.blackheadCount > 1)'), false);
   }
-  for (const level of [3, 4, 5, 6, 7, 8, 9]) {
-    const p = startLevel(g, level);
-    assert.ok(g.state('state.pimples.filter(p => p.blackheadCount > 1).length') >= 2);
-    assert.ok(p.blackheadCount >= 2 && p.blackheadCount <= 4);
+  for (const count of [2,3,4]) {
+    const p = startBundle(g,{count});
+    assert.equal(p.blackheadCount,count);
     assert.equal(p.type, 'blackhead');
     assert.equal(p.linkedPore, false);
     assert.equal(p.sharedPore, null);
@@ -124,8 +123,8 @@ test('multiple bundles appear from level three and remain separate from other po
 
 test('real heat and squeeze expose every strand with one root and distinct dark tips for two, three and four blackheads', async t => {
   const g = await game(t);
-  for (const level of [5, 6, 7]) {
-    const p = startLevel(g, level);
+  for (const count of [2,3,4]) {
+    const p = startBundle(g,{count});
     warm(g, p);
     squeeze(g, p, () => p.state === 2 && p.extrudeProgress > .42);
     assertBundle(drawnStrands(g, `renderPimple(state.pimples.find(p=>p.id===${p.id}),false);`), p.blackheadCount, p.blackheadLengths);
@@ -135,12 +134,12 @@ test('real heat and squeeze expose every strand with one root and distinct dark 
 });
 
 test('grabbing an outer tip removes the bundle once and preserves four strands through flight, reload and the tray', async t => {
-  const g = await game(t), p = startLevel(g, 7);
+  const g = await game(t), p = startBundle(g,{count:4,lengths:[.6,1,1.5,.8]});
   const id = p.id, origin = {x:p.x,y:p.y}, run = g.state('state.runId');
   warm(g, p);
   squeeze(g, p, () => p.state === 2 && p.extrudeProgress > .50);
   const lengths = plain(p.blackheadLengths);
-  assert.ok(Math.max(...lengths) / Math.min(...lengths) > 2, 'this real level contains visibly unequal strands');
+  assert.ok(Math.max(...lengths) / Math.min(...lengths) > 2, 'the saved fixture contains visibly unequal strands');
   const tips = plain(g.state(`getBlackheadRenderData(state.pimples.find(p=>p.id===${id})).curves.map(curve=>curve.at(-1))`));
   for (const tip of tips) {
     g.click('tool-tweezers');
@@ -178,7 +177,7 @@ test('grabbing an outer tip removes the bundle once and preserves four strands t
 });
 
 test('a squeezed bundle keeps its three strands on the skin across reload and a real swab collects the group once', async t => {
-  const g = await game(t), p = startLevel(g, 6);
+  const g = await game(t), p = startBundle(g,{count:3,giant:true});
   warm(g, p); squeeze(g, p, () => p.state === 3);
   const id = p.id;
   assert.equal(p.blackheadSize, 'giant');
@@ -215,13 +214,13 @@ test('a squeezed bundle keeps its three strands on the skin across reload and a 
 
 test('old saves default to one strand, while invalid bundle counts and mixed pore variants are rejected', async t => {
   const g = await game(t);
-  startLevel(g, 1);
+  setupRound(g,{level:1,pace:'intro',recipe:{blackhead:3,whitehead:0,cyst:0}});
   const old = JSON.parse(g.storage()[PROFILE]).session;
   for (const p of [...old.data.pimples, ...old.data.initialPimples]) delete p.blackheadCount;
   assert.equal(g.evaluate(`restoreCurrentSession(${JSON.stringify(JSON.stringify(old))})`), true);
   assert.equal(g.state('state.pimples.every(p=>p.blackheadCount===1)'), true);
 
-  const bundle = startLevel(g, 5), run = g.state('state.runId');
+  const bundle = startBundle(g,{count:2}), run = g.state('state.runId');
   const source = JSON.parse(g.storage()[PROFILE]).session;
   for (const bad of [0, 5, 2.5, '3', null]) {
     const damaged = plain(source);

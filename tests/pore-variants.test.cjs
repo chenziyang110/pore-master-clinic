@@ -1,6 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { createGame } = require('./harness.cjs');
+const { setupRound } = require('./round-fixture.cjs');
 
 const plain = value => JSON.parse(JSON.stringify(value));
 const PROFILE = 'pimple_clinic_profile_v3';
@@ -13,9 +14,13 @@ async function game(t, options = {}) {
   return g;
 }
 
-function level(g, value) {
-  g.evaluate(`wardrobeProgress.level=${value};generateLevel(0);state.paused=false;saveCurrentSession(true);`);
-  g.frame();
+function validationRound(g) {
+  setupRound(g, {level:4, recipe:{blackhead:6,whitehead:2,cyst:0}, setup:`
+    const giant=state.pimples[0];giant.blackheadSize='giant';giant.blackheadCount=3;
+    giant.blackheadLengths=[.6,1,1.5];
+    state.pimples[1].sharedPore={mode:'together',phase:'blackhead'};
+    state.pimples.find(p=>p.type==='whitehead').whiteheadSize='large';
+  `});
 }
 
 function key(g, value, type = 'keydown') {
@@ -67,10 +72,13 @@ function cavity(g, id) {
   })()`));
 }
 
-test('brief real heat softens a pore, and generated giant bodies are visibly longer and thicker without moving their opening', async t => {
-  const g=await game(t,{width:900,height:650});level(g,5);
+test('brief real heat softens a pore, and giant bodies are visibly longer and thicker without moving their opening', async t => {
+  const g=await game(t,{width:900,height:650});
+  setupRound(g, {level:5, recipe:{blackhead:3,whitehead:0,cyst:0}, setup:`
+    state.pimples[0].blackheadSize='giant';state.pimples[0].wormTotalLen=32;
+  `});
   const p=g.state('state.pimples.find(p=>p.blackheadSize==="giant")');
-  assert.equal(p.blackheadCount,1,'odd later levels include a giant single strand');
+  assert.equal(p.blackheadCount,1,'the fixture contains a giant single strand');
   select(g,p.id);key(g,'1');hold(g,.8);
   assert.ok(p.steamed>=.75,'a short unupgraded heat hold reaches the real soften threshold');
   const steam=p.steamed;g.frame(10,50);assert.equal(p.steamed,steam,'released heat stops adding progress');
@@ -101,7 +109,10 @@ test('brief real heat softens a pore, and generated giant bodies are visibly lon
 });
 
 test('large whitehead uses real heat, squeeze, swab and reload; its pale cavity remains until a real ice brush covers it', async t => {
-  const g=await game(t);level(g,4);
+  const g=await game(t);
+  setupRound(g, {level:4, recipe:{blackhead:3,whitehead:2,cyst:0}, setup:`
+    state.pimples.find(p=>p.type==='whitehead').whiteheadSize='large';
+  `});
   const p=g.state('state.pimples.find(p=>p.whiteheadSize==="large")'),id=p.id;
   const mouth=plain(g.state(`getPimpleMouths(state.pimples.find(p=>p.id===${id}))`));
   warm(g,p);squeeze(g,p);
@@ -141,8 +152,71 @@ test('large whitehead uses real heat, squeeze, swab and reload; its pale cavity 
   assert.ok(cavity(r,id).area<before.area*.25,'ice visibly closes the large cavity');
 });
 
+test('giant blackhead cavities remain pale after real squeeze or pluck, survive cleaning and reload, and close under the ice brush', async t => {
+  const g=await game(t);
+  // Choose two legal appearance variants without depending on the random
+  // level plan. Every care stage below still comes from real held inputs.
+  setupRound(g, {level:4, recipe:{blackhead:3,whitehead:0,cyst:0}, setup:`
+    for (const [index,count] of [[0,3],[1,1]]) {
+      const p=state.pimples[index];p.blackheadSize='giant';p.blackheadCount=count;
+      p.blackheadLengths=Array(count).fill(1);
+    }
+  `});
+  const targets=g.state('state.pimples.slice(0,2)'),before=[];
+  for (const [index,p] of targets.entries()) {
+    const origin=plain(g.state(`getPimpleMouths(state.pimples.find(p=>p.id===${p.id}))`));
+    warm(g,p);
+    if (index===0) {
+      squeeze(g,p);
+      assert.equal(p.state,3);
+      assert.ok(cavity(g,p.id).area>35,'the emptied giant opening is immediately visible');
+      select(g,p.id);key(g,'5');key(g,' ');
+      let frames=0;while(p.state<4 && frames++<60)g.frame(1,50);
+      key(g,' ','keyup');
+      assert.equal(p.state,4,'the swab reaches the real healing stage');
+      assert.ok(cavity(g,p.id).area>35,'the cavity is retained while the skin heals');
+    } else {
+      select(g,p.id);key(g,'4');hold(g,3.6);
+      assert.ok(p.state>=4,'a real slow pluck cleans the single giant');
+    }
+    wipe(g,p);
+    assert.equal(p.state,5);
+    assert.equal(p.bloodDropSize,0,'a giant blackhead still never bleeds');
+    assert.equal(p.iced,false);
+    assert.deepEqual(plain(g.state(`getPimpleMouths(state.pimples.find(p=>p.id===${p.id}))`)),origin);
+    const pixels=cavity(g,p.id);
+    assert.ok(pixels.area>35,'the broad opening does not fade into an ordinary pinhole');
+    assert.ok(pixels.center[0]>200 && pixels.center[1]>145 && pixels.center[2]>125,
+      'the persistent hollow is light pink skin, without a dark plug or blood');
+    before.push({id:p.id,...pixels});
+  }
+  const score=g.state('state.score');
+  assert.equal(g.state('state.trophiesPlucked'),2,'each entire pore is collected once');
+  g.evaluate('saveCurrentSession(true);');const saved=g.storage();g.close();
+
+  const r=await game(t,{storage:saved});
+  for (const expected of before) {
+    const p=r.state(`state.pimples.find(p=>p.id===${expected.id})`);
+    assert.equal(p.blackheadSize,'giant');assert.equal(p.iced,false);
+    assert.deepEqual(cavity(r,p.id),{center:expected.center,area:expected.area},'reload preserves the cleaned giant cavity');
+    wipe(r,p);
+  }
+  assert.equal(r.state('state.score'),score,'repeated wiping cannot reward the same extraction again');
+  assert.equal(r.state('state.trophiesPlucked'),2);
+  for (const p of r.state('state.pimples.filter(p=>p.state<4)')) {
+    warm(r,p);select(r,p.id);key(r,'4');hold(r,3.6);assert.ok(p.state>=4);
+  }
+  r.click('btn-ice-finish');assert.equal(r.state('state.currentTool'),'ice_brush');
+  for (const expected of before) {
+    const p=r.state(`state.pimples.find(p=>p.id===${expected.id})`);
+    r.mouse('skin-canvas','mousedown',p.x,p.y);r.mouse(r.w,'mouseup',p.x,p.y);
+    assert.equal(p.iced,true);
+    assert.ok(cavity(r,p.id).area<expected.area*.25,'real ice coverage closes the giant opening');
+  }
+});
+
 test('variant fields accept old saves and reject malformed lengths, incompatible sizes and altered collection profiles', async t => {
-  const g=await game(t);level(g,4);
+  const g=await game(t);validationRound(g);
   const source=JSON.parse(g.storage()[PROFILE]).session;
   const giant=source.data.pimples.find(p=>p.blackheadSize==='giant');
   const white=source.data.pimples.find(p=>p.whiteheadSize==='large');
@@ -167,7 +241,7 @@ test('variant fields accept old saves and reject malformed lengths, incompatible
   assert.equal(g.evaluate(`restoreCurrentSession(${JSON.stringify(JSON.stringify(old))})`),true);
   assert.equal(g.state('state.pimples.every(p=>p.blackheadSize==="normal" && p.whiteheadSize==="normal" && p.blackheadLengths.every(length=>length===1))'),true);
 
-  level(g,4);const p=g.state('state.pimples.find(p=>p.blackheadSize==="giant")');
+  validationRound(g);const p=g.state('state.pimples.find(p=>p.blackheadSize==="giant")');
   warm(g,p);squeeze(g,p);g.evaluate('saveCurrentSession(true);');
   const collected=JSON.parse(g.storage()[PROFILE]).session;
   for (const field of ['blackheadSize','blackheadLengths']) {
@@ -181,17 +255,17 @@ test('variant fields accept old saves and reject malformed lengths, incompatible
 test('skin uses a light peach-pink range while preserving visible relief across care regions', async t => {
   const g=await game(t);
   const samples=plain(g.evaluate(`(() => {
-    const indices=[...new Set(CLIENTS.map(client=>client.zoneId))].map(zone=>CLIENTS.findIndex(client=>client.zoneId===zone));
-    const values=[];
-    for(const index of indices)for(const mode of ['realistic','creamy']) {
-      state.clientIndex=index;state.styleMode=mode;renderSkinTexture();
+    const values=[],originalPlan=state.roundPlan,originalMode=state.styleMode;
+    try {for(const region of TREATMENT_REGIONS)for(const mode of ['realistic','creamy']) {
+      state.roundPlan={version:1,region:region.id,pace:'busy',recipe:{blackhead:6,whitehead:2,cyst:0}};
+      state.styleMode=mode;renderSkinTexture();
       const image=skinCtx.getImageData(0,0,skinLayer.width,skinLayer.height),reds=[],greens=[],blues=[];
       for(let y=12;y<image.height;y+=17)for(let x=12;x<image.width;x+=17) {
         const i=(y*image.width+x)*4;reds.push(image.data[i]);greens.push(image.data[i+1]);blues.push(image.data[i+2]);
       }
       const average=xs=>xs.reduce((a,b)=>a+b,0)/xs.length;
       values.push({red:average(reds),green:average(greens),blue:average(blues),relief:Math.max(...greens)-Math.min(...greens)});
-    }
+    }} finally {state.roundPlan=originalPlan;state.styleMode=originalMode;renderSkinTexture();}
     return values;
   })()`));
   for (const sample of samples) {

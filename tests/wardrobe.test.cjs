@@ -1,6 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {createGame, createStorageHub} = require('./harness.cjs');
+const {setupRound} = require('./round-fixture.cjs');
 
 const PROFILE = 'pimple_clinic_profile_v3';
 const plain = value => JSON.parse(JSON.stringify(value));
@@ -21,9 +22,7 @@ async function game(t, options = {}) {
 }
 
 function startLevel(g, level, gifts = []) {
-  g.evaluate(`document.querySelectorAll('.modal-backdrop.open').forEach(m=>m.classList.remove('open'));
-    wardrobeProgress.level=${level};state.runLevel=${level};generateLevel(0);
-    state.paused=false;selectTool('steam');`);
+  setupRound(g,{level,...(level<=2?{pace:'intro',recipe:{blackhead:level===1?3:4,whitehead:0,cyst:0}}:{})});
   // Reward-accounting tests bind a known outcome to real care points. The
   // random selection and generateLevel binding have their own tests below.
   g.evaluate(`(() => {
@@ -113,7 +112,8 @@ test('early levels stay simple, food is common and permanent surprises stay rare
   const g = await game(t);
   assert.deepEqual(plain(g.state('adventureRecipeFor(1)')), {blackhead:3,whitehead:0,cyst:0});
   assert.deepEqual(plain(g.state('adventureRecipeFor(2)')), {blackhead:4,whitehead:0,cyst:0});
-  assert.deepEqual(plain(g.state('adventureRecipeFor(3)')), {blackhead:3,whitehead:1,cyst:0});
+  // Later recipes and their busy/light rhythm are exercised with the real
+  // random planner in round-variety.test.cjs, separately from reward accounting.
   assert.deepEqual(plain(g.state('WARDROBE_DEFAULTS')), DEFAULTS);
   assert.deepEqual(plain(g.state('Object.fromEntries(WARDROBE_ITEMS.map(item=>[item.id,item.slot]))')), ITEMS);
   const dreamIds=plain(g.state('DREAM_ITEMS.map(item=>item.id)'));
@@ -495,6 +495,7 @@ test('an old v3 care resumes intact, then starts the new adventure at its simple
   const originalCount=legacy.session.data.pimples.length;
   delete legacy.wardrobe;
   delete legacy.session.data.runLevel;
+  delete legacy.session.data.roundPlan;
   delete legacy.session.data.legacyCareSession;
   delete legacy.session.data.discoveredGifts;
   for(const list of [legacy.session.data.pimples,legacy.session.data.initialPimples]) {
