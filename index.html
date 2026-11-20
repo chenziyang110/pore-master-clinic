@@ -1753,7 +1753,7 @@ function dressupSvgPaints(skin = 'natural', eyes = 'natural') {
     : eyes === 'contacts_hazel' ? ['#5c3d20','#ae7a32','#e4c876'] : ['#3d2927','#855039','#d69a61'];
   const gradients = {
     skin: pearl ? ['#fff8ef','#fbe9dc','#f0d0be'] : ['#ffe8d4','#f5ceb4','#e8b297'],
-    hair:['#563541','#965d70','#d29aa4'], hairLight:['#f2c8ca','#d99da9','#a96d7c'],
+    hair:['#583a35','#a86b59','#e6b18e'], hairLight:['#ffe0bd','#edb98f','#bf806d'],
     old:['#f8d7d8','#e6aebc','#c98298'], blue:['#9de3ff','#65b5ee','#4086cf'],
     blueDeep:['#68b5ef','#3f8ed5','#3b69b2'], blueLight:['#f6fcff','#d8efff','#9dd7f5'],
     peach:['#ffe2ca','#f7b4a4','#d88d9a'], lilac:['#f0e4ff','#c5a8eb','#9b7bcf'],
@@ -1847,7 +1847,7 @@ function dressupHairstyleMarkup(style, part, tousled = false, paint = {}) {
       ?'M122 78C113 61 120 41 132 32Q149 22 165 31Q185 38 184 63L179 84L174 85L175 61Q167 65 158 61L154 54L150 63Q135 66 126 61L126 85Z'
       :chosen==='hairstyle_twintails'
       ?'M123 79Q114 62 123 44Q135 27 151 28Q170 26 181 45Q189 63 179 81L175 84L175 62Q161 59 151 43Q142 58 127 63L126 84Z'
-      :'M123 80C113 63 119 42 134 32C149 23 166 28 176 39Q189 52 180 79L175 85L174 62Q159 58 151 43Q147 54 132 61L136 53Q129 62 125 65L126 85Z';
+      :'M121 82C111 63 117 39 133 29C149 20 169 25 179 40Q192 57 181 82L176 91Q173 74 172 63Q163 59 157 48Q152 43 150 39Q145 56 132 62L137 51Q127 62 124 72L126 91Z';
     art=`<path d="${cap}" fill="${fill}" stroke="#805e50" stroke-width=".9" stroke-linejoin="round"/>
       <path d="M124 49Q132 34 148 33M160 34Q175 38 179 51" fill="none" stroke="${light}" stroke-width="5.3" stroke-linecap="round" opacity=".82"/><path d="M126 57Q119 73 129 91Q134 101 131 113M177 56Q185 74 174 92Q170 103 174 113" fill="none" stroke="${light}" stroke-width="2.1" stroke-linecap="round" opacity=".62"/><path d="M133 37Q141 31 148 33M158 33Q170 32 176 43" fill="none" stroke="#ffe1df" stroke-width="1.25" stroke-linecap="round" opacity=".78"/>
       <path d="M126 48Q135 37 147 36M129 54Q139 43 147 41M160 37Q174 43 176 52M163 44Q169 54 176 57" fill="none" stroke="#e3c4a3" stroke-width=".8" stroke-linecap="round" opacity=".64"/>
@@ -1878,7 +1878,7 @@ function dressupShoesMarkup(shoes, paint = {}) {
 function dressupEyesMarkup(eyes, paint = {}) {
   const chosen=['contacts_hazel','contacts_ocean'].includes(eyes)?eyes:'natural';
   const iris=paint.iris||(chosen==='contacts_ocean'?'#81b8cd':chosen==='contacts_hazel'?'#c7a16a':'#a97956');
-  const art=[[137,71],[163,70]].map(([x,y])=>`<g transform="translate(${x} ${y}) scale(1.12 1.16)"><path d="M-8 .3C-4.8-5.6 3.4-6 8.4-.9C5.3 5.8-4.8 6.2-8 .3Z" fill="#fffaf5" stroke="#b88d84" stroke-width=".55"/><g${paint.eyeClip?' clip-path="'+paint.eyeClip+'"':''}><ellipse cx=".3" cy=".1" rx="4.9" ry="6.4" fill="${iris}"/><ellipse cx=".3" cy="-.1" rx="2.1" ry="3.9" fill="#49313a"/><path d="M-3 3.2Q.3 6.1 3.8 3.1" fill="none" stroke="${chosen==='contacts_ocean'?'#d0f1ee':'#f7d6a2'}" stroke-width=".9" opacity=".85"/><ellipse cx="-1.1" cy="-2.6" rx="1.5" ry="1.9" fill="#fff"/><circle cx="3.2" cy="2.3" r=".9" fill="#fffaf0"/><circle cx="-2.2" cy="1.4" r=".45" fill="#fff"/></g><path d="M-8 .3Q-4.8-5.6 1-5Q6-5.4 8.4-.9" fill="none" stroke="#78515a" stroke-width="1" stroke-linecap="round"/><path d="M-5.8 5Q.2 6.5 5.5 3.5" fill="none" stroke="#d6a69c" stroke-width=".5" opacity=".75"/></g>`).join('');
+  const art=[[137,71],[163,70]].map(([x,y])=>`<g transform="translate(${x} ${y}) scale(1.24 1.3)"><path d="M-8 .3C-4.8-5.6 3.4-6 8.4-.9C5.3 5.8-4.8 6.2-8 .3Z" fill="#fffaf5" stroke="#b88d84" stroke-width=".55"/><g${paint.eyeClip?' clip-path="'+paint.eyeClip+'"':''}><ellipse cx=".3" cy=".1" rx="4.9" ry="6.4" fill="${iris}"/><ellipse cx=".3" cy="-.1" rx="2.1" ry="3.9" fill="#49313a"/><path d="M-3 3.2Q.3 6.1 3.8 3.1" fill="none" stroke="${chosen==='contacts_ocean'?'#d0f1ee':'#f7d6a2'}" stroke-width=".9" opacity=".85"/><ellipse cx="-1.1" cy="-2.6" rx="1.5" ry="1.9" fill="#fff"/><circle cx="3.2" cy="2.3" r=".9" fill="#fffaf0"/><circle cx="-2.2" cy="1.4" r=".45" fill="#fff"/></g><path d="M-8 .3Q-4.8-5.6 1-5Q6-5.4 8.4-.9" fill="none" stroke="#68404a" stroke-width="1.45" stroke-linecap="round"/><path d="M-6.5-2.8L-8-5.5M-3.5-4.7L-4.2-7.1M4.6-4.4L6.1-6.6" fill="none" stroke="#68404a" stroke-width=".9" stroke-linecap="round"/><path d="M-5.8 5Q.2 6.5 5.5 3.5" fill="none" stroke="#d6a69c" stroke-width=".5" opacity=".75"/></g>`).join('');
   return `<g data-dressup-slot="eyes" data-equipped="${chosen}">${art}</g>`;
 }
 
@@ -1890,7 +1890,7 @@ function dressupLashesMarkup(lashes) {
 function dressupLipsMarkup(lips, smiling = false) {
   const chosen=['lipstick_rose','lipstick_peach'].includes(lips)?lips:'natural';
   const rose=chosen==='lipstick_rose',peach=chosen==='lipstick_peach';
-  const fill=rose?'#d78eaa':peach?'#e8ac91':'#d58f9b';
+  const fill=rose?'#df86a4':peach?'#efa98d':'#d98291';
   return `<g data-dressup-slot="lips" data-equipped="${chosen}"><path d="M143.1 89.3Q147.1 88.4 150 90Q153.5 87.7 157.8 88.4Q154.8 95.1 149.2 95.2Q145.5 94.5 143.1 89.3Z" fill="${fill}" opacity="${chosen==='natural'?'.7':'1'}"/><path d="M143.8 89.7Q150 92.6 157 88.9Q153.8 94.2 148.5 93.5Z" fill="#a8757c" opacity=".68"/><path d="M146 90.7Q150.6 91.9 155.3 89.9L154.3 91.4Q149.7 92.6 146.7 91.8Z" fill="#fff8ee"/><path d="M143 89.4Q142.4 89.8 142.7 90.3M157.8 88.5Q158.2 88.9 158 89.3" stroke="#c49289" stroke-width=".55" stroke-linecap="round"/></g>`;
 }
 
@@ -1927,6 +1927,7 @@ function girlIllustration(equipped = {}) {
       <g data-dressup-slot="skin" data-equipped="${skin}" data-part="face"><path d="M122 59C123 43 135 34 152 36C170 35 180 47 181 63L179 77C176 90 167 99 153 100C141 99 128 89 124 77Z" fill="${p.skin}" stroke="${c.line}" stroke-width=".65"/><path d="M125 75Q128 90 143 97Q129 93 124 77Z" fill="${c.shade}" opacity=".18"/><ellipse cx="129" cy="82" rx="9" ry="5.5" fill="${p.blush}"/><ellipse cx="172" cy="81" rx="9" ry="5.3" fill="${p.blush}"/></g>
       <path d="M130 61Q137 58.9 144 60.5M157 60.5Q164 58.4 171 60" fill="none" stroke="#a47a66" stroke-width=".9" stroke-linecap="round"/>
       ${dressupEyesMarkup(eyes,p)}${dressupLashesMarkup(lashes)}
+      <g pointer-events="none" fill="none" stroke="#fff8e8" stroke-linecap="round" opacity=".9"><path d="M119 79l2.4-5.5 2.4 5.5 5.5 2.4-5.5 2.4-2.4 5.5-2.4-5.5-5.5-2.4Z" stroke-width="1.05"/><path d="M183 72l1.7-4 1.7 4 4 1.7-4 1.7-1.7 4-1.7-4-4-1.7Z" stroke-width=".9"/></g>
       <path d="M150 78Q148 83 151 83.5" fill="none" stroke="${c.nose}" stroke-width=".6" stroke-linecap="round"/><ellipse cx="150.8" cy="81.2" rx="1.45" ry=".8" fill="#fff2df" opacity=".6"/>
       ${dressupLipsMarkup(lips,true)}
       ${dressupHairstyleMarkup(hairstyle,'front',dress==='patched'&&hair==='none',p)}
