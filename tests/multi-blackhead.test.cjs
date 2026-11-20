@@ -57,7 +57,7 @@ function pull(g, p, fromExposedTip = false) {
   const mouth = plain(g.state(`getPimpleMouths(state.pimples.find(p => p.id === ${p.id}))`));
   const start = fromExposedTip ? g.evaluate(`(() => {
     const p=state.pimples.find(p=>p.id===${p.id});
-    return blackheadBundleCurves(computeRealisticBlackheadCurve(p,p.extrudeProgress,p.x,p.y),p.blackheadCount)[0].at(-1);
+    const tip=getBlackheadRenderData(p).curves[0].at(-1);return {x:p.x+tip.x,y:p.y+tip.y};
   })()`) : { x: p.x, y: p.y };
   const direction = start.x < g.state('state.width') / 2 ? 1 : -1;
   g.click('tool-tweezers');
@@ -80,7 +80,7 @@ function drawnStrands(g, statement) {
   return plain(g.evaluate(`(() => {
     const observed=[], draw=renderRealisticSebumFilament;
     renderRealisticSebumFilament=(context,points,...args)=>{
-      observed.push({root:{x:points[0].x,y:points[0].y},tip:{x:points.at(-1).x,y:points.at(-1).y},dark:points.at(-1).hasDarkCap});
+      observed.push({root:{x:points[0].x,y:points[0].y},tip:{x:points.at(-1).x,y:points.at(-1).y},dark:points.at(-1).hasDarkCap,length:points.at(-1).distFromRoot});
       draw(context,points,...args);
     };
     try { ${statement} } finally { renderRealisticSebumFilament=draw; }
@@ -88,11 +88,15 @@ function drawnStrands(g, statement) {
   })()`));
 }
 
-function assertBundle(strands, count) {
+function assertBundle(strands, count, lengths = Array(count).fill(1)) {
   assert.equal(strands.length, count, 'every saved strand reaches the actual canvas renderer');
   for (const strand of strands) {
     assert.deepEqual(strand.root, strands[0].root, 'all roots use one opening');
     assert.equal(strand.dark, true, 'each ivory body has its own dark terminal cap');
+  }
+  for (let index = 0; index < count; index++) {
+    assert.ok(Math.abs(strands[index].length / strands[0].length - lengths[index] / lengths[0]) < 1e-7,
+      'the visible length ratio survives every collection stage');
   }
   for (let a = 0; a < count; a++) for (let b = a + 1; b < count; b++) {
     assert.ok(Math.hypot(strands[a].tip.x - strands[b].tip.x, strands[a].tip.y - strands[b].tip.y) > 2.4,
@@ -100,21 +104,21 @@ function assertBundle(strands, count) {
   }
 }
 
-test('one bundle appears from level five, cycles through two to four strands, and remains separate from other pore variants', async t => {
+test('multiple bundles appear from level three and remain separate from other pore variants', async t => {
   const g = await game(t);
-  for (const level of [1, 2, 3, 4]) {
+  for (const level of [1, 2]) {
     startLevel(g, level);
     assert.equal(g.state('state.pimples.some(p => p.blackheadCount > 1)'), false);
   }
-  for (const [level, count] of [[5, 2], [6, 3], [7, 4]]) {
+  for (const level of [3, 4, 5, 6, 7, 8, 9]) {
     const p = startLevel(g, level);
-    assert.equal(g.state('state.pimples.filter(p => p.blackheadCount > 1).length'), 1);
-    assert.equal(p.blackheadCount, count);
+    assert.ok(g.state('state.pimples.filter(p => p.blackheadCount > 1).length') >= 2);
+    assert.ok(p.blackheadCount >= 2 && p.blackheadCount <= 4);
     assert.equal(p.type, 'blackhead');
     assert.equal(p.linkedPore, false);
     assert.equal(p.sharedPore, null);
     assert.deepEqual(plain(g.state(`getPimpleMouths(state.pimples.find(p=>p.id===${p.id}))`)), [{x:p.x,y:p.y}]);
-    assert.match(g.state(`toolGuidanceFor('steam',{kind:'pimple',item:state.pimples.find(p=>p.id===${p.id})})`), new RegExp(`${count} 根黑头`));
+    assert.match(g.state(`keyboardTargetDescription({kind:'pimple',item:state.pimples.find(p=>p.id===${p.id})})`), new RegExp(`${p.blackheadCount} 根黑头`));
   }
 });
 
@@ -124,7 +128,7 @@ test('real heat and squeeze expose every strand with one root and distinct dark 
     const p = startLevel(g, level);
     warm(g, p);
     squeeze(g, p, () => p.state === 2 && p.extrudeProgress > .42);
-    assertBundle(drawnStrands(g, `renderPimple(state.pimples.find(p=>p.id===${p.id}),false);`), p.blackheadCount);
+    assertBundle(drawnStrands(g, `renderPimple(state.pimples.find(p=>p.id===${p.id}),false);`), p.blackheadCount, p.blackheadLengths);
     assert.equal(p.bloodDropSize, 0);
     assert.equal(g.state(`state.collectionLedger['blackhead:${p.id}']`), undefined);
   }
@@ -135,12 +139,21 @@ test('grabbing an outer tip removes the bundle once and preserves four strands t
   const id = p.id, origin = {x:p.x,y:p.y}, run = g.state('state.runId');
   warm(g, p);
   squeeze(g, p, () => p.state === 2 && p.extrudeProgress > .50);
+  const lengths = plain(p.blackheadLengths);
+  assert.ok(Math.max(...lengths) / Math.min(...lengths) > 2, 'this real level contains visibly unequal strands');
+  const tips = plain(g.state(`getBlackheadRenderData(state.pimples.find(p=>p.id===${id})).curves.map(curve=>curve.at(-1))`));
+  for (const tip of tips) {
+    g.click('tool-tweezers');
+    g.mouse('skin-canvas', 'mousedown', p.x + tip.x, p.y + tip.y);
+    assert.equal(g.state('state.tweezers.clampedPimple?.id'), id, 'each short or long tip is a real hit target');
+    g.mouse(g.w, 'mouseup', p.x + tip.x, p.y + tip.y);
+  }
   pull(g, p, true);
   assert.ok(p.state >= 4);
   assert.equal(p.bloodDropSize, 0);
   assert.equal(g.state('state.flyingTrophies.length'), 1);
   assert.equal(g.state(`state.collectionLedger['blackhead:${id}'].blackheadCount`), 4);
-  assertBundle(drawnStrands(g, 'renderTrophyDishAndFlyingPlugs(state.width);'), 4);
+  assertBundle(drawnStrands(g, 'renderTrophyDishAndFlyingPlugs(state.width);'), 4, lengths);
   const score = g.state('state.score');
   g.evaluate('saveCurrentSession(true);');
   const saved = g.storage(); g.close();
@@ -149,14 +162,16 @@ test('grabbing an outer tip removes the bundle once and preserves four strands t
   const restored = r.state(`state.pimples.find(p=>p.id===${id})`);
   assert.equal(r.state('state.runId'), run);
   assert.equal(restored.blackheadCount, 4);
+  assert.deepEqual(plain(restored.blackheadLengths), lengths);
   assert.deepEqual({x:restored.x,y:restored.y}, origin);
   assert.equal(r.state(`state.collectionLedger['blackhead:${id}'].blackheadCount`), 4);
+  assert.deepEqual(plain(r.state(`state.collectionLedger['blackhead:${id}'].blackheadLengths`)), lengths);
   assert.equal(r.state('state.score'), score);
-  assertBundle(drawnStrands(r, 'renderTrophyDishAndFlyingPlugs(state.width);'), 4);
+  assertBundle(drawnStrands(r, 'renderTrophyDishAndFlyingPlugs(state.width);'), 4, lengths);
   r.frame(40);
   assert.equal(r.state('state.trophiesPlucked'), 1, 'one bundle is one combined collectible');
   assert.equal(r.state('state.trophyTrayItems.length'), 1);
-  assertBundle(drawnStrands(r, 'renderTrophyDishAndFlyingPlugs(state.width);'), 4);
+  assertBundle(drawnStrands(r, 'renderTrophyDishAndFlyingPlugs(state.width);'), 4, lengths);
   wipe(r, restored); wipe(r, restored);
   assert.equal(r.state('state.score'), score);
   assert.equal(r.state('state.trophiesPlucked'), 1);
@@ -166,9 +181,11 @@ test('a squeezed bundle keeps its three strands on the skin across reload and a 
   const g = await game(t), p = startLevel(g, 6);
   warm(g, p); squeeze(g, p, () => p.state === 3);
   const id = p.id;
+  assert.equal(p.blackheadSize, 'giant');
   assert.equal(p.bloodDropSize, 0);
   assert.equal(g.state(`state.surfaceResidues.filter(r=>r.pimpleId===${id}).length`), 1);
   assert.equal(g.state(`state.collectionLedger['blackhead:${id}'].blackheadCount`), 3);
+  assert.equal(g.state(`state.collectionLedger['blackhead:${id}'].blackheadSize`), 'giant');
   assertBundle(drawnStrands(g, 'renderSurfaceResidues(false);'), 3);
   g.evaluate('saveCurrentSession(true);');
   const saved = g.storage();
@@ -182,6 +199,8 @@ test('a squeezed bundle keeps its three strands on the skin across reload and a 
   const restored = r.state(`state.pimples.find(p=>p.id===${id})`);
   assert.equal(restored.state, 3);
   assert.equal(restored.blackheadCount, 3);
+  assert.equal(restored.blackheadSize, 'giant');
+  assert.equal(r.state(`state.collectionLedger['blackhead:${id}'].blackheadSize`), 'giant');
   assertBundle(drawnStrands(r, 'renderSurfaceResidues(false);'), 3);
   wipe(r, restored);
   assert.ok(restored.state >= 4);

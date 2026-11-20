@@ -360,6 +360,20 @@ async function runViewport(cdp, origin, viewport, report) {
         button.focus({preventScroll:true}); button.click();
       })()`);
     };
+    const trustedClick = async selector => {
+      const point = await evaluate(`(() => {
+        const button=document.querySelector(${JSON.stringify(selector)});
+        if(!button||button.disabled||button.closest('[hidden], [inert]')||!button.getClientRects().length
+          ||getComputedStyle(button).visibility!=='visible')throw new Error('User control is unavailable');
+        button.scrollIntoView({block:'center',inline:'nearest'});
+        const box=button.getBoundingClientRect(),point={x:(box.left+box.right)/2,y:(box.top+box.bottom)/2};
+        if(!button.contains(document.elementFromPoint(point.x,point.y)))throw new Error('User control is covered');
+        return point;
+      })()`);
+      await send('Input.dispatchMouseEvent',{type:'mouseMoved',...point,pointerType:'mouse',button:'none',buttons:0});
+      await send('Input.dispatchMouseEvent',{type:'mousePressed',...point,pointerType:'mouse',button:'left',buttons:1,clickCount:1});
+      await send('Input.dispatchMouseEvent',{type:'mouseReleased',...point,pointerType:'mouse',button:'left',buttons:0,clickCount:1});
+    };
     const checkpoint = async (name, expectedModal) => {
       await evaluate('Promise.all(document.getAnimations().filter(animation => animation.effect?.getComputedTiming().iterations !== Infinity).map(animation => animation.finished.catch(() => {})))');
       await evaluate('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
@@ -371,7 +385,7 @@ async function runViewport(cdp, origin, viewport, report) {
         const modal = document.querySelector('.modal-backdrop.open');
         const active = modal || document.getElementById('app-shell');
         const containers = [document.documentElement, document.body, active,
-          ...active.querySelectorAll('.modal-card,.home-grid,.wardrobe-layout,.wardrobe-items,.tool-section,.game-utilities,#viewport-wrap')];
+          ...active.querySelectorAll('.modal-card,.home-grid,.wardrobe-layout,.wardrobe-items,#wardrobe-preview,#wardrobe-food-collection,.tool-section,.game-utilities,#viewport-wrap')];
         const overflow = [];
         for (const element of new Set(containers)) {
           const box = element.getBoundingClientRect();
@@ -456,19 +470,6 @@ async function runViewport(cdp, origin, viewport, report) {
     if (viewport.name === 'desktop') {
       // One real-browser audio gate: trusted mouse clicks must respect mute
       // and may start the ordinary UI sound scope while the wardrobe is open.
-      const trustedClick = async selector => {
-        const point = await evaluate(`(() => {
-          const button=document.querySelector(${JSON.stringify(selector)});
-          if(!button||button.disabled||button.closest('[hidden], [inert]')||!button.getClientRects().length
-            ||getComputedStyle(button).visibility!=='visible')throw new Error('Audio control is unavailable');
-          const box=button.getBoundingClientRect(),point={x:(box.left+box.right)/2,y:(box.top+box.bottom)/2};
-          if(!button.contains(document.elementFromPoint(point.x,point.y)))throw new Error('Audio control is covered');
-          return point;
-        })()`);
-        await send('Input.dispatchMouseEvent',{type:'mouseMoved',...point,pointerType:'mouse',button:'none',buttons:0});
-        await send('Input.dispatchMouseEvent',{type:'mousePressed',...point,pointerType:'mouse',button:'left',buttons:1,clickCount:1});
-        await send('Input.dispatchMouseEvent',{type:'mouseReleased',...point,pointerType:'mouse',button:'left',buttons:0,clickCount:1});
-      };
       const initialMuted=await evaluate('sound.muted');
       if(!initialMuted)await trustedClick('#btn-sound');
       await trustedClick('#btn-wardrobe');
@@ -495,20 +496,52 @@ async function runViewport(cdp, origin, viewport, report) {
       if(initialMuted)await trustedClick('#btn-sound');
     }
     await click('#btn-wardrobe');
+    await click('#wardrobe-tab-outfits');
+    const previewNames={mask_pearl:'美白面膜',dress_sky:'蓝色公主裙',crown_snow:'白雪公主的王冠',shoes_crystal:'水晶鞋'};
     const unknownWardrobe = await evaluate(`(() => {
       const collection=document.getElementById('wardrobe-collection');
       const modal=document.getElementById('wardrobe-modal');
-      const coming=document.getElementById('wardrobe-coming-soon');
-      return {buttons:collection.querySelectorAll('button[data-equip]').length,
-        art:collection.querySelectorAll('svg').length,coming:!!coming&&!coming.hidden&&coming.textContent.includes('敬请期待'),
-        leaked:WARDROBE_ITEMS.filter(item=>modal.textContent.includes(item.name)
-          || modal.querySelector('[data-equip="'+item.id+'"]')).map(item=>item.id)};
+      const names=${JSON.stringify(previewNames)};
+      const expected={hair:'none',dress:'patched',skin:'natural',lashes:'natural',eyes:'natural',lips:'natural',
+        hairstyle:'original',shoes:'worn',bracelet:'none',necklace:'none'};
+      return {buttons:collection.querySelectorAll('button[data-equip]').length,art:collection.querySelectorAll('svg').length,
+        previews:[...document.querySelectorAll('#wardrobe-preview [data-preview]')].map(card=>({id:card.dataset.preview,
+          name:card.textContent.includes(names[card.dataset.preview]||WARDROBE_ITEMS.find(item=>item.id===card.dataset.preview)?.name),
+          art:!!card.querySelector('svg'),locked:card.textContent.includes('暂未获得')})),
+        expectedIds:WARDROBE_ITEMS.map(item=>item.id),
+        dreams:[...document.querySelectorAll('#dream-preview [data-dream-preview]')].map(card=>({id:card.dataset.dreamPreview,
+          locked:card.textContent.includes('暂未获得'),art:!!card.querySelector('svg')})),
+        foods:[...document.querySelectorAll('#wardrobe-food-collection [data-food-preview]')].map(card=>({id:card.dataset.foodPreview,
+          locked:card.textContent.includes('暂未获得'),art:!!card.querySelector('svg')})),
+        feedingButtons:document.querySelectorAll('#wardrobe-food-collection [data-feed]').length,
+        dreamButtons:document.querySelectorAll('[data-dream-equip]').length,
+        previewEquip:!!modal.querySelector('#wardrobe-preview [data-equip]'),
+        freshSlots:Object.entries(expected).every(([slot,id])=>wardrobeProgress.equipped[slot]===id
+          &&['home-girl','wardrobe-girl'].every(portrait=>{
+            const layers=[...document.querySelectorAll('#'+portrait+' [data-dressup-slot="'+slot+'"]')];
+            return layers.length&&layers.every(layer=>layer.dataset.equipped===id);
+          })),
+        dreamDecorations:document.querySelectorAll('#home-dream-scene [data-dream-slot],#wardrobe-dream-scene [data-dream-slot]').length};
     })()`);
-    assert.deepEqual(unknownWardrobe,{buttons:0,art:0,coming:true,leaked:[]},`${label}: the initial wardrobe does not reveal unknown items`);
+    assert.equal(unknownWardrobe.previews.length,20);
+    assert.deepEqual(unknownWardrobe.previews.map(card=>card.id).sort(),unknownWardrobe.expectedIds.sort(),
+      `${label}: all twenty unowned outfits are previewed`);
+    assert.deepEqual(unknownWardrobe.previews.slice(0,4).map(card=>card.id),Object.keys(previewNames),
+      `${label}: the four requested treasures appear first`);
+    assert.ok(unknownWardrobe.previews.every(card=>card.name&&card.art&&card.locked),`${label}: every outfit has named artwork and a not-yet-owned label`);
+    assert.equal(unknownWardrobe.dreams.length,8);assert.equal(unknownWardrobe.foods.length,8);
+    assert.ok([...unknownWardrobe.dreams,...unknownWardrobe.foods].every(card=>card.locked&&card.art),
+      `${label}: all dreams and foods show their locked previews`);
+    assert.equal(unknownWardrobe.feedingButtons,0);assert.equal(unknownWardrobe.dreamButtons,0);
+    assert.equal(unknownWardrobe.previewEquip,false,`${label}: preview cards cannot equip unowned items`);
+    assert.equal(unknownWardrobe.buttons,0);assert.equal(unknownWardrobe.art,0);
+    assert.equal(unknownWardrobe.freshSlots,true,`${label}: the fresh girl wears only default clothes and accessories`);
+    assert.equal(unknownWardrobe.dreamDecorations,0,`${label}: previewed dreams are not already beside the girl`);
     await checkpoint('03-wardrobe-surprises', 'wardrobe-modal');
     await click('#btn-close-wardrobe');
 
-    for (const [level, gift, slot, sequence] of [[4, 'contacts_ocean', 'eyes', '04'], [7, 'dress_sky', 'dress', '06']]) {
+    const foodGift=await evaluate('FOOD_ITEMS[0].id');
+    for (const [level, gift, slot, sequence] of [[4, foodGift, 'food', '04'], [7, 'dress_sky', 'dress', '06']]) {
       // Bind a known random outcome to an actual care point for stable QA.
       // Reveal, flight animation and the ice/settlement award are production paths.
       const flight = await evaluate(`(() => {
@@ -534,7 +567,7 @@ async function runViewport(cdp, origin, viewport, report) {
           x:Number(node.dataset.sourceX),y:Number(node.dataset.sourceY),expectedId:String(source.id),
           expectedX:source.x/state.width,expectedY:source.y/state.height,
           expectedCenter:{x:bounds.left+source.x/state.width*bounds.width,y:bounds.top+source.y/state.height*bounds.height},
-          start,grown,owned:wardrobeProgress.unlocked.includes(source.giftId)};
+          start,grown,owned:wardrobeProgress.unlocked.includes(source.giftId)||(wardrobeProgress.pantry[source.giftId]||0)>0};
       })()`);
       assert.equal(flight.itemId,gift);
       assert.equal(flight.sourceId,flight.expectedId,`${label}: the flight names its real care point`);
@@ -554,10 +587,59 @@ async function runViewport(cdp, origin, viewport, report) {
       });updateHUD();`);
       await click('#btn-ice-quick');
       await waitFor('state.settled && document.getElementById("result-modal").classList.contains("open")', 'gift settlement');
-      await checkpoint(`${String(Number(sequence) + 1).padStart(2, '0')}-level-${level}-reward`, 'result-modal');
+      if(slot!=='food')await checkpoint(`${String(Number(sequence) + 1).padStart(2, '0')}-level-${level}-reward`, 'result-modal');
       await click('#btn-open-wardrobe-result');
-      await click(`[data-equip="${gift}"]`);
-      assert.equal(await evaluate(`wardrobeProgress.equipped.${slot}`), gift, 'outfit button equips the earned gift');
+      if(slot==='food') {
+        await trustedClick('#wardrobe-tab-food');
+        const before=await evaluate(`({quantity:wardrobeProgress.pantry[${JSON.stringify(gift)}],hunger:wardrobeProgress.hunger,
+          satiety:FOOD_ITEMS.find(item=>item.id===${JSON.stringify(gift)}).satiety})`);
+        assert.equal(before.quantity,1,`${label}: completed care grants one consumable serving`);
+        assert.ok(before.hunger>0,`${label}: the girl is hungry after care`);
+        await trustedClick(`#wardrobe-food-collection [data-feed="${gift}"]`);
+        const after=await evaluate(`({quantity:wardrobeProgress.pantry[${JSON.stringify(gift)}]||0,hunger:wardrobeProgress.hunger,
+          message:document.getElementById('wardrobe-status').textContent,
+          shownHunger:document.getElementById('wardrobe-hunger').textContent,
+          feedButton:!!document.querySelector('#wardrobe-food-collection [data-feed="${gift}"]'),
+          lockedPreview:document.querySelector('#wardrobe-food-collection [data-food-preview="${gift}"]')?.textContent.includes('暂未获得')||false,
+          outfits:wardrobeProgress.unlocked.slice()})`);
+        assert.equal(after.quantity,before.quantity-1,`${label}: one real feed click consumes one serving`);
+        assert.equal(after.feedButton,false);assert.equal(after.lockedPreview,true,`${label}: consuming the last serving returns the food to its locked preview`);
+        assert.equal(after.hunger,Math.max(0,before.hunger-before.satiety),`${label}: food reduces actual hunger`);
+        assert.match(after.message,/谢谢你的款待/);
+        assert.ok(after.shownHunger.includes(String(after.hunger)),`${label}: the hunger display follows the meal`);
+        assert.deepEqual(after.outfits,[],`${label}: food never becomes a permanent outfit`);
+        await evaluate('document.querySelector("#wardrobe-modal .modal-card").scrollTop=0;document.getElementById("btn-close-wardrobe").focus({preventScroll:true});');
+        const caption=await evaluate(`(() => {
+          const node=document.getElementById('wardrobe-girl-caption');
+          if(!node)throw new Error('The girl needs a visible meal response');
+          const visible=()=>{
+            const box=node.getBoundingClientRect();let left=0,top=0,right=innerWidth,bottom=innerHeight;
+            for(let parent=node;parent;parent=parent.parentElement){
+              const style=getComputedStyle(parent),bounds=parent.getBoundingClientRect();
+              if(style.visibility!=='visible'||Number(style.opacity)===0||parent.hidden)return false;
+              if(/hidden|clip|scroll|auto/.test(style.overflowX)){left=Math.max(left,bounds.left);right=Math.min(right,bounds.right);}
+              if(/hidden|clip|scroll|auto/.test(style.overflowY)){top=Math.max(top,bounds.top);bottom=Math.min(bottom,bounds.bottom);}
+            }
+            return box.width>0&&box.height>0&&box.left>=left&&box.right<=right&&box.top>=top&&box.bottom<=bottom
+              &&node.contains(document.elementFromPoint((box.left+box.right)/2,(box.top+box.bottom)/2));
+          };
+          const scrolledIntoView=!visible();
+          if(scrolledIntoView)node.scrollIntoView({block:'center',inline:'nearest'});
+          return {text:node.textContent,visible:visible(),scrolledIntoView};
+        })()`);
+        assert.match(caption.text,/谢谢你的款待/);
+        assert.equal(caption.visible,true,`${label}: the portrait-side thanks is visible and unobscured in the meal screenshot`);
+        if(viewport.name!=='phone-landscape')assert.equal(caption.scrolledIntoView,false,
+          `${label}: ordinary portrait and desktop layouts show the thanks immediately`);
+        report.feeding.push({viewport:label,itemId:gift,before,after,caption});
+        await checkpoint('05-food-thank-you','wardrobe-modal');
+      } else {
+        await click('#wardrobe-tab-outfits');
+        await click(`[data-equip="${gift}"]`);
+        assert.equal(await evaluate(`wardrobeProgress.equipped.${slot}`), gift, 'outfit button equips the earned gift');
+        assert.equal(await evaluate(`!!document.querySelector('#wardrobe-preview [data-preview="${gift}"]')`),false,
+          `${label}: an earned treasure leaves the unowned preview`);
+      }
       assert.equal(await evaluate(`(() => {
         const owned=wardrobeProgress.unlocked.slice().sort();
         const shown=[...document.querySelectorAll('#wardrobe-collection button[data-equip]')].map(button=>button.dataset.equip).sort();
@@ -565,16 +647,17 @@ async function runViewport(cdp, origin, viewport, report) {
       })()`),true,'the collection lists only items actually earned');
       if (slot === 'dress') await checkpoint('08-wardrobe-dressed', 'wardrobe-modal');
       await click('#btn-close-wardrobe');
-      if (slot === 'eyes') await click('#btn-next-face');
+      if (slot === 'food') await click('#btn-next-face');
     }
     await click('#btn-result-home');
     await checkpoint('09-home-dressed', 'home-modal');
     await click('#btn-home-wardrobe');
+    await click('#wardrobe-tab-outfits');
     // A separate ownership fixture shows all ten visible outfit layers. The
     // two reward scenarios above already verified that care grants ownership.
-    await evaluate('wardrobeProgress.unlocked=WARDROBE_ITEMS.map(item=>item.id);renderWardrobe();saveCurrentSession(true);');
-    const fullOutfit={hair:'bow_rose',dress:'dress_lilac',skin:'mask_pearl',lashes:'mascara_cocoa',eyes:'contacts_ocean',
-      lips:'lipstick_rose',hairstyle:'hairstyle_twintails',shoes:'shoes_maryjane',bracelet:'bracelet_pearl',necklace:'necklace_star'};
+    await evaluate('wardrobeProgress.unlocked=WARDROBE_ITEMS.map(item=>item.id);wardrobeProgress.dreams=DREAM_ITEMS.map(item=>item.id);renderWardrobe();saveCurrentSession(true);');
+    const fullOutfit={hair:'crown_snow',dress:'dress_sky',skin:'mask_pearl',lashes:'mascara_cocoa',eyes:'contacts_ocean',
+      lips:'lipstick_rose',hairstyle:'hairstyle_twintails',shoes:'shoes_crystal',bracelet:'bracelet_pearl',necklace:'necklace_star'};
     for(const [slot,id] of Object.entries(fullOutfit)) {
       await click(`#wardrobe-collection [data-equip="${id}"]`);
       assert.equal(await evaluate(`wardrobeProgress.equipped.${slot}`),id,`${label}: ${slot} is independently equipped`);
@@ -587,31 +670,51 @@ async function runViewport(cdp, origin, viewport, report) {
       }).map(([slot])=>slot);
     })()`);
     assert.deepEqual(outfitLayers,[],`${label}: the portrait displays all equipped layers`);
+    const dreamScene={pet:'pet_kitten',room:'room_vanity',ride:'ride_carriage',bag:'bag_starlight',toy:'toy_bunny'};
+    for(const [slot,id] of Object.entries(dreamScene)) {
+      await click(`[data-dream-equip="${id}"]`);
+      assert.equal(await evaluate(`wardrobeProgress.dreamEquipped.${slot}`),id,`${label}: ${slot} dream is independently selected`);
+    }
+    assert.deepEqual(await evaluate(`(() => {
+      const expected=${JSON.stringify(dreamScene)};
+      return Object.entries(expected).filter(([slot,id])=>{
+        const layer=document.querySelector('#wardrobe-dream-scene [data-dream-slot="'+slot+'"]');
+        return !layer||layer.dataset.equipped!==id;
+      }).map(([slot])=>slot);
+    })()`),[],`${label}: the dream scene displays the chosen companions and objects`);
     await evaluate('document.querySelector("#wardrobe-modal .modal-card").scrollTop=0;document.getElementById("btn-close-wardrobe").focus({preventScroll:true});');
     await checkpoint('10-full-outfit', 'wardrobe-modal');
     await click('#btn-close-wardrobe');
     await click('#btn-start-adventure');
-    // Visual-only fixture: show paired contents, a remaining whitehead and a
-    // four-blackhead bundle together. Mechanics and resume use real-input tests.
+    // Visual-only fixture: show paired contents, a remaining whitehead, a
+    // giant uneven bundle and a large whitehead's cleared pit together.
+    // Mechanics and resume use separate real-input tests.
     const shared = await evaluate(`(() => {
       wardrobeProgress.level=6;generateLevel(0);state.paused=false;selectTool('squeeze');
       finishPracticeGuide(true);clearGiftPresentation();
-      state.pimples=state.pimples.filter(p=>p.type==='blackhead').slice(0,3);
-      const [together,sequential,bundle]=state.pimples;
-      if(!bundle)throw new Error('The shared-opening screenshot requires three blackhead care points');
-      state.pimples.forEach((p,index)=>{
+      const blackheads=state.pimples.filter(p=>p.type==='blackhead').slice(0,3);
+      const largeWhitehead=state.pimples.find(p=>p.type==='whitehead');
+      const [together,sequential,bundle]=blackheads;
+      if(!bundle||!largeWhitehead)throw new Error('The contents screenshot requires three blackheads and one whitehead');
+      state.pimples=[...blackheads,largeWhitehead];
+      blackheads.forEach((p,index)=>{
         p.linkedPore=false;p.giftId=null;p.steamed=1;p.pierced=true;p.blackheadCount=index===2?4:1;
+        p.blackheadLengths=index===2?[.6,1,1.5,.8]:[1];p.blackheadSize=index===2?'giant':'normal';p.whiteheadSize='normal';
         p.sharedPore=index===2?null:{mode:index?'sequential':'together',phase:'blackhead'};
         p.state=P_STATE.EXTRUDING;p.extrudeProgress=.62;p.wormTotalLen=74;
-        p.x=state.width*[.22,.50,.78][index];p.y=state.height*.6;
+        p.x=state.width*[.25,.75,.32][index];p.y=state.height*[.36,.36,.72][index];
         p.nx=p.x/state.width;p.ny=p.y/state.height;
         p.pressure=.42;p.swellVisual=.42;p.bloodDropSize=0;
       });
       advanceSharedPore(sequential);
       sequential.pusRemaining=.24;
+      Object.assign(largeWhitehead,{linkedPore:false,sharedPore:null,giftId:null,blackheadCount:1,blackheadLengths:[1],
+        blackheadSize:'normal',whiteheadSize:'large',state:P_STATE.HEALED,healProgress:1,iced:false,
+        x:state.width*.76,y:state.height*.72,bloodDropSize:0,serousDropSize:0});
+      largeWhitehead.nx=largeWhitehead.x/state.width;largeWhitehead.ny=largeWhitehead.y/state.height;
       startMirrorPinch({x:together.x+38,y:together.y});
       state.pointer.squeezeForce=.42;state.pointer.rawForce=.42;
-      updateHUD();setHint('同一个洞口：黑白一起取出、取走黑头后剩下白头，也可能挤出多根黑头。');
+      updateHUD();setHint('长长短短，一起取出。');
       window.sharedShotSimulation=updateSimulation;updateSimulation=()=>{};
       // Inspect the actual tool renderer before repainting the scene. With
       // active squeeze it must leave a transparent layer, without any fingers.
@@ -621,14 +724,16 @@ async function runViewport(cdp, origin, viewport, report) {
       // Observe the real bundle renderer; every strand must keep a pale body,
       // a separate dark terminal cap and exactly the same source opening.
       const strands=[],drawFilament=renderRealisticSebumFilament;
-      const probe=document.createElement('canvas');probe.width=probe.height=200;
+      const probe=document.createElement('canvas');
       const probeCtx=probe.getContext('2d',{willReadFrequently:true});
       renderRealisticSebumFilament=(targetCtx,points,...args)=>{
         const tip=points[points.length-1],middle=points[Math.floor(points.length*.5)];
-        probeCtx.setTransform(1,0,0,1,0,0);probeCtx.clearRect(0,0,200,200);probeCtx.translate(100,100);
+        const origin=Math.ceil(Math.max(96,...points.flatMap(point=>[Math.abs(point.x),Math.abs(point.y)])))+16;
+        probe.width=probe.height=origin*2;probeCtx.translate(origin,origin);
         drawFilament(probeCtx,points,...args);
-        const pixel=point=>Array.from(probeCtx.getImageData(Math.floor(point.x+100),Math.floor(point.y+100),1,1).data);
+        const pixel=point=>Array.from(probeCtx.getImageData(Math.floor(point.x+origin),Math.floor(point.y+origin),1,1).data);
         strands.push({root:{x:points[0].x,y:points[0].y},tip:{x:tip.x,y:tip.y},
+          length:points.reduce((total,point,index)=>total+(index?Math.hypot(point.x-points[index-1].x,point.y-points[index-1].y):0),0),
           darkTip:tip.hasDarkCap===true,bodyPixel:pixel(middle),tipPixel:pixel(tip),
           inCanvas:points.every(point=>bundle.x+point.x>=0&&bundle.x+point.x<=state.width
             &&bundle.y+point.y>=0&&bundle.y+point.y<=state.height)});
@@ -637,16 +742,22 @@ async function runViewport(cdp, origin, viewport, report) {
       try{renderPimple(bundle,state.styleMode==='creamy');}finally{renderRealisticSebumFilament=drawFilament;}
       renderScene(false);requestSceneFrame();
       return {active:state.pointer.active,tool:state.currentTool,mode:state.pointer.mode,toolPixels,
-        bundleCount:bundle.blackheadCount,bundleStrands:strands,
+        bundleCount:bundle.blackheadCount,bundleSize:bundle.blackheadSize,bundleLengths:bundle.blackheadLengths,bundleStrands:strands,
+        thickness:getBlackheadRenderData(bundle).thickness,
+        normalThickness:getBlackheadRenderData({...bundle,blackheadSize:'normal'}).thickness,
         pores:state.pimples.map(p=>({id:p.id,type:p.type,state:p.state,shared:p.sharedPore,
-          blackheadCount:p.blackheadCount,mouths:getPimpleMouths(p)}))};
+          blackheadCount:p.blackheadCount,whiteheadSize:p.whiteheadSize,iced:p.iced,mouths:getPimpleMouths(p)}))};
     })()`);
     assert.equal(shared.active,true,`${label}: shared-opening screenshot holds squeeze active`);
     assert.equal(shared.tool,'squeeze');
     assert.equal(shared.toolPixels,false,`${label}: squeezing draws no finger overlay`);
-    assert.deepEqual(shared.pores.map(p=>[p.shared?.mode||'bundle',p.shared?.phase||'blackhead',p.mouths.length]),
-      [['together','blackhead',1],['sequential','whitehead',1],['bundle','blackhead',1]],`${label}: all three contents use one opening each`);
+    assert.deepEqual(shared.pores.map(p=>[p.shared?.mode||(p.type==='whitehead'?'large-whitehead':'bundle'),p.shared?.phase||p.type,p.mouths.length]),
+      [['together','blackhead',1],['sequential','whitehead',1],['bundle','blackhead',1],['large-whitehead','whitehead',1]],
+      `${label}: each contents variant uses one opening`);
     assert.equal(shared.bundleCount,4,`${label}: the third opening contains four blackheads`);
+    assert.equal(shared.bundleSize,'giant');
+    assert.ok(shared.thickness>shared.normalThickness,`${label}: the giant bundle renders visibly thicker than an ordinary one`);
+    assert.equal(shared.pores[3].whiteheadSize,'large');assert.equal(shared.pores[3].iced,false);
     assert.equal(shared.bundleStrands.length,4,`${label}: all four blackheads reach the actual filament renderer`);
     assert.ok(shared.bundleStrands.every(strand=>strand.darkTip&&strand.inCanvas
       &&strand.bodyPixel.slice(0,3).reduce((sum,value)=>sum+value,0)/3>170
@@ -657,6 +768,8 @@ async function runViewport(cdp, origin, viewport, report) {
       `${label}: the four strands grow from one opening`);
     assert.equal(new Set(shared.bundleStrands.map(strand=>JSON.stringify(strand.tip))).size,4,
       `${label}: the four tips stay visually separated`);
+    const lengths=shared.bundleStrands.map(strand=>strand.length);
+    assert.ok(Math.max(...lengths)>Math.min(...lengths)*1.5,`${label}: the bundle visibly mixes long and short strands`);
     report.sharedPores.push({viewport:label,...shared});
     await checkpoint('11-shared-openings-squeeze', null);
     await evaluate('updateSimulation=window.sharedShotSimulation;delete window.sharedShotSimulation;releasePointer();');
@@ -668,7 +781,7 @@ async function runViewport(cdp, origin, viewport, report) {
 
 async function main() {
   await fsp.mkdir(OUTPUT, { recursive: true });
-  const report = { viewports: VIEWPORTS, screens: [], fonts: [], geometry: [], giftFlights: [], sharedPores: [], audio: [], failures: [] };
+  const report = { viewports: VIEWPORTS, screens: [], fonts: [], geometry: [], giftFlights: [], feeding: [], sharedPores: [], audio: [], failures: [] };
   let server, child, cdp, profileDirectory;
   try {
     const executable = [process.env.CHROME_BIN, '/usr/bin/google-chrome', '/usr/bin/chromium'].find(file => file && fs.existsSync(file));
