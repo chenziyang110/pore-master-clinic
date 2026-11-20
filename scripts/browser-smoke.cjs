@@ -1,6 +1,7 @@
 /* Real Chromium layout QA. Runs in CI with Node built-ins and the runner's Chrome.
- * Gameplay fixtures skip extraction time; navigation, ice, rewards and outfit
- * buttons use the actual page. The Node suite covers detailed game rules. */
+ * Board stability uses real mouse input and animation frames, including held
+ * heat treatment. Milestone fixtures skip extraction time; navigation, ice,
+ * rewards and outfit buttons use the actual page. */
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const fsp = require('node:fs/promises');
@@ -16,7 +17,8 @@ const VIEWPORTS = [
   { name: 'desktop', width: 1280, height: 900, mobile: false },
   { name: 'phone', width: 390, height: 844, mobile: true },
   { name: 'small-phone', width: 320, height: 568, mobile: true },
-  { name: 'phone-landscape', width: 844, height: 390, mobile: true }
+  { name: 'phone-landscape', width: 844, height: 390, mobile: true },
+  { name: 'tablet', width: 820, height: 1180, mobile: false, geometryOnly: true }
 ];
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -113,6 +115,221 @@ async function startServer() {
   return server;
 }
 
+async function checkBoardStability({ send, evaluate, viewport, label, report }) {
+  const result = { viewport: label, motion: 'no-preference', status: 'running', hoverCycles: 0, checks: [] };
+  report.geometry.push(result);
+  const frames = () => evaluate('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
+  const mouse = (type, point, held = false) => send('Input.dispatchMouseEvent', {
+    type, x: point.x, y: point.y, pointerType: 'mouse',
+    button: type === 'mouseMoved' ? 'none' : 'left', buttons: held ? 1 : 0,
+    ...(type === 'mouseMoved' ? {} : { clickCount: 1 })
+  });
+  const realClick = async selector => {
+    const point = await evaluate(`(() => {
+      const button = document.querySelector(${JSON.stringify(selector)});
+      if (!button || button.disabled || button.closest('[hidden], [inert]')
+        || !button.getClientRects().length || getComputedStyle(button).visibility !== 'visible')
+        throw new Error('Mouse button unavailable: ' + ${JSON.stringify(selector)});
+      button.scrollIntoView({block:'center',inline:'nearest'});
+      const box = button.getBoundingClientRect();
+      const point = {x:(box.left+box.right)/2,y:(box.top+box.bottom)/2};
+      if (!button.contains(document.elementFromPoint(point.x,point.y)))
+        throw new Error('Mouse button covered: ' + ${JSON.stringify(selector)});
+      return point;
+    })()`);
+    await mouse('mouseMoved', point);
+    await mouse('mousePressed', point, true);
+    await mouse('mouseReleased', point);
+  };
+  const phase = name => evaluate(`window.__boardLayoutQA.phase = ${JSON.stringify(name)}`);
+  let baseline;
+  const stable = async name => {
+    await frames();
+    const observation = await evaluate(`(() => {
+      const qa = window.__boardLayoutQA, next = document.getElementById('btn-care-next');
+      return {geometry:qa.snapshot(),firstChange:qa.firstChange,resizeCalls:qa.resizeCalls,
+        layoutCalls:qa.layoutCalls,nextHidden:next.hidden,nextTool:next.dataset.tool,
+        nextVisible:!next.closest('[hidden], [inert]') && !!next.getClientRects().length
+          && getComputedStyle(next).visibility === 'visible',
+        selected:currentPointerCareTarget()?.item.id ?? null,
+        active:state.pointer.active,mode:state.pointer.mode,
+        heat:state.pimples.find(p => p.id === qa.targetId)?.steamed};
+    })()`);
+    assert.deepEqual(observation.geometry, baseline, `${label}/${name}: board and targets must stay fixed`);
+    assert.equal(observation.firstChange, null,
+      `${label}/${name}: transient board movement: ${JSON.stringify(observation.firstChange)}`);
+    assert.equal(observation.resizeCalls, 0, `${label}/${name}: UI changes must not resize the canvas`);
+    assert.equal(observation.layoutCalls, 0, `${label}/${name}: UI changes must not rearrange targets`);
+    result.checks.push(name);
+    return observation;
+  };
+  try {
+    assert.equal(await evaluate('matchMedia("(prefers-reduced-motion: reduce)").matches'), false,
+      `${label}: test normal motion, not reduced-motion shortcuts`);
+    await frames();
+    baseline = await evaluate(`(() => {
+      const rect = element => {
+        const box = element.getBoundingClientRect();
+        return {left:box.left,top:box.top,right:box.right,bottom:box.bottom,width:box.width,height:box.height};
+      };
+      const qa = window.__boardLayoutQA = {phase:'initial',resizeCalls:0,layoutCalls:0,
+        frames:0,firstChange:null,originalResize:resizeCanvas,originalLayout:layoutTreatmentScene};
+      qa.snapshot = () => ({viewport:rect(viewportWrap),canvas:rect(canvas),
+        buffer:{width:canvas.width,height:canvas.height},
+        logical:{width:state.width,height:state.height,dpr:state.dpr},runId:state.runId,
+        targets:state.pimples.map(p => ({id:p.id,x:p.x,y:p.y,radius:p.radius}))});
+      qa.baseline = qa.snapshot();
+      const expected = JSON.stringify(qa.baseline);
+      resizeCanvas = function(...args) { qa.resizeCalls++; return qa.originalResize.apply(this,args); };
+      layoutTreatmentScene = function(...args) { qa.layoutCalls++; return qa.originalLayout.apply(this,args); };
+      const observe = () => {
+        qa.frames++;
+        const current = qa.snapshot();
+        if (!qa.firstChange && JSON.stringify(current) !== expected) qa.firstChange = {phase:qa.phase,geometry:current};
+        qa.raf = requestAnimationFrame(observe);
+      };
+      qa.raf = requestAnimationFrame(observe);
+      return qa.baseline;
+    })()`);
+    result.baseline = baseline;
+    assert.ok(baseline.viewport.width > 0 && baseline.viewport.height > 0 && baseline.targets.length > 0,
+      `${label}: a real board is present`);
+    assert.equal(await evaluate('state.practiceGuide?.active'), true, `${label}: new-game teaching is active`);
+
+    const skipTeaching = async name => {
+      await phase(name);
+      const available = await evaluate(`(() => {
+        const button = document.getElementById('btn-skip-practice');
+        return !button.closest('[hidden], [inert]') && !!button.getClientRects().length
+          && getComputedStyle(button).visibility === 'visible';
+      })()`);
+      if (available) await realClick('#btn-skip-practice');
+      else {
+        // The short landscape UI intentionally omits teaching controls. Its
+        // logical teaching state must still be harmless to the board geometry.
+        assert.equal(viewport.name, 'phone-landscape', `${label}: teaching skip is usable`);
+        await evaluate('finishPracticeGuide(true); updateCareGuidance();');
+      }
+      assert.equal(await evaluate('state.practiceGuide.active'), false, `${label}: teaching was skipped`);
+      await stable(name);
+    };
+    await skipTeaching('teaching-hidden');
+    await phase('teaching-replayed');
+    await realClick('#btn-help');
+    await realClick('#btn-replay-practice');
+    assert.equal(await evaluate('state.practiceGuide.active'), true, `${label}: help reopens teaching`);
+    await stable('teaching-replayed');
+    await skipTeaching('teaching-hidden-again');
+    await realClick('#tool-steam');
+    await stable('steam-selected');
+
+    const points = await evaluate(`(() => {
+      const qa = window.__boardLayoutQA;
+      const p = state.pimples.find(item => item.type === 'blackhead' && item.steamed === 0);
+      if (!p) throw new Error('A cold blackhead is needed for real hover and heat input');
+      qa.targetId = p.id;
+      const bounds = canvas.getBoundingClientRect();
+      const screen = point => ({x:bounds.left+point.x/state.width*bounds.width,
+        y:bounds.top+point.y/state.height*bounds.height});
+      let empty = null, clearance = -Infinity;
+      for (let y=16;y<state.height-16;y+=16) for (let x=16;x<state.width-16;x+=16) {
+        const point = screen({x,y});
+        if (document.elementFromPoint(point.x,point.y) !== canvas) continue;
+        const gap = Math.min(...state.pimples.map(item => Math.hypot(x-item.x,y-item.y)
+          - Math.max(25,(item.hitRadius || item.radius)*1.6)));
+        if (gap > clearance) { clearance=gap; empty=point; }
+      }
+      if (!empty || clearance < 8) throw new Error('No empty skin point for hover regression');
+      const target = screen(p);
+      if (document.elementFromPoint(target.x,target.y) !== canvas) throw new Error('Heat target is covered');
+      return {target,empty,id:p.id};
+    })()`);
+    // This is the user's repro: selecting a cold target with steam already
+    // equipped hides the suggestion; moving back to empty skin shows it again.
+    for (let i = 0; i < 20; i++) {
+      await phase(`hover-target-${i + 1}`);
+      await mouse('mouseMoved', points.target);
+      const selected = await stable(`hover-target-${i + 1}`);
+      assert.equal(selected.selected, points.id, `${label}: real mouse selects the target`);
+      assert.equal(selected.nextHidden, true, `${label}: the matching-tool suggestion hides`);
+      assert.equal(selected.nextVisible, false, `${label}: hidden suggestion is not displayed`);
+      await phase(`hover-empty-${i + 1}`);
+      await mouse('mouseMoved', points.empty);
+      const empty = await stable(`hover-empty-${i + 1}`);
+      assert.equal(empty.selected, null, `${label}: real mouse clears the target on empty skin`);
+      assert.equal(empty.nextHidden, false, `${label}: the next-target suggestion reappears`);
+      if (viewport.name !== 'phone-landscape')
+        assert.equal(empty.nextVisible, true, `${label}: next-target suggestion is displayed`);
+      result.hoverCycles++;
+    }
+
+    // Exercise wrapping through the production hint renderer. Combining the
+    // existing guidance copy makes this cover multiple lines even on desktop;
+    // no dimensions, CSS rules or target positions are changed by the fixture.
+    for (const [name, expression] of [
+      ['short-hint', "setHint('慢慢来。', 'normal')"],
+      ['wrapped-hint', "setHint(Object.values(TOOL_GUIDANCE).join(' '), 'warn')"],
+      ['short-hint-again', "setHint('慢慢来。', 'good')"]
+    ]) {
+      await phase(name);
+      await evaluate(expression);
+      await stable(name);
+      if (name === 'wrapped-hint') {
+        result.hintLines = await evaluate(`(() => {
+          const range = document.createRange(); range.selectNodeContents(document.getElementById('hint-banner'));
+          return new Set(Array.from(range.getClientRects(), box => box.top)).size;
+        })()`);
+        assert.ok(result.hintLines > 1, `${label}: long hint really wraps in the browser`);
+      }
+    }
+
+    await phase('held-steam');
+    await realClick('#tool-steam');
+    await mouse('mouseMoved', points.target);
+    const cold = await stable('before-held-steam');
+    assert.equal(cold.heat, 0, `${label}: real heat input starts cold`);
+    assert.equal(cold.nextHidden, true, `${label}: recommendation starts hidden before warming`);
+    let warmed = cold, crossedThreshold = false;
+    const started = Date.now();
+    try {
+      await mouse('mousePressed', points.target, true);
+      while (Date.now() - started < TIMEOUT) {
+        const sample = await stable('held-steam-frame');
+        assert.equal(sample.active, true, `${label}: hold must survive guidance and HUD updates`);
+        assert.equal(sample.mode, 'steam', `${label}: heat input remains active`);
+        assert.ok(sample.heat >= warmed.heat, `${label}: heat keeps increasing while held`);
+        if (warmed.heat < 0.75 && sample.heat >= 0.75) crossedThreshold = true;
+        warmed = sample;
+        if (sample.heat >= 0.95) break;
+        await delay(40);
+      }
+      assert.ok(crossedThreshold && warmed.heat >= 0.95, `${label}: held heat crosses the recommendation threshold and continues`);
+      assert.equal(warmed.nextHidden, false, `${label}: warmed target shows its next tool during the hold`);
+      assert.equal(warmed.nextTool, 'tweezers', `${label}: actual warmed-blackhead guidance changed`);
+      result.heat = {before:cold.heat,after:warmed.heat,crossedThreshold,held:true};
+    } finally {
+      await mouse('mouseReleased', points.target);
+    }
+    const released = await stable('released-steam');
+    assert.equal(released.active, false, `${label}: explicit mouseup ends the hold`);
+    result.status = 'passed';
+    console.log(`${label}: stable board through 20 hover cycles, teaching, wrapped hints and held heat`);
+  } finally {
+    const observation = await evaluate(`(() => {
+      const qa = window.__boardLayoutQA;
+      if (!qa) return null;
+      cancelAnimationFrame(qa.raf);
+      resizeCanvas = qa.originalResize; layoutTreatmentScene = qa.originalLayout;
+      const observation = {frames:qa.frames,resizeCalls:qa.resizeCalls,layoutCalls:qa.layoutCalls,
+        firstChange:qa.firstChange,final:qa.snapshot()};
+      delete window.__boardLayoutQA;
+      return observation;
+    })()`).catch(() => null);
+    if (result.status !== 'passed') result.status = 'failed';
+    if (observation) Object.assign(result, observation);
+  }
+}
+
 async function runViewport(cdp, origin, viewport, report) {
   const { browserContextId } = await cdp.send('Target.createBrowserContext');
   let sessionId;
@@ -144,6 +361,7 @@ async function runViewport(cdp, origin, viewport, report) {
       })()`);
     };
     const checkpoint = async (name, expectedModal) => {
+      await evaluate('Promise.all(document.getAnimations().filter(animation => animation.effect?.getComputedTiming().iterations !== Infinity).map(animation => animation.finished.catch(() => {})))');
       await evaluate('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
       // Check before click() scrolls anything into view: the main entry and
       // everyday care controls must be immediately usable at each screen size.
@@ -215,7 +433,7 @@ async function runViewport(cdp, origin, viewport, report) {
     await send('Emulation.setDeviceMetricsOverride', { width: viewport.width, height: viewport.height, deviceScaleFactor: 1,
       mobile: viewport.mobile, screenWidth: viewport.width, screenHeight: viewport.height });
     await send('Emulation.setTouchEmulationEnabled', { enabled: viewport.mobile });
-    await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
+    await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'no-preference' }] });
     await send('Page.bringToFront');
     await send('Page.navigate', { url: origin });
     await waitFor('document.readyState === "complete" && typeof startAdventure === "function"', 'page startup');
@@ -230,9 +448,11 @@ async function runViewport(cdp, origin, viewport, report) {
         report.failures.push(`${label}/${selector}: Chinese Noto CJK glyphs were not rendered`);
     }
 
-    await checkpoint('01-home', 'home-modal');
+    if (!viewport.geometryOnly) await checkpoint('01-home', 'home-modal');
     await click('#btn-start-adventure');
-    await checkpoint('02-game-level-1', null);
+    if (!viewport.geometryOnly) await checkpoint('02-game-level-1', null);
+    await checkBoardStability({ send, evaluate, viewport, label, report });
+    if (viewport.geometryOnly) return;
     await click('#btn-wardrobe');
     await checkpoint('03-wardrobe-locked', 'wardrobe-modal');
     await click('#btn-close-wardrobe');
@@ -271,7 +491,7 @@ async function runViewport(cdp, origin, viewport, report) {
 
 async function main() {
   await fsp.mkdir(OUTPUT, { recursive: true });
-  const report = { viewports: VIEWPORTS, screens: [], fonts: [], failures: [] };
+  const report = { viewports: VIEWPORTS, screens: [], fonts: [], geometry: [], failures: [] };
   let server, child, cdp, profileDirectory;
   try {
     const executable = [process.env.CHROME_BIN, '/usr/bin/google-chrome', '/usr/bin/chromium'].find(file => file && fs.existsSync(file));
@@ -314,7 +534,7 @@ async function main() {
   if (report.failures.length) {
     console.error(report.failures.join('\n'));
     process.exitCode = 1;
-  } else console.log(`Browser QA passed: ${report.screens.length} screenshots across ${VIEWPORTS.length} viewports.`);
+  } else console.log(`Browser QA passed: ${report.screens.length} screenshots; stable interaction geometry across ${report.geometry.length} viewports.`);
 }
 
 main().catch(error => { console.error(error); process.exitCode = 1; });
