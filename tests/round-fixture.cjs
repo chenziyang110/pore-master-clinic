@@ -17,7 +17,7 @@ function roundFixtureSource({level=4,recipe={blackhead:6,whitehead:2,cyst:0},reg
     if(!${JSON.stringify(keepPlan)})state.roundPlan=null;
     state.paused=false;selectTool('steam');state.discoveredGifts=[];
     for(const p of state.pimples) {
-      p.giftId=null;p.linkedPore=false;p.sharedPore=null;
+      p.giftId=null;p.linkedPore=false;p.sharedPore=null;p.poreSequence=null;
       p.blackheadCount=1;p.blackheadLengths=[1];p.blackheadSize='normal';p.whiteheadSize='normal';
     }
     ${setup}

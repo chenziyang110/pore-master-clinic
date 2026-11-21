@@ -2378,7 +2378,7 @@ function foodIllustration(itemId) {
     }
 
     function adventurePoreVariants(typePool, level, random = Math.random) {
-      const variants = typePool.map(() => ({ linkedPore: false, sharedPore: null, blackheadCount: 1,
+      const variants = typePool.map(() => ({ linkedPore: false, sharedPore: null, poreSequence: null, blackheadCount: 1,
         blackheadLengths: [1], blackheadSize: 'normal', whiteheadSize: 'normal' }));
       if (level <= 2) return variants;
       const shuffled = values => {
@@ -2396,8 +2396,20 @@ function foodIllustration(itemId) {
       if (level >= 4 && white.length && black.length >= 4 && rewardRandom(random) < .30) {
         variants[black.shift()].sharedPore = { mode: level >= 6 && rewardRandom(random) < .5 ? 'sequential' : 'together', phase: 'blackhead' };
       }
-      const bundleCount = Math.min(black.length, Math.max(2, Math.ceil(black.length * .75)));
-      const bundles = new Set(shuffled(black).slice(0, bundleCount));
+      // Hidden contents are selected once per round. A small board has only one
+      // two-core surprise; fuller boards favour whiteheads and keep both kinds.
+      const light = typePool.length <= 4;
+      const sequenceIndices = light
+        ? shuffled(white.length ? white : black).slice(0, 1)
+        : [...shuffled(white).slice(0, Math.min(2, Math.ceil(white.length * .6))),
+          ...shuffled(black).slice(0, Math.min(2, Math.max(0, Math.floor(black.length * .35))))];
+      for (const index of sequenceIndices) {
+        const roll = rewardRandom(random);
+        variants[index].poreSequence = { count: light || level === 3 || roll < .65 ? 2 : roll < .93 ? 3 : 4, index: 0 };
+      }
+      const bundleCandidates = black.filter(index => !variants[index].poreSequence);
+      const bundleCount = Math.min(bundleCandidates.length, Math.max(2, Math.ceil(bundleCandidates.length * .75)));
+      const bundles = new Set(shuffled(bundleCandidates).slice(0, bundleCount));
       const giants = new Set(level >= 4 ? shuffled(black).slice(0, Math.min(3, Math.max(1, Math.round(black.length * .45)))) : []);
       for (const index of black) {
         const item = variants[index];
@@ -3518,7 +3530,7 @@ function foodIllustration(itemId) {
           && Number.isInteger(p.id) && Number.isInteger(p.state) && p.state >= P_STATE.INTACT && p.state <= P_STATE.HEALED
           && pimpleNumbers.every(key => Number.isFinite(p[key])) && pimpleBooleans.every(key => typeof p[key] === 'boolean')
           && p.radius > 0 && p.shape && ['p1', 'p2', 'p3', 'a1', 'a2', 'rot'].every(k => Number.isFinite(p.shape[k]))
-          && validSharedPore(p) && validBlackheadCount(p) && validPoreVariant(p);
+          && validSharedPore(p) && validBlackheadCount(p) && validPoreVariant(p) && validPoreSequence(p);
         if (!data.pimples.every(validPimple) || new Set(data.pimples.map(p => p.id)).size !== data.pimples.length) return false;
         if (data.initialPimples !== undefined && (!Array.isArray(data.initialPimples) || !data.initialPimples.every(validPimple))) return false;
         if (data.roundPlan != null && (!validRoundPlan(data.roundPlan) || !Array.isArray(data.initialPimples)
@@ -3549,6 +3561,7 @@ function foodIllustration(itemId) {
           && !sameCollectedVariant(ledger[`blackhead:${p.id}`], p, 'blackhead'))) return false;
         if (data.pimples.some(p => ledger[`seed:${p.id}`]
           && !sameCollectedVariant(ledger[`seed:${p.id}`], p, 'seed'))) return false;
+        if (!validPoreSequenceLedger(data)) return false;
         if (!data.flyingTrophies.every(item => numbers(item, ['sx', 'sy', 'tx', 'ty', 'progress', 'duration', 'wormLen', 'rot']) && item.duration > 0
           && ledger[item.collectionId]?.location === 'flight' && ledger[item.collectionId].kind === item.kind)) return false;
         if (!data.trophyTrayItems.every(item => numbers(item, ['wormLen', 'ox', 'oy', 'rot']) && ledger[item.collectionId]?.location === 'tray')) return false;
@@ -3582,6 +3595,7 @@ function foodIllustration(itemId) {
         const hydrate = p => ({ ...p, cfg: CONFIG.TYPES[p.type.toUpperCase()], pressure: 0, tentOffsetX: 0, tentOffsetY: 0,
           linkedPore: !p.sharedPore && p.type === 'blackhead' && p.linkedPore === true,
           sharedPore: p.sharedPore ? { mode: p.sharedPore.mode, phase: p.sharedPore.phase } : null,
+          poreSequence: p.poreSequence ? { count: p.poreSequence.count, index: p.poreSequence.index } : null,
           blackheadCount: getBlackheadCount(p),
           blackheadLengths: getBlackheadLengths(p),
           blackheadSize: p.blackheadSize === 'giant' ? 'giant' : 'normal',
@@ -3590,6 +3604,10 @@ function foodIllustration(itemId) {
           bloodDropSize: p.type === 'blackhead' ? 0 : Math.min(1.6, p.bloodDropSize) });
         state.pimples = state.pimples.map(hydrate);
         if (Array.isArray(state.initialPimples)) state.initialPimples = state.initialPimples.map(hydrate);
+        // A synchronous reward save can precede the same frame's advancement.
+        // Finish that already-awarded transition without awarding the core twice.
+        for (const p of state.pimples) if (p.poreSequence && p.state < P_STATE.OOZING
+          && state.collectionLedger[trophyIdFor(p)]?.rewards.extract) enterOozingStage(p, true);
         state.paused = false;
         state.settled = false;
         state.beforeCaptured = false;
@@ -3798,13 +3816,15 @@ function foodIllustration(itemId) {
       const goal = CARE_GOALS[client.id];
       const extracted = Object.values(state.collectionLedger).filter(item => item.rewards.extract);
       const blackheads = state.pimples.filter(p => p.type === 'blackhead' || p.sharedPore);
+      const blackheadContents = blackheads.reduce((sum, p) => sum + (p.poreSequence?.count || 1), 0);
+      const hiddenContents = state.pimples.some(p => p.poreSequence && p.poreSequence.index < p.poreSequence.count - 1);
       const cysts = state.pimples.filter(p => p.type === 'cyst');
       let eligible = false;
       let progress = '';
       if (client.id === 'coder') {
         const warmed = extracted.filter(item => item.sourceType === 'blackhead' && item.softened).length;
-        eligible = blackheads.length > 0 && warmed === blackheads.length;
-        progress = `${warmed} / ${blackheads.length} 处先软化`;
+        eligible = blackheadContents > 0 && warmed === blackheadContents;
+        progress = hiddenContents ? `已充分软化取出 ${warmed} 颗` : `${warmed} / ${blackheadContents} 颗先软化`;
       } else if (client.id === 'student') {
         eligible = state.runStats.mistakes === 0 && state.runStats.totalDamage <= 8;
         progress = `误操作 ${state.runStats.mistakes} 次 · 累计刺激 ${state.runStats.totalDamage.toFixed(1)}`;
@@ -3814,12 +3834,14 @@ function foodIllustration(itemId) {
         progress = `${gentle} / ${cysts.length} 处轻柔取出`;
       } else if (client.id === 'foodie_vip') {
         const count = state.trophiesPlucked + state.coreSeedsCollected;
-        const contents = state.pimples.length + state.pimples.filter(p => p.sharedPore?.mode === 'sequential').length;
+        const contents = state.pimples.reduce((sum, p) => sum + (p.poreSequence?.count || (p.sharedPore?.mode === 'sequential' ? 2 : 1)), 0);
         eligible = count === contents && state.runStats.totalDamage <= 20;
-        progress = `已收集 ${count} / ${contents} · 累计刺激 ${state.runStats.totalDamage.toFixed(1)}`;
+        progress = hiddenContents ? `已收集 ${count} 颗 · 累计刺激 ${state.runStats.totalDamage.toFixed(1)}`
+          : `已收集 ${count} / ${contents} · 累计刺激 ${state.runStats.totalDamage.toFixed(1)}`;
       } else {
-        eligible = state.trophiesPlucked === blackheads.length && state.runStats.snaps === 0;
-        progress = `已收集 ${state.trophiesPlucked} / ${blackheads.length} · 夹断 ${state.runStats.snaps} 次`;
+        eligible = state.trophiesPlucked === blackheadContents && state.runStats.snaps === 0;
+        progress = hiddenContents ? `已收集 ${state.trophiesPlucked} 颗 · 夹断 ${state.runStats.snaps} 次`
+          : `已收集 ${state.trophiesPlucked} / ${blackheadContents} · 夹断 ${state.runStats.snaps} 次`;
       }
       return { id: goal.id, title: goal.title, description: goal.description, progress, met: state.settled && eligible };
     }
@@ -4611,6 +4633,7 @@ function foodIllustration(itemId) {
           type: typeKey,
           linkedPore: variants[idx].linkedPore,
           sharedPore: variants[idx].sharedPore,
+          poreSequence: variants[idx].poreSequence,
           blackheadCount,
           blackheadLengths,
           blackheadSize,
@@ -4861,14 +4884,22 @@ function foodIllustration(itemId) {
     /**
      * 发射拔出的脂栓/脓核沿抛物线飞入右上角不锈钢战利品弯盘！
      */
-    function trophyIdFor(p, kind = p.type === 'blackhead' ? 'blackhead' : 'seed') {
-      return `${kind}:${p.id}`;
+    function trophyIdFor(p, kind = p.type === 'blackhead' ? 'blackhead' : 'seed', index = p.poreSequence?.index || 0) {
+      return `${kind}:${p.id}${index ? `:core:${index + 1}` : ''}`;
+    }
+
+    function sourcePimpleForTrophy(collectionId) {
+      const match = /^(blackhead|seed):(-?\d+)(?::core:([2-4]))?$/.exec(collectionId);
+      if (!match) return null;
+      const p = state.pimples.find(p => p.id === Number(match[2]));
+      return p && (!match[3] || (p.poreSequence && Number(match[3]) <= p.poreSequence.count)) ? p : null;
     }
 
     function placeTrophyOnSkin(collectionId, kind) {
       if (state.collectionLedger[collectionId]) return false;
-      const source = state.pimples.find(p => trophyIdFor(p) === collectionId);
+      const source = sourcePimpleForTrophy(collectionId);
       state.collectionLedger[collectionId] = { kind, location: 'skin', rewards: {},
+        ...(source?.poreSequence ? { sourcePimpleId: source.id, sequenceIndex: source.poreSequence.index } : {}),
         blackheadCount: kind === 'blackhead' ? getBlackheadCount(source) : 1,
         blackheadLengths: kind === 'blackhead' ? getBlackheadLengths(source) : [1],
         blackheadSize: kind === 'blackhead' && source?.blackheadSize === 'giant' ? 'giant' : 'normal',
@@ -4882,7 +4913,7 @@ function foodIllustration(itemId) {
       if (!item || item.rewards[reward]) return false;
       item.rewards[reward] = true;
       if (reward === 'extract') {
-        const source = state.pimples.find(p => trophyIdFor(p) === collectionId);
+        const source = sourcePimpleForTrophy(collectionId);
         if (source) {
           item.sourceType = source.type;
           item.softened = source.steamed >= 0.75;
@@ -4899,8 +4930,9 @@ function foodIllustration(itemId) {
       const id = collectionId || `loose:${++state.collectionSerial}`;
       const item = state.collectionLedger[id];
       if (item && item.location !== 'skin') return false;
-      const source = state.pimples.find(p => trophyIdFor(p) === id);
+      const source = sourcePimpleForTrophy(id);
       state.collectionLedger[id] = { ...item, kind, location: 'flight', rewards: item ? item.rewards : {},
+        ...(source?.poreSequence ? { sourcePimpleId: source.id, sequenceIndex: Number(id.split(':core:')[1] || 1) - 1 } : {}),
         blackheadCount: kind === 'blackhead' ? normalizedBlackheadCount(item?.blackheadCount ?? getBlackheadCount(source)) : 1,
         blackheadLengths: kind === 'blackhead' ? [...(item?.blackheadLengths || getBlackheadLengths(source))] : [1],
         blackheadSize: kind === 'blackhead' && (item?.blackheadSize === 'giant' || (!item && source?.blackheadSize === 'giant')) ? 'giant' : 'normal',
@@ -4978,6 +5010,10 @@ function foodIllustration(itemId) {
     function toolGuidanceFor(tool, selected = currentPointerCareTarget()) {
       if (selected?.kind === 'pimple') {
         const p = selected.item;
+        if (poreNeedsFreshAction(p)) return '咦，里面还有一颗！松手后，再轻挤一次。';
+        if (p.poreSequence?.index > 0 && p.state < P_STATE.OOZING && (tool === 'squeeze' || tool === 'tweezers')) {
+          return tool === 'squeeze' ? '同一个洞口又露出一颗，轻轻挤出这一颗。' : '又露出一颗，夹住后缓缓取出。';
+        }
         const count = getRevealedBlackheadCount(p);
         if (count > 1 && tool === 'steam') return `${count} 根黑头挤一窝，先暖一暖。`;
         if (count > 1 && tool === 'squeeze') return `${count} 根黑头，轻轻向中间推。`;
@@ -5034,7 +5070,7 @@ function foodIllustration(itemId) {
 
     function canTweezePimple(p) {
       if (p.state === P_STATE.INTACT) return p.type === 'blackhead' && (p.steamed >= 0.75 || p.pierced);
-      return p.state === P_STATE.EXTRUDING && (p.type !== 'blackhead' || p.extrudeProgress >= 0.16);
+      return p.state === P_STATE.EXTRUDING && (p.type !== 'blackhead' || p.extrudeProgress >= 0.16 || p.poreSequence?.index > 0);
     }
 
     function needsGoalWarmth(p) {
@@ -5086,7 +5122,8 @@ function foodIllustration(itemId) {
 
     function updatePressureFeedback() {
       const pointer = state.pointer;
-      const active = pointer.active && (pointer.mode === 'two-finger' || pointer.mode === 'mirror-pinch');
+      const active = pointer.active && (pointer.mode === 'two-finger' || pointer.mode === 'mirror-pinch')
+        && !poreNeedsFreshAction(pointer.lockedPimple);
       const status = document.getElementById('canvas-status');
       const wasActive = status.dataset.pressure === 'true';
       status.dataset.pressure = String(active);
@@ -5336,7 +5373,7 @@ function foodIllustration(itemId) {
     }
 
     function getPimpleMouths(p) {
-      const fixedMouth = p.sharedPore || getBlackheadCount(p) > 1 || p.blackheadSize === 'giant' || p.whiteheadSize === 'large';
+      const fixedMouth = p.sharedPore || p.poreSequence || getBlackheadCount(p) > 1 || p.blackheadSize === 'giant' || p.whiteheadSize === 'large';
       const x = p.x + (fixedMouth ? 0 : p.tentOffsetX || 0), y = p.y + (fixedMouth ? 0 : p.tentOffsetY || 0);
       return getPimpleMouthOffsets(p).map(mouth => ({ x: x + mouth.x, y: y + mouth.y }));
     }
@@ -5597,6 +5634,88 @@ function foodIllustration(itemId) {
       return revealed ? getBlackheadCount(p) : 1;
     }
 
+    const blockedPoreActions = new WeakMap();
+
+    function poreNeedsFreshAction(p) {
+      return Boolean(p && blockedPoreActions.has(p) && blockedPoreActions.get(p) === state.actionSerial);
+    }
+
+    function validPoreSequence(p) {
+      const sequence = p.poreSequence;
+      if (sequence == null) return true;
+      return typeof sequence === 'object' && !Array.isArray(sequence)
+        && Number.isInteger(sequence.count) && sequence.count >= 2 && sequence.count <= 4
+        && Number.isInteger(sequence.index) && sequence.index >= 0 && sequence.index < sequence.count
+        && ['blackhead', 'whitehead'].includes(p.type) && !p.linkedPore && !p.sharedPore && getBlackheadCount(p) === 1
+        && (sequence.index === 0 || p.state >= P_STATE.EXTRUDING)
+        && (p.state < P_STATE.OOZING || sequence.index === sequence.count - 1);
+    }
+
+    function validPoreSequenceLedger(data) {
+      const ledger = data.collectionLedger;
+      for (const p of data.pimples) {
+        const sequence = p.poreSequence;
+        const initial = data.initialPimples?.find(item => item.id === p.id);
+        if (Boolean(sequence) !== Boolean(initial?.poreSequence)) return false;
+        if (!sequence) continue;
+        if (!initial?.poreSequence || initial.poreSequence.count !== sequence.count
+          || initial.poreSequence.index !== 0 || initial.type !== p.type) return false;
+        const kind = p.type === 'blackhead' ? 'blackhead' : 'seed';
+        for (let index = 0; index < sequence.count; index++) {
+          const id = trophyIdFor(p, kind, index), item = ledger[id];
+          if (index < sequence.index && (!item?.rewards.extract || item.location === 'skin')) return false;
+          if (index > sequence.index && item) return false;
+          if (index === sequence.index && p.state >= P_STATE.OOZING && (!item?.rewards.extract || item.location === 'skin')) return false;
+          if (item && (item.rewards.extract !== true || item.kind !== kind || item.sourcePimpleId !== p.id || item.sequenceIndex !== index
+            || !sameCollectedVariant(item, p, kind))) return false;
+          if (item?.location === 'skin' && data.surfaceResidues.filter(r => r.collectionId === id).length !== 1) return false;
+          if (item?.location === 'flight' && data.flyingTrophies.filter(r => r.collectionId === id).length !== 1) return false;
+          if (item?.location === 'tray' && data.trophyTrayItems.length < 20
+            && data.trophyTrayItems.filter(r => r.collectionId === id).length !== 1) return false;
+        }
+      }
+      for (const [id, item] of Object.entries(ledger)) {
+        const match = /^(blackhead|seed):(-?\d+)(?::core:([2-4]))?$/.exec(id);
+        if (!match) { if (id.includes(':core:')) return false; continue; }
+        const p = data.pimples.find(p => p.id === Number(match[2])), index = Number(match[3] || 1) - 1;
+        if (!p?.poreSequence) { if (match[3]) return false; continue; }
+        if (index >= p.poreSequence.count || index > p.poreSequence.index
+          || item.kind !== (p.type === 'blackhead' ? 'blackhead' : 'seed')
+          || id !== trophyIdFor(p, item.kind, index)) return false;
+      }
+      return true;
+    }
+
+    function collectCurrentSequenceCore(p) {
+      const id = trophyIdFor(p), item = state.collectionLedger[id];
+      if (!item?.rewards.extract) return false;
+      if (item.location === 'skin') {
+        const residue = state.surfaceResidues.find(r => r.collectionId === id);
+        if (!residue || !launchTrophyToDish(residue.x, residue.y, item.kind, residue.wormLen || 24, id)) return false;
+        state.surfaceResidues = state.surfaceResidues.filter(r => r.collectionId !== id);
+        rewardTrophyOnce(id, 'collect', 45, p.x, p.y);
+      }
+      return state.collectionLedger[id].location !== 'skin';
+    }
+
+    function advancePoreSequence(p) {
+      const sequence = p.poreSequence;
+      if (!sequence || sequence.index >= sequence.count - 1) return false;
+      sequence.index += 1;
+      Object.assign(p, { state: P_STATE.EXTRUDING, pressure: 0, swellVisual: 0,
+        extrudeProgress: p.type === 'blackhead' ? .12 : 0, pusRemaining: p.type === 'whitehead' ? .36 : 0,
+        surfacePusMound: 0, pierced: true, snappedCap: false, hardSqueezeWarned: false,
+        ruptureTimer: 0, oozeEmitAccum: 0, wipeProgress: 0, healProgress: 0,
+        bloodDropSize: 0, serousDropSize: 0, tentOffsetX: 0, tentOffsetY: 0 });
+      blockedPoreActions.set(p, state.actionSerial);
+      triggerHaptic([9, 45, 15]);
+      spawnFloatingText(p.x, p.y - 22, '还有一颗！', '#a36f52');
+      updateHUD();
+      setHint('咦，里面还有一颗！松手后，再轻挤一次，也可以夹住取出。', 'good');
+      saveCurrentSession(true);
+      return true;
+    }
+
     function validBlackheadCount(p) {
       if (p.blackheadCount === undefined) return true;
       return Number.isInteger(p.blackheadCount) && p.blackheadCount >= 1 && p.blackheadCount <= 4
@@ -5683,8 +5802,9 @@ function foodIllustration(itemId) {
         p.bloodDropSize = 0;
         p.serousDropSize = 0;
         p.tentOffsetX = p.tentOffsetY = 0;
-        setHint('黑头已取出，同一个洞口里还有一颗白头。继续轻挤，或用细胞夹缓缓取出。', 'good');
+        blockedPoreActions.set(p, state.actionSerial);
         updateHUD();
+        setHint('黑头已取出，同一个洞口里还有一颗白头。松手后，再轻挤一次或夹住取出。', 'good');
         return true;
       }
       shared.phase = 'done';
@@ -5694,11 +5814,17 @@ function foodIllustration(itemId) {
 
     function canFinishPoreFromResidue(p) {
       return p && p.state === P_STATE.OOZING && p.bloodDropSize <= .1
-        && (!p.sharedPore || (p.sharedPore.phase === 'done'
-          && !state.surfaceResidues.some(residue => residue.pimpleId === p.id)));
+        && (!p.sharedPore || p.sharedPore.phase === 'done')
+        && (!p.poreSequence || p.poreSequence.index === p.poreSequence.count - 1)
+        && (!(p.sharedPore || p.poreSequence) || !state.surfaceResidues.some(residue => residue.pimpleId === p.id));
     }
 
     function enterOozingStage(p, pluckedCleanly = false) {
+      if (p.poreSequence) {
+        if (!collectCurrentSequenceCore(p)) return;
+        if (advancePoreSequence(p)) return;
+        pluckedCleanly = !state.surfaceResidues.some(residue => residue.pimpleId === p.id);
+      }
       if (advanceSharedPore(p)) return;
       p.state = P_STATE.OOZING;
       p.pressure = 0;
@@ -5872,6 +5998,11 @@ function foodIllustration(itemId) {
         return;
       }
 
+      if (poreNeedsFreshAction(hit)) {
+        setHint('又露出一颗，松手后再开始下一次操作。', 'good');
+        return;
+      }
+
       if (needleActionFor(hit) === 'extract') {
         hit.extrudeProgress = 1;
         sound.playPop('blackhead');
@@ -5974,6 +6105,10 @@ function foodIllustration(itemId) {
       }
 
       rememberPointerCareTarget({ x: target.x, y: target.y }, true);
+      if (poreNeedsFreshAction(target)) {
+        setHint('又露出一颗，松手后再夹住这一颗。', 'good');
+        return;
+      }
       if (!canTweezePimple(target)) {
         setHint(tweezerPreparationHint(target), 'normal');
         return;
@@ -6042,7 +6177,7 @@ function foodIllustration(itemId) {
       // A full-length drag can be a fraction of a floating-point pixel short.
       if (1 - tw.pullRatio < 1e-8) tw.pullRatio = 1;
 
-      const fixedMouth = p.sharedPore || getBlackheadCount(p) > 1 || p.blackheadSize === 'giant' || p.whiteheadSize === 'large';
+      const fixedMouth = p.sharedPore || p.poreSequence || getBlackheadCount(p) > 1 || p.blackheadSize === 'giant' || p.whiteheadSize === 'large';
       p.tentOffsetX = fixedMouth ? 0 : (pullVecX / pullVecLen) * tw.pullRatio * 4.2;
       p.tentOffsetY = fixedMouth ? 0 : (pullVecY / pullVecLen) * tw.pullRatio * 4.2;
 
@@ -6213,10 +6348,10 @@ function foodIllustration(itemId) {
       if (!target || !state.pimples.includes(target)) return [];
       // Shared blackhead/whitehead openings keep their deliberate two-stage
       // treatment. A group never starts by squeezing an already empty pore.
-      if (target.type !== 'blackhead' || target.sharedPore || target.state >= P_STATE.OOZING) return [target];
+      if (target.type !== 'blackhead' || target.sharedPore || target.poreSequence || target.state >= P_STATE.OOZING) return [target];
       const reach = Math.min(92, Math.max(72, target.radius * 4.2));
       const neighbors = state.pimples.filter(p => p !== target && p.type === 'blackhead'
-        && !p.sharedPore && p.state < P_STATE.OOZING
+        && !p.sharedPore && !p.poreSequence && p.state < P_STATE.OOZING
         && Math.hypot(p.x - target.x, p.y - target.y) <= reach)
         .sort((a, b) => Math.hypot(a.x - target.x, a.y - target.y) - Math.hypot(b.x - target.x, b.y - target.y) || a.id - b.id);
       return [target, ...neighbors.slice(0, 3)];
@@ -6226,7 +6361,7 @@ function foodIllustration(itemId) {
       const ptr = state.pointer;
       const group = ptr.squeezeTargets.length ? ptr.squeezeTargets : ptr.lockedPimple ? [ptr.lockedPimple] : [];
       return group.filter(p => state.pimples.includes(p) && p.state < P_STATE.OOZING
-        && (p === ptr.lockedPimple || (p.type === 'blackhead' && !p.sharedPore)));
+        && (p === ptr.lockedPimple || (p.type === 'blackhead' && !p.sharedPore && !p.poreSequence)));
     }
 
     function lockSqueezeTarget(target, preserveGroup = false) {
@@ -6576,7 +6711,10 @@ function foodIllustration(itemId) {
         e.preventDefault();
         if (state.settled || state.paused || state.iceFinishing) return;
         const incoming = Array.from(e.changedTouches || []);
+        const waitingForLift = !state.pointer.active && canvasTouchIds.size > 0
+          && state.pimples.some(poreNeedsFreshAction);
         incoming.forEach((touch, index) => canvasTouchIds.add(touchIdentity(touch, index)));
+        if (waitingForLift) return;
         const allTouches = e.targetTouches ? Array.from(e.targetTouches) : Array.from(e.touches).filter((touch, index) => canvasTouchIds.has(touchIdentity(touch, index)));
         if (!allTouches.length) return;
         if (state.pointer.active && (state.currentTool !== 'squeeze' || state.pointer.mode === 'two-finger')) return;
@@ -7090,6 +7228,7 @@ function foodIllustration(itemId) {
           }
         } else if (group.length) {
           for (const p of group) {
+            if (poreNeedsFreshAction(p)) continue;
             squeezedThisFrame.add(p);
             const index = ptr.squeezeTargets.indexOf(p);
             const force = ptr.squeezeForce * (index <= 0 ? 1 : 0.95 - index * 0.03);
@@ -7216,6 +7355,7 @@ function foodIllustration(itemId) {
     }
 
     function applySqueezeToIntact(p, force, axisAngle, initSpan, dt) {
+      if (poreNeedsFreshAction(p)) return;
       const alreadyWarned = p.hardSqueezeWarned;
       recordSqueezePressure(p, force, dt);
       const steamEase = p.steamed >= 0.75 ? (state.upgrades.steamer ? 1.65 : 1.40) : 1.0;
@@ -7324,6 +7464,7 @@ function foodIllustration(itemId) {
     }
 
     function applySqueezeToExtruding(p, force, axisAngle, dt) {
+      if (poreNeedsFreshAction(p)) return;
       recordSqueezePressure(p, force, dt);
       const steamEase = p.steamed >= 0.75 ? (state.upgrades.steamer ? 1.55 : 1.35) : 1.0;
 
@@ -7882,6 +8023,7 @@ function foodIllustration(itemId) {
     }
 
     function renderRealPinchedSkinMesh(ptr) {
+      if (poreNeedsFreshAction(ptr.lockedPimple)) return;
       const f = Math.min(1, ptr.squeezeForce);
       const p1 = ptr.smoothP1;
       const p2 = ptr.smoothP2;
@@ -7961,7 +8103,7 @@ function foodIllustration(itemId) {
 
     function renderPimple(p, isCreamy, cleanForSnapshot = false) {
       const ptr = state.pointer;
-      const isTarget = ptr.active && ptr.lockedPimple === p && ptr.squeezeForce > 0.05;
+      const isTarget = ptr.active && ptr.lockedPimple === p && ptr.squeezeForce > 0.05 && !poreNeedsFreshAction(p);
       const isClampedByTweezer = state.tweezers.clampedPimple === p;
 
       if (p.state === P_STATE.HEALED) {
@@ -8043,7 +8185,7 @@ function foodIllustration(itemId) {
       if (p.type === 'blackhead') {
         renderRealBlackhead(p, isCreamy, healFade);
       } else if (p.type === 'whitehead') {
-        if (p.sharedPore) renderSharedPoreContents(p, isCreamy);
+        if (p.sharedPore || p.poreSequence?.index > 0) renderSharedPoreContents(p, isCreamy);
         else renderRealWhitehead(p, isCreamy, healFade);
       } else {
         renderRealCyst(p, isCreamy, healFade);
@@ -8312,13 +8454,13 @@ function foodIllustration(itemId) {
     }
 
     function renderSharedPoreContents(p, isCreamy, blackheadPoints = null) {
-      if (!p.sharedPore || p.state >= P_STATE.OOZING) return;
+      if (!(p.sharedPore || p.poreSequence?.index > 0) || p.state >= P_STATE.OOZING) return;
       const thick = Math.max(2.4, p.radius * .24);
       if (blackheadPoints) {
         renderRealisticSebumFilament(ctx, sharedWhiteheadCurve(blackheadPoints), thick, isCreamy, 1.8);
         return;
       }
-      if (p.sharedPore.phase !== 'whitehead') return;
+      if (p.sharedPore ? p.sharedPore.phase !== 'whitehead' : p.type !== 'whitehead') return;
       // The second content rises from the original opening; neither the pore nor
       // its hit target shifts when the first plug has been removed.
       const mouth = getPimpleMouthOffsets(p)[0];
