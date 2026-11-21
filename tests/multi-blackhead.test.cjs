@@ -117,7 +117,8 @@ test('introductory boards stay simple and two, three or four strands each use on
     assert.equal(p.linkedPore, false);
     assert.equal(p.sharedPore, null);
     assert.deepEqual(plain(g.state(`getPimpleMouths(state.pimples.find(p=>p.id===${p.id}))`)), [{x:p.x,y:p.y}]);
-    assert.match(g.state(`keyboardTargetDescription({kind:'pimple',item:state.pimples.find(p=>p.id===${p.id})})`), new RegExp(`${p.blackheadCount} 根黑头`));
+    assert.equal(g.state(`keyboardTargetDescription({kind:'pimple',item:state.pimples.find(p=>p.id===${p.id})})`), '黑头 · 待护理',
+      'an unopened pore does not disclose the hidden strand count');
   }
 });
 
@@ -128,6 +129,7 @@ test('real heat and squeeze expose every strand with one root and distinct dark 
     warm(g, p);
     squeeze(g, p, () => p.state === 2 && p.extrudeProgress > .42);
     assertBundle(drawnStrands(g, `renderPimple(state.pimples.find(p=>p.id===${p.id}),false);`), p.blackheadCount, p.blackheadLengths);
+    assert.match(g.state(`keyboardTargetDescription({kind:'pimple',item:state.pimples.find(p=>p.id===${p.id})})`), new RegExp(`${p.blackheadCount} 根黑头`));
     assert.equal(p.bloodDropSize, 0);
     assert.equal(g.state(`state.collectionLedger['blackhead:${p.id}']`), undefined);
   }

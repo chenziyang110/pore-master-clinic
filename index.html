@@ -575,10 +575,17 @@
     #wardrobe-status { font-size: 14px; min-height: 44px; line-height: 1.6; }
     .girl-portrait.is-fed { animation: happy-meal .7s ease-in-out; }
     @keyframes happy-meal { 0%,100% { transform: translateY(0) rotate(0); } 28% { transform: translateY(-6px) rotate(-2deg); } 65% { transform: translateY(-3px) rotate(2deg); } }
-    .gift-discovery { position: absolute; inset: 18px 14px auto; z-index: 24; margin: 0 auto; max-width: 350px; display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 16px; background: #fffcf2f5; border: 1px solid #e5d7b7; box-shadow: 0 8px 35px #684c2820; pointer-events: none; }
-    .gift-discovery svg { width: 64px; height: 64px; flex: 0 0 64px; }
-    .gift-discovery strong { display: block; color: #8a6543; font-size: 15px; margin-bottom: 5px; }
-    .gift-discovery p { color: #74745f; font-size: 12px; line-height: 1.7; }
+    .gift-discovery { position: absolute; inset: 10px 12px auto; z-index: 24; margin: 0 auto; max-width: 328px; display: flex; align-items: center; gap: 8px; padding: 8px 6px 8px 10px; border-radius: 15px; background: #fffcf2f5; border: 1px solid #e5d7b7; box-shadow: 0 5px 20px #684c2820; pointer-events: auto; touch-action: none; user-select: none; cursor: grab; transform: translateY(var(--gift-drag-y, 0px)); transition: transform .18s ease-out, opacity .18s ease-out; }
+    .gift-discovery > svg { width: 44px; height: 44px; flex: 0 0 44px; pointer-events: none; }
+    .gift-discovery .gift-copy { flex: 1; min-width: 0; }
+    .gift-discovery strong { display: block; color: #8a6543; font-size: 14px; line-height: 1.4; }
+    .gift-discovery p { color: #74745f; font-size: 12px; line-height: 1.5; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+    .gift-discovery .gift-swipe-hint { display: block; margin-top: 2px; color: #9b7285; font-size: 11px; line-height: 1.3; }
+    .gift-discovery .gift-dismiss { align-self: stretch; flex: 0 0 36px; min-height: 44px; padding: 0; border: 0; border-radius: 9px; background: transparent; color: #9b647f; font-size: 24px; line-height: 1; cursor: pointer; touch-action: manipulation; }
+    .gift-discovery .gift-dismiss:hover { background: #eed4e35c; }
+    .gift-discovery .gift-dismiss:focus-visible { outline: 2px solid #ad5d89; outline-offset: -3px; }
+    .gift-discovery.is-dragging { transition: none; cursor: grabbing; }
+    .gift-discovery.is-dismissing { opacity: 0; transform: translateY(calc(-100% - 20px)); pointer-events: none; }
     #gift-flight-layer { position: absolute; inset: 0; z-index: 25; overflow: hidden; pointer-events: none; }
     .gift-flight { position: absolute; width: 82px; height: 82px; transform: translate(-50%, -50%) scale(.12); transform-origin: center; filter: drop-shadow(0 5px 8px #72532926); animation: gift-emerge 1.8s ease-out forwards; }
     .gift-flight svg { display: block; width: 100%; height: 100%; }
@@ -589,7 +596,7 @@
       78% { opacity: 1; transform: translate(-50%, -50%) translate(var(--gift-end-x), var(--gift-end-y)) scale(1) rotate(0); }
       100% { opacity: 0; transform: translate(-50%, -50%) translate(var(--gift-end-x), var(--gift-end-y)) scale(.95) rotate(0); }
     }
-    @media (prefers-reduced-motion: reduce) { .gift-flight { animation: none !important; transform: translate(-50%, -50%) scale(.7); } }
+    @media (prefers-reduced-motion: reduce) { .gift-flight { animation: none !important; transform: translate(-50%, -50%) scale(.7); } .gift-discovery { transition: none; } }
     #result-modal .result-heading { display: block; text-align: center; }
     #result-modal .modal-card { max-width: 460px; border-radius: 22px; padding: 28px; }
     #result-modal .result-kicker { letter-spacing: 2px; }
@@ -850,6 +857,54 @@
     @media (max-height: 500px) and (orientation: landscape) {
       #home-modal .girl-portrait svg.kawaii-character { height: min(250px, 65dvh); }
     }
+
+    /* A gentle food request; the approved character artwork stays untouched. */
+    #hunger-modal { position: fixed; inset: 0; z-index: 55; padding: max(12px, var(--safe-top)) max(12px, var(--safe-right)) max(12px, var(--safe-bottom)) max(12px, var(--safe-left)); background: rgba(111, 62, 87, .27); }
+    #hunger-modal .hunger-card { width: 100%; max-width: 380px; min-height: 0; max-height: calc(100dvh - 24px - var(--safe-top) - var(--safe-bottom)); overflow-y: auto; overscroll-behavior: contain; padding: 20px; border: 1px solid #f3cfdf; border-radius: 26px; background: #fff9fc; box-shadow: 0 18px 58px rgba(135, 67, 103, .20); text-align: center; scrollbar-gutter: stable; }
+    #hunger-modal .hunger-close { position: sticky; top: -8px; z-index: 5; display: flex; align-items: center; justify-content: center; width: 44px; min-height: 44px; margin: -8px -8px -40px auto; padding: 0; border: 1px solid #f0d8e4; border-radius: 50%; background: #fff8fcf5; color: #a46685; font-size: 25px; line-height: 1; }
+    #hunger-modal .hunger-close:hover { background: #ffe7f2; }
+    #hunger-modal button:focus-visible { outline: 3px solid #bc5c8c; outline-offset: 3px; }
+    #hunger-modal .hunger-art { position: relative; isolation: isolate; height: 182px; overflow: hidden; margin: 4px 0 14px; border: 1px solid #f5dce8; border-radius: 23px; background: #fff; }
+    #hunger-girl { position: absolute; z-index: 1; inset: 0; height: 100%; width: 100%; overflow: hidden; pointer-events: none; }
+    #hunger-girl > svg.kawaii-character { position: absolute; top: -28px; left: 50%; width: 340px; height: 696px; max-width: none; margin: 0; transform: translateX(-50%); filter: none; }
+    #hunger-modal .hunger-request { position: absolute; z-index: 3; top: 14px; left: 12px; margin: 0; padding: 7px 11px; border: 1px solid #efc9dc; border-radius: 15px 15px 15px 4px; color: #9d587b; background: #fff5fa; font-size: 14px; line-height: 1.4; box-shadow: 0 3px 10px #c98ba714; }
+    #hunger-modal .hunger-bowl { position: absolute; z-index: 3; bottom: 5px; left: 50%; display: block; width: 82px; height: 55px; transform: translateX(-50%); filter: drop-shadow(0 3px 3px #b27c8e24); }
+    #hunger-modal .hunger-tear { position: absolute; z-index: 3; top: 96px; left: calc(50% + 36px); display: block; width: 13px; height: 19px; opacity: .72; }
+    #hunger-title { margin: 0; color: #a74f79; font-size: 24px; font-weight: 650; line-height: 1.4; }
+    #hunger-copy { margin: 8px auto 16px; max-width: 28ch; color: #986a82; font-size: 16px; line-height: 1.65; overflow-wrap: anywhere; }
+    #hunger-modal .hunger-meter-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 7px; color: #9d617d; font-size: 14px; line-height: 1.5; }
+    #hunger-percent { color: #b4517f; font-weight: 650; font-variant-numeric: tabular-nums; }
+    #hunger-meter { height: 9px; overflow: hidden; border-radius: 20px; background: #f5e2eb; }
+    #hunger-meter-fill { height: 100%; width: 100%; border-radius: inherit; background: linear-gradient(90deg, #efacc6, #df7da6); transition: width .25s ease; }
+    #hunger-modal .hunger-actions { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; margin-top: 18px; }
+    #hunger-modal .hunger-actions button { min-height: 46px; margin: 0; padding: 11px 14px; border-radius: 15px; font-size: 16px; line-height: 1.4; }
+    #hunger-modal #btn-hunger-later { min-height: 44px; border-color: #edd4e1; background: #fff9fc; color: #a87590; font-size: 14px; box-shadow: none; }
+    #hunger-modal.is-very-hungry .hunger-card { border-color: #e9a7c5; }
+    #hunger-modal.is-very-hungry #hunger-meter-fill { background: linear-gradient(90deg, #ed9cbd, #d66697); }
+    #hunger-modal.open.is-very-hungry .hunger-request { animation: hunger-request-sigh 3.5s ease-in-out infinite; }
+    #hunger-modal.open.is-very-hungry .hunger-tear { animation: hunger-tear-wobble 3.5s ease-in-out infinite; }
+    @keyframes hunger-request-sigh { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+    @keyframes hunger-tear-wobble { 0%,100% { opacity: .60; transform: translateY(0); } 50% { opacity: .88; transform: translateY(2px); } }
+    @media (max-width: 355px), (max-height: 650px) {
+      #hunger-modal .hunger-card { padding: 16px; border-radius: 22px; }
+      #hunger-modal .hunger-art { height: 153px; margin-bottom: 10px; }
+      #hunger-girl > svg.kawaii-character { top: -31px; }
+      #hunger-modal .hunger-request { top: 11px; left: 9px; padding: 6px 9px; }
+      #hunger-title { font-size: 22px; }
+      #hunger-copy { margin: 6px auto 12px; }
+      #hunger-modal .hunger-actions { margin-top: 14px; gap: 6px; }
+    }
+    @media (max-height: 500px) and (orientation: landscape) {
+      #hunger-modal .hunger-art { height: 124px; }
+      #hunger-girl > svg.kawaii-character { top: -46px; }
+      #hunger-modal .hunger-tear { top: 77px; }
+      #hunger-modal .hunger-bowl { left: calc(50% + 65px); width: 70px; height: 47px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #hunger-modal.open { animation: none; }
+      #hunger-modal .hunger-request, #hunger-modal .hunger-tear { animation: none !important; }
+      #hunger-meter-fill { transition: none; }
+    }
   </style>
 </head>
 <body>
@@ -909,7 +964,7 @@
           <p id="keyboard-care-status" class="keyboard-care-status" role="status" aria-live="polite" hidden></p>
           <span id="keyboard-care-help" class="visually-hidden">键盘辅助：左或上选择上一处，右或下选择下一处；1–5 切换工具，按住空格或回车使用，松开停手；粉刺针在松键时破口，Esc 取消。清理完后按 6 涂冰膜。</span>
           <div class="canvas-topline" hidden><ol class="care-stages" aria-label="护理流程"><li data-care-stage="0" aria-current="step"><span>01</span>热敷</li><li data-care-stage="1"><span>02</span>清理</li><li data-care-stage="2"><span>03</span>舒缓</li></ol><span id="canvas-status" class="canvas-status">已软化 0 / 8</span></div>
-          <div id="gift-discovery" class="gift-discovery" role="status" aria-live="polite" hidden></div>
+          <div id="gift-discovery" class="gift-discovery" role="region" aria-label="发现礼物" hidden></div>
           <div id="gift-flight-layer" aria-hidden="true"></div>
           <div class="ice-cta-group"><button id="btn-ice-finish" class="ice-finish-cta" type="button">涂抹舒缓冰膜</button><button id="btn-ice-quick" class="ice-quick-btn" type="button">一键敷膜 · 完成护理</button></div>
           <div class="macro-frame-overlay"></div><div id="macro-reticle" class="macro-reticle" hidden>鼻翼沟与内侧脸颊 · 自然肌理</div>
@@ -961,6 +1016,26 @@
             <section id="wardrobe-outfits-panel" role="tabpanel" aria-labelledby="wardrobe-tab-outfits"><h3 id="wardrobe-owned-title" class="wardrobe-section-title" hidden>已经拥有</h3><div id="wardrobe-collection" class="wardrobe-items"></div><div id="wardrobe-reset" class="wardrobe-reset" hidden><button type="button" data-equip="reset:all">恢复最初装扮</button></div><h3 id="wardrobe-wish-title" class="wardrobe-section-title">想变漂亮</h3><div id="wardrobe-preview" class="wardrobe-wishes"></div><div id="dream-preview"></div><div id="wardrobe-coming-soon" class="wardrobe-coming-soon" hidden><strong>敬请期待</strong></div></section>
             <section id="wardrobe-food-panel" role="tabpanel" aria-labelledby="wardrobe-tab-food" hidden><p class="food-intro">一份美味，吃掉一点小饥饿。</p><div id="wardrobe-food-collection" class="food-items"></div><p id="wardrobe-food-empty" class="food-empty">等一份小美味掉进篮子里。</p></section>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="hunger-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="hunger-title" aria-describedby="hunger-copy" tabindex="-1">
+      <div class="modal-card hunger-card">
+        <button id="btn-close-hunger" class="hunger-close" type="button" aria-label="关闭饥饿提醒">×</button>
+        <div class="hunger-art" aria-hidden="true">
+          <div id="hunger-girl" class="girl-portrait"></div>
+          <p class="hunger-request">咕噜…咕噜…</p>
+          <svg class="hunger-tear" viewBox="0 0 16 24" focusable="false"><path d="M8 2C7 7 2 11 2 16a6 6 0 0 0 12 0C14 11 9 7 8 2Z" fill="#b8dce9" stroke="#93c3d5" stroke-width="1.2"/><path d="M5 13c-1 2-1 4 0 5" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/></svg>
+          <svg class="hunger-bowl" viewBox="0 0 96 64" focusable="false"><ellipse cx="48" cy="57" rx="31" ry="4" fill="#eac8d8" opacity=".42"/><path d="M12 24c2 18 13 30 36 30s34-12 36-30Z" fill="#f9dce8" stroke="#cf93b0" stroke-width="1.8"/><ellipse cx="48" cy="24" rx="36" ry="10" fill="#fff8fb" stroke="#cf93b0" stroke-width="1.8"/><ellipse cx="48" cy="25" rx="27" ry="5" fill="#f4e2ea"/><path d="M43 39c-4-5-10 2 5 10 15-8 9-15 5-10-3-3-7-3-10 0Z" fill="#e8a2bf"/><path d="M19 34c2 7 6 12 12 15" fill="none" stroke="#fff6fa" stroke-width="3" stroke-linecap="round"/></svg>
+        </div>
+        <h2 id="hunger-title">肚子好饿呀…</h2>
+        <p id="hunger-copy">可以给我一点吃的吗？一小口也好。</p>
+        <div class="hunger-meter-heading"><span id="hunger-meter-label">饥饿程度</span><strong id="hunger-percent" aria-hidden="true">100%</strong></div>
+        <div id="hunger-meter" role="progressbar" aria-labelledby="hunger-meter-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><div id="hunger-meter-fill"></div></div>
+        <div class="hunger-actions">
+          <button id="btn-hunger-feed" class="primary-btn" type="button" data-open-tab="food">喂她吃一点</button>
+          <button id="btn-hunger-later" class="secondary-btn" type="button">等一下</button>
         </div>
       </div>
     </div>
@@ -1132,19 +1207,23 @@
         TWEEZER_SNAP_SPEED_PX: 470,
         CYST_TOO_NARROW_SPAN_PX: 38,
         LOUPE_RADIUS_PX: 48,          // 2.2X 偏振微距瞄准放大镜半径
-        LOUPE_ZOOM: 2.2
+        LOUPE_ZOOM: 2.2,
+        EXTRACTION_LOUPE_MAX_WIDTH: 236,
+        EXTRACTION_LOUPE_MAX_HEIGHT: 252,
+        EXTRACTION_LOUPE_MAX_ZOOM: 2.65,
+        EXTRACTION_LOUPE_RELEASE_SEC: .36
       },
       TYPES: {
         BLACKHEAD: {
           id: 'blackhead',
           name: '黑头粉刺',
-          radiusRange: [11.5, 15],
+          radiusRange: [14, 18],
           popThreshold: 0.26,
           extrudeRate: 0.64,
           piercedBoost: 1.55,
           steamBoost: 1.45,
           decayRate: 0.45,
-          wormTotalLenRange: [24, 36],
+          wormTotalLenRange: [34, 46],
           scorePop: 145,
           scoreTweezeBonus: 85,
           scoreWipe: 45
@@ -2158,7 +2237,17 @@ function foodIllustration(itemId) {
     let adventureEntered = false;
     let wardrobeReturnModal = null;
     let giftNoticeTimer = null;
+    let giftNoticeRevision = 0;
+    let giftNoticeGesture = null;
+    let giftNoticeItems = [];
     const giftFlightTimers = new Set();
+    let hungerReminderTimer = null;
+    let hungerReminderRevision = 0;
+    let hungerWindowActive = true;
+    let hungerSafeAfter = 0;
+    const hungerHeldMouseButtons = new Set();
+    const hungerHeldTouches = new Set();
+    const hungerHeldKeys = new Set();
     let wardrobeTab = 'outfits';
     let wardrobePreviewFocus = 'full';
     let wardrobeVisualRevision = 0;
@@ -2322,7 +2411,14 @@ function foodIllustration(itemId) {
       return { version: 3, level: Number.isSafeInteger(raw?.level) && raw.level >= 1 && raw.level <= 1000000 ? raw.level : 1,
         unlocked, equipped: Object.fromEntries(Object.entries(WARDROBE_DEFAULTS).map(([slot, fallback]) => [slot, selected(slot, fallback)])),
         dreams, dreamEquipped, pantry, hunger: Number.isInteger(raw?.hunger) && raw.hunger >= 0 && raw.hunger <= 100 ? raw.hunger : 38,
-        careRhythm: normalizeCareRhythm(raw?.careRhythm) };
+        careRhythm: normalizeCareRhythm(raw?.careRhythm), hungerReminder: normalizeHungerReminder(raw?.hungerReminder) };
+    }
+
+    function normalizeHungerReminder(raw) {
+      return {
+        lastRunId: typeof raw?.lastRunId === 'string' && raw.lastRunId.length <= 128 ? raw.lastRunId : '',
+        nextAt: Number.isSafeInteger(raw?.nextAt) && raw.nextAt >= 0 && raw.nextAt <= Date.now() + 86400000 ? raw.nextAt : 0
+      };
     }
 
     function normalizeCareRhythm(raw) {
@@ -2368,7 +2464,7 @@ function foodIllustration(itemId) {
     }
 
     function adventurePoreVariants(typePool, level, random = Math.random) {
-      const variants = typePool.map(() => ({ linkedPore: false, sharedPore: null, blackheadCount: 1,
+      const variants = typePool.map(() => ({ linkedPore: false, sharedPore: null, poreSequence: null, blackheadCount: 1,
         blackheadLengths: [1], blackheadSize: 'normal', whiteheadSize: 'normal' }));
       if (level <= 2) return variants;
       const shuffled = values => {
@@ -2380,14 +2476,31 @@ function foodIllustration(itemId) {
         return items;
       };
       const black = shuffled(typePool.map((type, index) => type === 'blackhead' ? index : -1).filter(index => index >= 0));
+      const blackheadTotal = black.length;
       const white = typePool.map((type, index) => type === 'whitehead' ? index : -1).filter(index => index >= 0);
       if (black.length >= 5 && rewardRandom(random) < .24) variants[black.shift()].linkedPore = true;
       // A pure blackhead round must not hide a whitehead in a shared pore.
       if (level >= 4 && white.length && black.length >= 4 && rewardRandom(random) < .30) {
         variants[black.shift()].sharedPore = { mode: level >= 6 && rewardRandom(random) < .5 ? 'sequential' : 'together', phase: 'blackhead' };
       }
-      const bundleCount = Math.min(black.length, Math.max(2, Math.ceil(black.length * .75)));
-      const bundles = new Set(shuffled(black).slice(0, bundleCount));
+      // Hidden contents are selected once per round. Fuller boards offer more
+      // separate reveals, favouring whiteheads while keeping a squeezeable
+      // patch on fuller boards. Linked blackheads can also join that patch.
+      const light = typePool.length <= 4;
+      const sequenceLimit = level === 3 ? 2 : 3;
+      const linkedCount = variants.filter(item => item.linkedPore).length;
+      const blackSequenceLimit = Math.max(0, black.length + linkedCount - (blackheadTotal >= 5 ? 3 : 1));
+      const sequenceIndices = light
+        ? shuffled(white.length ? white : black).slice(0, 1)
+        : [...shuffled(white).slice(0, Math.min(sequenceLimit, Math.ceil(white.length * .75))),
+          ...shuffled(black).slice(0, Math.min(sequenceLimit, blackSequenceLimit, Math.ceil(black.length * .5)))];
+      for (const index of sequenceIndices) {
+        const roll = rewardRandom(random);
+        variants[index].poreSequence = { count: light || level === 3 || roll < .65 ? 2 : roll < .93 ? 3 : 4, index: 0 };
+      }
+      const bundleCandidates = black.filter(index => !variants[index].poreSequence);
+      const bundleCount = Math.min(bundleCandidates.length, Math.max(2, Math.ceil(bundleCandidates.length * .75)));
+      const bundles = new Set(shuffled(bundleCandidates).slice(0, bundleCount));
       const giants = new Set(level >= 4 ? shuffled(black).slice(0, Math.min(3, Math.max(1, Math.round(black.length * .45)))) : []);
       for (const index of black) {
         const item = variants[index];
@@ -2400,6 +2513,40 @@ function foodIllustration(itemId) {
       }
       if (level >= 4 && white.length && rewardRandom(random) < .65) variants[white[Math.floor(rewardRandom(random) * white.length)]].whiteheadSize = 'large';
       return variants;
+    }
+
+    function clusterInitialPoreContents(pimples) {
+      const black = pimples.filter(p => p.type === 'blackhead' && !p.sharedPore);
+      const movable = black.filter(p => !p.linkedPore);
+      const current = new Set(black.filter(p => !p.poreSequence));
+      if (current.size < 2 || !movable.some(p => p.poreSequence)) return;
+      const groupSize = members => Math.max(...[...members].map(p => {
+        const reach = Math.min(92, Math.max(72, p.radius * 4.2));
+        return Math.min(4, [...members].filter(q => Math.hypot(p.x - q.x, p.y - q.y) <= reach).length);
+      }));
+      let best = current, bestSize = groupSize(current), bestChanges = 0;
+      if (bestSize >= Math.min(3, current.size)) return;
+      // Choose contents once, after the immutable geometry has been packed.
+      // Nearby openings keep the ordinary/bundle contents; hidden sequences
+      // move as complete packages, without changing any rolled quantity.
+      for (const anchor of black) {
+        const candidate = new Set(black.filter(p => p.linkedPore));
+        candidate.add(anchor);
+        const nearest = [...movable].sort((a, b) => Math.hypot(a.x - anchor.x, a.y - anchor.y)
+          - Math.hypot(b.x - anchor.x, b.y - anchor.y) || a.id - b.id);
+        for (const p of nearest) { if (candidate.size >= current.size) break; candidate.add(p); }
+        const size = groupSize(candidate);
+        const changes = movable.filter(p => candidate.has(p) !== current.has(p)).length;
+        if (size > bestSize || (size === bestSize && changes < bestChanges)) {
+          best = candidate; bestSize = size; bestChanges = changes;
+        }
+      }
+      const incoming = movable.filter(p => best.has(p) && p.poreSequence);
+      const outgoing = movable.filter(p => !best.has(p) && !p.poreSequence);
+      incoming.forEach((p, index) => {
+        const q = outgoing[index];
+        for (const key of ['poreSequence', 'blackheadCount', 'blackheadLengths']) [p[key], q[key]] = [q[key], p[key]];
+      });
     }
 
     function wardrobeRewardPool(level) {
@@ -2443,9 +2590,131 @@ function foodIllustration(itemId) {
         : DREAM_ITEMS.some(item => item.id === id) ? dreamItemIllustration(id) : wardrobeItemIllustration(id);
     }
 
+    function resetGiftNoticeGesture() {
+      const notice = document.getElementById('gift-discovery'), gesture = giftNoticeGesture;
+      giftNoticeGesture = null;
+      notice.classList.remove('is-dragging');
+      notice.style.removeProperty('--gift-drag-y');
+      notice.style.removeProperty('opacity');
+      if (gesture?.kind === 'pointer' && notice.hasPointerCapture?.(gesture.id)) notice.releasePointerCapture(gesture.id);
+    }
+
+    function dismissGiftNotice(immediate = false, restoreFocus = true) {
+      const notice = document.getElementById('gift-discovery');
+      if (restoreFocus && notice.contains(document.activeElement) && !state.paused) canvas.focus({preventScroll: true});
+      const revision = ++giftNoticeRevision;
+      if (giftNoticeTimer !== null) clearTimeout(giftNoticeTimer);
+      giftNoticeTimer = null;
+      resetGiftNoticeGesture();
+      giftNoticeItems = [];
+      if (immediate || motionPreference?.matches || notice.hidden) {
+        notice.hidden = true;
+        notice.classList.remove('is-dismissing');
+        if (!immediate) queueHungerReminder(1400);
+        return;
+      }
+      notice.classList.add('is-dismissing');
+      giftNoticeTimer = setTimeout(() => {
+        if (revision !== giftNoticeRevision) return;
+        notice.hidden = true;
+        notice.classList.remove('is-dismissing');
+        giftNoticeTimer = null;
+        queueHungerReminder(1400);
+      }, 180);
+    }
+
+    function scheduleGiftNoticeDismiss(delay = 2800) {
+      const notice = document.getElementById('gift-discovery'), revision = ++giftNoticeRevision;
+      if (giftNoticeTimer !== null) clearTimeout(giftNoticeTimer);
+      giftNoticeTimer = null;
+      if (notice.hidden || giftNoticeGesture || notice.contains(document.activeElement)) return;
+      giftNoticeTimer = setTimeout(() => {
+        if (revision === giftNoticeRevision) dismissGiftNotice();
+      }, delay);
+    }
+
+    function showGiftNotice(item) {
+      cancelHungerReminder();
+      const notice = document.getElementById('gift-discovery'), focused = notice.contains(document.activeElement);
+      const previous = notice.hidden || notice.classList.contains('is-dismissing') ? [] : giftNoticeItems;
+      giftNoticeItems = [...new Set([...previous, item.id])];
+      resetGiftNoticeGesture();
+      notice.classList.remove('is-dismissing');
+      const items = giftNoticeItems.map(rewardItem).filter(Boolean);
+      const headline = items.some(found => !found.satiety) ? '你的运气超棒！' : items.length > 1 ? '找到几份小美味！' : '找到小美味！';
+      notice.innerHTML = rewardItemIllustration(item.id) + '<div class="gift-copy"><div role="status" aria-live="polite" aria-atomic="true"><strong>'
+        + headline + '</strong><p>' + items.map(found => found.name).join('、') + ' · 过关带回家</p></div><span class="gift-swipe-hint" aria-hidden="true">上滑收起</span></div>'
+        + '<button class="gift-dismiss" type="button" aria-label="关闭礼物提示" title="关闭礼物提示">×</button>';
+      notice.dataset.itemIds = giftNoticeItems.join(',');
+      notice.hidden = false;
+      if (focused) notice.querySelector('.gift-dismiss').focus({preventScroll: true});
+      scheduleGiftNoticeDismiss();
+    }
+
+    function bindGiftNoticeInteractions() {
+      const notice = document.getElementById('gift-discovery');
+      const begin = (event, point, id, kind) => {
+        if (notice.hidden || notice.classList.contains('is-dismissing') || giftNoticeGesture
+          || event.target.closest('button') || event.isPrimary === false) return;
+        giftNoticeGesture = {id, kind, startX: point.clientX, startY: point.clientY};
+        scheduleGiftNoticeDismiss();
+        notice.classList.add('is-dragging');
+        if (kind === 'pointer') notice.setPointerCapture?.(id);
+        event.preventDefault(); event.stopPropagation();
+      };
+      const move = (event, point, id) => {
+        const gesture = giftNoticeGesture;
+        if (!gesture || gesture.id !== id) return;
+        const dy = Math.min(0, point.clientY - gesture.startY), dx = point.clientX - gesture.startX;
+        const shift = -dy > Math.abs(dx) * .8 ? Math.max(-150, dy) : 0;
+        if (!motionPreference?.matches) {
+          notice.style.setProperty('--gift-drag-y', shift + 'px');
+          notice.style.opacity = String(Math.max(.15, 1 + shift / 160));
+        }
+        event.preventDefault(); event.stopPropagation();
+      };
+      const end = (event, point, id, cancelled = false) => {
+        const gesture = giftNoticeGesture;
+        if (!gesture || gesture.id !== id) return;
+        const dy = point ? point.clientY - gesture.startY : 0, dx = point ? point.clientX - gesture.startX : 0;
+        resetGiftNoticeGesture();
+        if (!cancelled && dy <= -28 && -dy > Math.abs(dx) * 1.15) dismissGiftNotice();
+        else scheduleGiftNoticeDismiss(2000);
+        event.preventDefault(); event.stopPropagation();
+      };
+      if (window.PointerEvent) {
+        notice.addEventListener('pointerdown', event => { if (event.button === 0) begin(event, event, event.pointerId, 'pointer'); });
+        notice.addEventListener('pointermove', event => move(event, event, event.pointerId));
+        notice.addEventListener('pointerup', event => end(event, event, event.pointerId));
+        notice.addEventListener('pointercancel', event => end(event, null, event.pointerId, true));
+        notice.addEventListener('lostpointercapture', event => end(event, null, event.pointerId, true));
+      } else {
+        notice.addEventListener('touchstart', event => {
+          if (event.touches.length === 1) { const point = event.touches[0]; begin(event, point, point.identifier, 'touch'); }
+        }, {passive: false});
+        notice.addEventListener('touchmove', event => {
+          const point = [...event.changedTouches].find(touch => touch.identifier === giftNoticeGesture?.id);
+          if (point) move(event, point, point.identifier);
+        }, {passive: false});
+        for (const type of ['touchend', 'touchcancel']) notice.addEventListener(type, event => {
+          const point = [...event.changedTouches].find(touch => touch.identifier === giftNoticeGesture?.id);
+          if (point) end(event, point, point.identifier, type === 'touchcancel');
+        }, {passive: false});
+        notice.addEventListener('mousedown', event => { if (event.button === 0) begin(event, event, 'mouse', 'mouse'); });
+        window.addEventListener('mousemove', event => { if (giftNoticeGesture?.kind === 'mouse') move(event, event, 'mouse'); });
+        window.addEventListener('mouseup', event => { if (giftNoticeGesture?.kind === 'mouse') end(event, event, 'mouse'); });
+      }
+      notice.addEventListener('click', event => { if (event.target.closest('.gift-dismiss')) { event.stopPropagation(); dismissGiftNotice(); } });
+      notice.addEventListener('keydown', event => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); dismissGiftNotice(); } });
+      notice.addEventListener('focusin', () => scheduleGiftNoticeDismiss());
+      notice.addEventListener('focusout', event => { if (!notice.contains(event.relatedTarget)) scheduleGiftNoticeDismiss(2000); });
+      window.addEventListener('blur', clearGiftPresentation);
+      window.addEventListener('pagehide', clearGiftPresentation);
+      document.addEventListener('visibilitychange', () => { if (document.hidden) clearGiftPresentation(); });
+    }
+
     function clearGiftPresentation() {
-      document.getElementById('gift-discovery').hidden = true;
-      if (giftNoticeTimer) { clearTimeout(giftNoticeTimer); giftNoticeTimer = null; }
+      dismissGiftNotice(true, false);
       for (const timer of giftFlightTimers) clearTimeout(timer);
       giftFlightTimers.clear();
       document.getElementById('gift-flight-layer').replaceChildren();
@@ -2484,15 +2753,7 @@ function foodIllustration(itemId) {
       state.discoveredGifts.push(id);
       animateWardrobeFind(p, item);
       sound.playGiftFound(p.x / state.width);
-      const notice = document.getElementById('gift-discovery');
-      notice.innerHTML = rewardItemIllustration(id) + '<div><strong>' + (item.satiety ? '找到小美味！' : '你的运气超棒！')
-        + '</strong><p>' + item.name + ' · 过关带回家</p></div>';
-      notice.hidden = !motionPreference?.matches;
-      if (giftNoticeTimer) clearTimeout(giftNoticeTimer);
-      giftNoticeTimer = setTimeout(() => {
-        notice.hidden = false;
-        giftNoticeTimer = setTimeout(() => { notice.hidden = true; giftNoticeTimer = null; }, 3800);
-      }, motionPreference?.matches ? 0 : 1000);
+      showGiftNotice(item);
       saveCurrentSession(true);
       return true;
     }
@@ -2680,6 +2941,185 @@ function foodIllustration(itemId) {
       return true;
     }
 
+    function cancelHungerReminder() {
+      hungerReminderRevision += 1;
+      if (hungerReminderTimer !== null) clearTimeout(hungerReminderTimer);
+      hungerReminderTimer = null;
+    }
+
+    function hungerInputIsHeld() {
+      return hungerHeldMouseButtons.size > 0 || hungerHeldTouches.size > 0 || hungerHeldKeys.size > 0;
+    }
+
+    function hungerReminderDue() {
+      const reminder = wardrobeProgress.hungerReminder;
+      return wardrobeProgress.hunger >= 80 && FOOD_ITEMS.some(item => wardrobeProgress.pantry[item.id] > 0)
+        && Boolean(state.runId) && reminder.lastRunId !== state.runId && Date.now() >= reminder.nextAt;
+    }
+
+    function hungerGameplayReady(allowQueued = false) {
+      return careControl.owned && !careControl.hydrating && adventureEntered && state.pimples.length > 0
+        && hungerWindowActive && !document.hidden && !state.paused && !state.settled
+        && !state.iceBrushingMode && !state.iceFinishing && state.currentTool !== 'ice_brush'
+        && !state.pointer.active && !state.keyboardCare.active && !state.tweezers.clampedPimple
+        && !hungerInputIsHeld() && (allowQueued || Date.now() >= hungerSafeAfter)
+        && !document.querySelector('.modal-backdrop.open');
+    }
+
+    function queueHungerReminder(delayMs = 12000) {
+      cancelHungerReminder();
+      if (!hungerReminderDue() || !hungerGameplayReady(true)) return false;
+      const revision = hungerReminderRevision;
+      const delay = Math.max(hungerSafeAfter - Date.now(),
+        Number.isFinite(delayMs) ? Math.max(0, Math.min(600000, delayMs)) : 12000);
+      hungerReminderTimer = setTimeout(() => {
+        if (revision !== hungerReminderRevision) return;
+        hungerReminderTimer = null;
+        maybeShowHungerReminder();
+      }, delay);
+      return true;
+    }
+
+    function maybeShowHungerReminder() {
+      cancelHungerReminder();
+      const modal = document.getElementById('hunger-modal');
+      if (!modal || !hungerReminderDue() || !hungerGameplayReady()
+        || !document.getElementById('gift-discovery').hidden
+        || document.getElementById('gift-flight-layer').childElementCount > 0
+        || state.flyingTrophies.length > 0 || !ensureCareControl()) return false;
+      const hunger = wardrobeProgress.hunger;
+      document.getElementById('hunger-girl').innerHTML = girlIllustration(wardrobeProgress.equipped);
+      document.getElementById('hunger-title').textContent = hunger >= 100 ? '肚子真的好饿呀…' : '肚子咕咕叫了…';
+      document.getElementById('hunger-copy').textContent = hunger >= 100
+        ? '主人……我真的好饿，能分我一口吗？' : '主人……肚子咕咕叫了，可以给我一点好吃的吗？';
+      document.getElementById('hunger-percent').textContent = hunger + '%';
+      const meter = document.getElementById('hunger-meter');
+      meter.setAttribute('aria-valuenow', String(hunger));
+      meter.setAttribute('aria-valuetext', '饥饿 ' + hunger + '%');
+      document.getElementById('hunger-meter-fill').style.width = hunger + '%';
+      modal.classList.toggle('is-very-hungry', hunger >= 100);
+      modal.classList.add('open');
+      state.paused = true;
+      wardrobeProgress.hungerReminder = { lastRunId: state.runId, nextAt: Date.now() + 180000 };
+      sound.pause();
+      saveCurrentSession(true);
+      requestSceneFrame();
+      return true;
+    }
+
+    function clearHungerReminderPresentation(resume = false) {
+      cancelHungerReminder();
+      const modal = document.getElementById('hunger-modal');
+      if (!modal?.classList.contains('open')) return false;
+      modal.classList.remove('open');
+      if (resume) {
+        state.paused = !careControl.owned || state.settled || Boolean(document.querySelector('.modal-backdrop.open'));
+        requestSceneFrame();
+      }
+      return true;
+    }
+
+    function snoozeHungerReminder() {
+      wardrobeProgress.hungerReminder = { lastRunId: state.runId || wardrobeProgress.hungerReminder.lastRunId,
+        nextAt: Math.max(wardrobeProgress.hungerReminder.nextAt, Date.now() + 300000) };
+    }
+
+    function dismissHungerReminder() {
+      if (!document.getElementById('hunger-modal')?.classList.contains('open')) return false;
+      if (!ensureCareControl()) { clearHungerReminderPresentation(); return false; }
+      snoozeHungerReminder();
+      clearHungerReminderPresentation(true);
+      saveCurrentSession(true);
+      return true;
+    }
+
+    function openHungerFood(event) {
+      if (!document.getElementById('hunger-modal')?.classList.contains('open') || !ensureCareControl()) return false;
+      if (!dismissHungerReminder()) return false;
+      // Remove the request before opening the food page, so closing the wardrobe
+      // returns to the care canvas instead of reopening the hunger dialog.
+      wardrobeTab = 'food';
+      openWardrobe(event);
+      return true;
+    }
+
+    function bindHungerReminders() {
+      const modal = document.getElementById('hunger-modal');
+      document.getElementById('btn-close-hunger').addEventListener('click', dismissHungerReminder);
+      document.getElementById('btn-hunger-later').addEventListener('click', dismissHungerReminder);
+      document.getElementById('btn-hunger-feed').addEventListener('click', openHungerFood);
+      modal.addEventListener('click', event => { if (event.target === modal) dismissHungerReminder(); });
+      modal.addEventListener('keydown', event => {
+        if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); dismissHungerReminder(); }
+      });
+
+      // Observe physical contacts separately from the simulation: releasePointer
+      // can be called by a completed group while a finger is still on the glass.
+      const afterRelease = () => {
+        if (hungerInputIsHeld()) return;
+        hungerSafeAfter = Date.now() + 1400;
+        cancelHungerReminder();
+        const revision = hungerReminderRevision;
+        // Capture the end even when a card stops propagation, then let the
+        // gameplay handler finish before checking whether this page is idle.
+        hungerReminderTimer = setTimeout(() => {
+          if (revision !== hungerReminderRevision) return;
+          hungerReminderTimer = null;
+          queueHungerReminder(1400);
+        }, 0);
+      };
+      window.addEventListener('mousedown', event => {
+        hungerHeldMouseButtons.add(event.button);
+        cancelHungerReminder();
+      }, {capture: true, passive: true});
+      window.addEventListener('mouseup', event => {
+        hungerHeldMouseButtons.delete(event.button);
+        afterRelease();
+      }, {capture: true, passive: true});
+      const syncTouches = event => {
+        hungerHeldTouches.clear();
+        Array.from(event.touches || []).forEach((touch, index) => hungerHeldTouches.add(touch.identifier ?? index));
+      };
+      window.addEventListener('touchstart', event => {
+        syncTouches(event); cancelHungerReminder();
+      }, {capture: true, passive: true});
+      for (const type of ['touchend', 'touchcancel']) window.addEventListener(type, event => {
+        syncTouches(event);
+        afterRelease();
+      }, {capture: true, passive: true});
+      window.addEventListener('keydown', event => {
+        if (event.key === ' ' || event.key === 'Enter') hungerHeldKeys.add(event.key);
+        cancelHungerReminder();
+      }, {capture: true, passive: true});
+      window.addEventListener('keyup', event => {
+        hungerHeldKeys.delete(event.key);
+        afterRelease();
+      }, {capture: true, passive: true});
+
+      const suspend = () => {
+        hungerWindowActive = false;
+        hungerHeldMouseButtons.clear(); hungerHeldTouches.clear(); hungerHeldKeys.clear();
+        clearHungerReminderPresentation(true);
+      };
+      const resume = () => { hungerWindowActive = true; queueHungerReminder(); };
+      window.addEventListener('blur', suspend);
+      window.addEventListener('pagehide', suspend);
+      window.addEventListener('focus', resume);
+      window.addEventListener('pageshow', resume);
+      document.addEventListener('visibilitychange', () => { if (document.hidden) suspend(); else resume(); });
+
+      let overlayWasOpen = Boolean(document.querySelector('.modal-backdrop.open:not(#hunger-modal)'));
+      const syncOverlays = () => {
+        const overlayOpen = Boolean(document.querySelector('.modal-backdrop.open:not(#hunger-modal)'));
+        if (overlayOpen) clearHungerReminderPresentation();
+        else if (overlayWasOpen) queueHungerReminder();
+        overlayWasOpen = overlayOpen;
+      };
+      for (const overlay of document.querySelectorAll('.modal-backdrop')) {
+        new MutationObserver(syncOverlays).observe(overlay, {attributes: true, attributeFilter: ['class']});
+      }
+    }
+
     function feedGirl(id, event) {
       const item = FOOD_ITEMS.find(item => item.id === id);
       if (!item || !ensureCareControl() || !(wardrobeProgress.pantry[id] > 0)) return false;
@@ -2690,6 +3130,8 @@ function foodIllustration(itemId) {
       wardrobeProgress.pantry[id]--;
       if (wardrobeProgress.pantry[id] === 0) delete wardrobeProgress.pantry[id];
       wardrobeProgress.hunger = Math.max(0, wardrobeProgress.hunger - item.satiety);
+      clearHungerReminderPresentation(true);
+      snoozeHungerReminder();
       wardrobePreviewFocus = 'full';
       persistSaveData(); renderWardrobe();
       document.getElementById('wardrobe-status').textContent = '谢谢你的款待！';
@@ -2704,6 +3146,8 @@ function foodIllustration(itemId) {
 
     function showAdventureHome(event) {
       if (!careControl.owned) return;
+      clearHungerReminderPresentation();
+      clearGiftPresentation();
       releasePointer();
       document.querySelectorAll('.modal-backdrop.open').forEach(modal => modal.classList.remove('open'));
       state.paused = true;
@@ -2730,10 +3174,13 @@ function foodIllustration(itemId) {
       sound.playUI('enter', event);
       saveCurrentSession(true);
       requestSceneFrame();
+      queueHungerReminder();
     }
 
     function openWardrobe(event) {
       if (!ensureCareControl()) return;
+      clearHungerReminderPresentation();
+      clearGiftPresentation();
       if (event?.currentTarget?.dataset.openTab) wardrobeTab = event.currentTarget.dataset.openTab;
       wardrobeReturnModal = document.querySelector('.modal-backdrop.open');
       wardrobeReturnModal?.classList.remove('open');
@@ -2753,6 +3200,7 @@ function foodIllustration(itemId) {
       state.paused = Boolean(document.querySelector('.modal-backdrop.open'));
       sound.playUI('close', event);
       requestSceneFrame();
+      queueHungerReminder();
     }
 
     const state = {
@@ -2830,6 +3278,11 @@ function foodIllustration(itemId) {
         pullDist: 0,
         pullRatio: 0,
         dangerRatio: 0,
+        grabbedStrand: 0,
+        loupePlacement: null,
+        loupeZoom: null,
+        loupeRotation: null,
+        loupeRelease: null,
         lastX: 0,
         lastY: 0
       },
@@ -2858,7 +3311,8 @@ function foodIllustration(itemId) {
         axisAngle: 0,
         initAxisCos: 1,
         initAxisSin: 0,
-        lockedPimple: null
+        lockedPimple: null,
+        squeezeTargets: []
       }
     };
 
@@ -3089,6 +3543,7 @@ function foodIllustration(itemId) {
     }
 
     function hydrateCareProfile(snapshot) {
+      clearHungerReminderPresentation();
       careControl.hydrating = true;
       careControl.saveIssue = false;
       sessionSaveEnabled = false;
@@ -3159,6 +3614,7 @@ function foodIllustration(itemId) {
       // Disable every writer before releasePointer or modal cleanup can save.
       careControl.owned = false;
       sessionSaveEnabled = false;
+      clearHungerReminderPresentation();
       if (sessionSaveTimer) { clearTimeout(sessionSaveTimer); sessionSaveTimer = null; }
       if (careControl.heartbeat) { clearInterval(careControl.heartbeat); careControl.heartbeat = null; }
       releasePointer();
@@ -3195,6 +3651,7 @@ function foodIllustration(itemId) {
         state.paused = preserveMemory ? Boolean(document.querySelector('.modal-backdrop.open')) : false;
         saveCurrentSession(true);
         requestSceneFrame();
+        queueHungerReminder();
         if (!navigator.locks?.request) {
           careControl.heartbeat = setInterval(() => {
             if (ensureCareControl()) {
@@ -3394,7 +3851,7 @@ function foodIllustration(itemId) {
           && Number.isInteger(p.id) && Number.isInteger(p.state) && p.state >= P_STATE.INTACT && p.state <= P_STATE.HEALED
           && pimpleNumbers.every(key => Number.isFinite(p[key])) && pimpleBooleans.every(key => typeof p[key] === 'boolean')
           && p.radius > 0 && p.shape && ['p1', 'p2', 'p3', 'a1', 'a2', 'rot'].every(k => Number.isFinite(p.shape[k]))
-          && validSharedPore(p) && validBlackheadCount(p) && validPoreVariant(p);
+          && validSharedPore(p) && validBlackheadCount(p) && validPoreVariant(p) && validPoreSequence(p);
         if (!data.pimples.every(validPimple) || new Set(data.pimples.map(p => p.id)).size !== data.pimples.length) return false;
         if (data.initialPimples !== undefined && (!Array.isArray(data.initialPimples) || !data.initialPimples.every(validPimple))) return false;
         if (data.roundPlan != null && (!validRoundPlan(data.roundPlan) || !Array.isArray(data.initialPimples)
@@ -3425,6 +3882,7 @@ function foodIllustration(itemId) {
           && !sameCollectedVariant(ledger[`blackhead:${p.id}`], p, 'blackhead'))) return false;
         if (data.pimples.some(p => ledger[`seed:${p.id}`]
           && !sameCollectedVariant(ledger[`seed:${p.id}`], p, 'seed'))) return false;
+        if (!validPoreSequenceLedger(data)) return false;
         if (!data.flyingTrophies.every(item => numbers(item, ['sx', 'sy', 'tx', 'ty', 'progress', 'duration', 'wormLen', 'rot']) && item.duration > 0
           && ledger[item.collectionId]?.location === 'flight' && ledger[item.collectionId].kind === item.kind)) return false;
         if (!data.trophyTrayItems.every(item => numbers(item, ['wormLen', 'ox', 'oy', 'rot']) && ledger[item.collectionId]?.location === 'tray')) return false;
@@ -3458,6 +3916,7 @@ function foodIllustration(itemId) {
         const hydrate = p => ({ ...p, cfg: CONFIG.TYPES[p.type.toUpperCase()], pressure: 0, tentOffsetX: 0, tentOffsetY: 0,
           linkedPore: !p.sharedPore && p.type === 'blackhead' && p.linkedPore === true,
           sharedPore: p.sharedPore ? { mode: p.sharedPore.mode, phase: p.sharedPore.phase } : null,
+          poreSequence: p.poreSequence ? { count: p.poreSequence.count, index: p.poreSequence.index } : null,
           blackheadCount: getBlackheadCount(p),
           blackheadLengths: getBlackheadLengths(p),
           blackheadSize: p.blackheadSize === 'giant' ? 'giant' : 'normal',
@@ -3466,6 +3925,10 @@ function foodIllustration(itemId) {
           bloodDropSize: p.type === 'blackhead' ? 0 : Math.min(1.6, p.bloodDropSize) });
         state.pimples = state.pimples.map(hydrate);
         if (Array.isArray(state.initialPimples)) state.initialPimples = state.initialPimples.map(hydrate);
+        // A synchronous reward save can precede the same frame's advancement.
+        // Finish that already-awarded transition without awarding the core twice.
+        for (const p of state.pimples) if (p.poreSequence && p.state < P_STATE.OOZING
+          && state.collectionLedger[trophyIdFor(p)]?.rewards.extract) enterOozingStage(p, true);
         state.paused = false;
         state.settled = false;
         state.beforeCaptured = false;
@@ -3674,13 +4137,15 @@ function foodIllustration(itemId) {
       const goal = CARE_GOALS[client.id];
       const extracted = Object.values(state.collectionLedger).filter(item => item.rewards.extract);
       const blackheads = state.pimples.filter(p => p.type === 'blackhead' || p.sharedPore);
+      const blackheadContents = blackheads.reduce((sum, p) => sum + (p.poreSequence?.count || 1), 0);
+      const hiddenContents = state.pimples.some(p => p.poreSequence && p.poreSequence.index < p.poreSequence.count - 1);
       const cysts = state.pimples.filter(p => p.type === 'cyst');
       let eligible = false;
       let progress = '';
       if (client.id === 'coder') {
         const warmed = extracted.filter(item => item.sourceType === 'blackhead' && item.softened).length;
-        eligible = blackheads.length > 0 && warmed === blackheads.length;
-        progress = `${warmed} / ${blackheads.length} 处先软化`;
+        eligible = blackheadContents > 0 && warmed === blackheadContents;
+        progress = hiddenContents ? `已充分软化取出 ${warmed} 颗` : `${warmed} / ${blackheadContents} 颗先软化`;
       } else if (client.id === 'student') {
         eligible = state.runStats.mistakes === 0 && state.runStats.totalDamage <= 8;
         progress = `误操作 ${state.runStats.mistakes} 次 · 累计刺激 ${state.runStats.totalDamage.toFixed(1)}`;
@@ -3690,12 +4155,14 @@ function foodIllustration(itemId) {
         progress = `${gentle} / ${cysts.length} 处轻柔取出`;
       } else if (client.id === 'foodie_vip') {
         const count = state.trophiesPlucked + state.coreSeedsCollected;
-        const contents = state.pimples.length + state.pimples.filter(p => p.sharedPore?.mode === 'sequential').length;
+        const contents = state.pimples.reduce((sum, p) => sum + (p.poreSequence?.count || (p.sharedPore?.mode === 'sequential' ? 2 : 1)), 0);
         eligible = count === contents && state.runStats.totalDamage <= 20;
-        progress = `已收集 ${count} / ${contents} · 累计刺激 ${state.runStats.totalDamage.toFixed(1)}`;
+        progress = hiddenContents ? `已收集 ${count} 颗 · 累计刺激 ${state.runStats.totalDamage.toFixed(1)}`
+          : `已收集 ${count} / ${contents} · 累计刺激 ${state.runStats.totalDamage.toFixed(1)}`;
       } else {
-        eligible = state.trophiesPlucked === blackheads.length && state.runStats.snaps === 0;
-        progress = `已收集 ${state.trophiesPlucked} / ${blackheads.length} · 夹断 ${state.runStats.snaps} 次`;
+        eligible = state.trophiesPlucked === blackheadContents && state.runStats.snaps === 0;
+        progress = hiddenContents ? `已收集 ${state.trophiesPlucked} 颗 · 夹断 ${state.runStats.snaps} 次`
+          : `已收集 ${state.trophiesPlucked} / ${blackheadContents} · 夹断 ${state.runStats.snaps} 次`;
       }
       return { id: goal.id, title: goal.title, description: goal.description, progress, met: state.settled && eligible };
     }
@@ -4179,7 +4646,10 @@ function foodIllustration(itemId) {
         }
       }
 
-      const idealRows = Math.max(1, Math.round(Math.sqrt(count * (bottom - top) / Math.max(1, right - left))));
+      // Layout uses immutable geometry only: a shared pore can change from
+      // blackhead to whitehead during care without changing its saved position.
+      const idealRows = count <= 4 ? 1
+        : Math.max(1, Math.round(Math.sqrt(count * (bottom - top) / Math.max(1, right - left))));
       let chosen = null;
       for (let step = 0; step < 50 && !chosen; step++) {
         const scale = 1 - step * 0.02;
@@ -4200,7 +4670,11 @@ function foodIllustration(itemId) {
             y += rowHeight + gap;
           }
           if (!feasible) continue;
-          const score = Math.abs(rows.length - idealRows) * 0.7 + slack / rows.length + (bottom - (y - gap)) / Math.max(1, bottom - top) * 0.25;
+          // Give tall plugs the upper row when packing quality is similar, so
+          // upright growth is less likely to cover a neighboring pore above it.
+          const tallRows = rows.flatMap((row, index) => row.filter(p => (p.baseRadius || p.radius) > CONFIG.TYPES.BLACKHEAD.radiusRange[1]).map(() => index));
+          const tallPenalty = tallRows.length ? tallRows.reduce((sum, row) => sum + row, 0) / tallRows.length / Math.max(1, rows.length - 1) * 0.18 : 0;
+          const score = Math.abs(rows.length - idealRows) * 0.7 + slack / rows.length + (bottom - (y - gap)) / Math.max(1, bottom - top) * 0.25 + tallPenalty;
           if (score < bestScore) { bestScore = score; chosen = { scale, metrics, totalHeight: y - gap - top }; }
         }
       }
@@ -4217,14 +4691,18 @@ function foodIllustration(itemId) {
       }
 
       const freeHeight = Math.max(0, bottom - top - chosen.totalHeight);
-      let y = top + (chosen.metrics.length === 1 ? freeHeight * 0.5 : freeHeight * 0.15);
-      const rowGap = gap + (chosen.metrics.length > 1 ? freeHeight * 0.7 / (chosen.metrics.length - 1) : 0);
+      // Keep a compact patch of distinct pores instead of stretching every row
+      // across the canvas. Nearby blackheads can share one squeeze gesture.
+      const extraRowGap = chosen.metrics.length > 1 ? Math.min(12, freeHeight / (chosen.metrics.length - 1)) : 0;
+      let y = top + Math.max(0, freeHeight - extraRowGap * (chosen.metrics.length - 1)) * 0.55;
+      const rowGap = gap + extraRowGap;
       const positions = [];
       chosen.metrics.forEach((metric, rowIndex) => {
         const rowRight = y < 94 ? Math.max(left + (right - left) * 0.45, Math.min(right, width - 104)) : right;
-        const extra = Math.max(0, rowRight - left - metric.width) / metric.row.length;
+        const extra = Math.min(10, Math.max(0, rowRight - left - metric.width) / metric.row.length);
         const row = seededRand(seed + rowIndex * 17.3) > 0.5 ? metric.row : [...metric.row].reverse();
-        let x = left;
+        const spareWidth = Math.max(0, rowRight - left - metric.width - extra * metric.row.length);
+        let x = left + spareWidth * (0.44 + seededRand(seed + rowIndex * 7.9) * 0.12);
         for (const p of row) {
           const radius = (p.baseRadius || p.radius) * chosen.scale;
           const footprint = radius * outline;
@@ -4237,8 +4715,8 @@ function foodIllustration(itemId) {
       });
       // Break up the packing rows with bounded, seeded movement. Every accepted
       // move retains the clearances, so even a crowded case stays valid.
-      const travel = Math.min(width, height) * 0.12;
-      for (let pass = 0; pass < 32; pass++) {
+      const travel = Math.min(6, width * 0.02, height * 0.02);
+      for (let pass = 0; pass < 4; pass++) {
         for (const p of positions) {
           const footprint = p.radius * outline;
           const x = p.x + (seededRand(seed + pass * 79.7 + p.id * 23.1) - 0.5) * travel * 2;
@@ -4363,6 +4841,7 @@ function foodIllustration(itemId) {
 
     function generateLevel(overrideDensity = 0, options = {}) {
       if (!ensureCareControl()) return;
+      clearHungerReminderPresentation();
       pointerCareTarget = null;
       pendingTreatmentChange = null;
       state.targetDensity = overrideDensity;
@@ -4421,7 +4900,12 @@ function foodIllustration(itemId) {
       state.pointer.active = false;
       state.pointer.squeezeForce = 0;
       state.pointer.lockedPimple = null;
+      state.pointer.squeezeTargets = [];
       state.tweezers.clampedPimple = null;
+      state.tweezers.loupePlacement = null;
+      state.tweezers.loupeZoom = null;
+      state.tweezers.loupeRotation = null;
+      state.tweezers.loupeRelease = null;
       sound.setTension(0);
 
       const client = currentClient();
@@ -4475,6 +4959,7 @@ function foodIllustration(itemId) {
           type: typeKey,
           linkedPore: variants[idx].linkedPore,
           sharedPore: variants[idx].sharedPore,
+          poreSequence: variants[idx].poreSequence,
           blackheadCount,
           blackheadLengths,
           blackheadSize,
@@ -4529,12 +5014,13 @@ function foodIllustration(itemId) {
       // Restoring a round must use the saved bindings, never draw again.
       const gifts = options.restoring ? [] : rollAdventureGifts(state.runLevel, Math.random,
         [...wardrobeProgress.unlocked, ...wardrobeProgress.dreams], state.roundPlan);
+      layoutTreatmentScene();
+      if (!options.restoring) clusterInitialPoreContents(state.pimples);
       const giftPores = [...state.pimples];
       for (const id of gifts) {
         const [p] = giftPores.splice(Math.floor(Math.random() * giftPores.length), 1);
         if (p) p.giftId = id;
       }
-      layoutTreatmentScene();
       state.initialPimples = state.pimples.map(({ cfg, ...p }) => JSON.parse(JSON.stringify(p)));
       state.snapshotBasis = null;
       startPracticeGuide(false);
@@ -4542,6 +5028,7 @@ function foodIllustration(itemId) {
       setHint(state.runLevel <= 2 ? '先按住热喷软化黑头，再用细胞夹缓缓取出。慢慢来就好。' : '从热敷开始，按住操作区缓缓移动。', 'normal');
       resultModalEl.classList.remove('open');
       requestSceneFrame();
+      if (!options.restoring) queueHungerReminder();
     }
 
     /**
@@ -4725,14 +5212,22 @@ function foodIllustration(itemId) {
     /**
      * 发射拔出的脂栓/脓核沿抛物线飞入右上角不锈钢战利品弯盘！
      */
-    function trophyIdFor(p, kind = p.type === 'blackhead' ? 'blackhead' : 'seed') {
-      return `${kind}:${p.id}`;
+    function trophyIdFor(p, kind = p.type === 'blackhead' ? 'blackhead' : 'seed', index = p.poreSequence?.index || 0) {
+      return `${kind}:${p.id}${index ? `:core:${index + 1}` : ''}`;
+    }
+
+    function sourcePimpleForTrophy(collectionId) {
+      const match = /^(blackhead|seed):(-?\d+)(?::core:([2-4]))?$/.exec(collectionId);
+      if (!match) return null;
+      const p = state.pimples.find(p => p.id === Number(match[2]));
+      return p && (!match[3] || (p.poreSequence && Number(match[3]) <= p.poreSequence.count)) ? p : null;
     }
 
     function placeTrophyOnSkin(collectionId, kind) {
       if (state.collectionLedger[collectionId]) return false;
-      const source = state.pimples.find(p => trophyIdFor(p) === collectionId);
+      const source = sourcePimpleForTrophy(collectionId);
       state.collectionLedger[collectionId] = { kind, location: 'skin', rewards: {},
+        ...(source?.poreSequence ? { sourcePimpleId: source.id, sequenceIndex: source.poreSequence.index } : {}),
         blackheadCount: kind === 'blackhead' ? getBlackheadCount(source) : 1,
         blackheadLengths: kind === 'blackhead' ? getBlackheadLengths(source) : [1],
         blackheadSize: kind === 'blackhead' && source?.blackheadSize === 'giant' ? 'giant' : 'normal',
@@ -4746,7 +5241,7 @@ function foodIllustration(itemId) {
       if (!item || item.rewards[reward]) return false;
       item.rewards[reward] = true;
       if (reward === 'extract') {
-        const source = state.pimples.find(p => trophyIdFor(p) === collectionId);
+        const source = sourcePimpleForTrophy(collectionId);
         if (source) {
           item.sourceType = source.type;
           item.softened = source.steamed >= 0.75;
@@ -4763,8 +5258,9 @@ function foodIllustration(itemId) {
       const id = collectionId || `loose:${++state.collectionSerial}`;
       const item = state.collectionLedger[id];
       if (item && item.location !== 'skin') return false;
-      const source = state.pimples.find(p => trophyIdFor(p) === id);
+      const source = sourcePimpleForTrophy(id);
       state.collectionLedger[id] = { ...item, kind, location: 'flight', rewards: item ? item.rewards : {},
+        ...(source?.poreSequence ? { sourcePimpleId: source.id, sequenceIndex: Number(id.split(':core:')[1] || 1) - 1 } : {}),
         blackheadCount: kind === 'blackhead' ? normalizedBlackheadCount(item?.blackheadCount ?? getBlackheadCount(source)) : 1,
         blackheadLengths: kind === 'blackhead' ? [...(item?.blackheadLengths || getBlackheadLengths(source))] : [1],
         blackheadSize: kind === 'blackhead' && (item?.blackheadSize === 'giant' || (!item && source?.blackheadSize === 'giant')) ? 'giant' : 'normal',
@@ -4819,7 +5315,7 @@ function foodIllustration(itemId) {
     const TOOL_GUIDANCE = {
       steam: '按住热敷，软软的就能夹啦。',
       needle: '对准尖端，松开挑开；移出操作区可取消。',
-      squeeze: '轻轻向中间推，双指也能捏。',
+      squeeze: '按住向中间轻推，相邻黑头一起出；双指也能捏。',
       tweezers: '黑头软化就能夹；白头与深层先轻挤到露头，再慢慢拉。',
       swab: '轻轻擦干净；再点棉签换新。'
     };
@@ -4842,7 +5338,11 @@ function foodIllustration(itemId) {
     function toolGuidanceFor(tool, selected = currentPointerCareTarget()) {
       if (selected?.kind === 'pimple') {
         const p = selected.item;
-        const count = getBlackheadCount(p);
+        if (poreNeedsFreshAction(p)) return '咦，里面还有一颗！松手后，再轻挤一次。';
+        if (p.poreSequence?.index > 0 && p.state < P_STATE.OOZING && (tool === 'squeeze' || tool === 'tweezers')) {
+          return tool === 'squeeze' ? '同一个洞口又露出一颗，轻轻挤出这一颗。' : '又露出一颗，夹住后缓缓取出。';
+        }
+        const count = getRevealedBlackheadCount(p);
         if (count > 1 && tool === 'steam') return `${count} 根黑头挤一窝，先暖一暖。`;
         if (count > 1 && tool === 'squeeze') return `${count} 根黑头，轻轻向中间推。`;
         if (count > 1 && tool === 'tweezers' && canTweezePimple(p)) return `${count} 根黑头一起，夹住慢慢往外拉。`;
@@ -4898,7 +5398,7 @@ function foodIllustration(itemId) {
 
     function canTweezePimple(p) {
       if (p.state === P_STATE.INTACT) return p.type === 'blackhead' && (p.steamed >= 0.75 || p.pierced);
-      return p.state === P_STATE.EXTRUDING && (p.type !== 'blackhead' || p.extrudeProgress >= 0.16);
+      return p.state === P_STATE.EXTRUDING && (p.type !== 'blackhead' || p.extrudeProgress >= 0.16 || p.poreSequence?.index > 0);
     }
 
     function needsGoalWarmth(p) {
@@ -4950,7 +5450,8 @@ function foodIllustration(itemId) {
 
     function updatePressureFeedback() {
       const pointer = state.pointer;
-      const active = pointer.active && (pointer.mode === 'two-finger' || pointer.mode === 'mirror-pinch');
+      const active = pointer.active && (pointer.mode === 'two-finger' || pointer.mode === 'mirror-pinch')
+        && !poreNeedsFreshAction(pointer.lockedPimple);
       const status = document.getElementById('canvas-status');
       const wasActive = status.dataset.pressure === 'true';
       status.dataset.pressure = String(active);
@@ -5200,7 +5701,7 @@ function foodIllustration(itemId) {
     }
 
     function getPimpleMouths(p) {
-      const fixedMouth = p.sharedPore || getBlackheadCount(p) > 1 || p.blackheadSize === 'giant' || p.whiteheadSize === 'large';
+      const fixedMouth = p.sharedPore || p.poreSequence || getBlackheadCount(p) > 1 || p.blackheadSize === 'giant' || p.whiteheadSize === 'large';
       const x = p.x + (fixedMouth ? 0 : p.tentOffsetX || 0), y = p.y + (fixedMouth ? 0 : p.tentOffsetY || 0);
       return getPimpleMouthOffsets(p).map(mouth => ({ x: x + mouth.x, y: y + mouth.y }));
     }
@@ -5217,38 +5718,29 @@ function foodIllustration(itemId) {
         originY += mouth.y;
       }
       const giant = p.blackheadSize === 'giant';
-      const extrudedLen = Math.max(2.5, p.wormTotalLen * progress * (giant ? 3 : 1));
+      // A plug rises from its fixed opening. Grow a short, thick column instead
+      // of accumulating turns into the old banana / curled-worm silhouette.
+      // The floor also gives older saved rounds the same readable minimum.
+      const extrudedLen = Math.max(5.5, Math.max(34, p.wormTotalLen) * progress * (giant ? 2.2 : 1));
       const stepPx = 1.6;
       const count = Math.max(3, Math.ceil(extrudedLen / stepPx) + 1);
       const pts = [];
-
-      let cx = originX;
-      let cy = originY;
-      // 若正被细胞夹夹住拉扯，曲线朝镊尖方向自然拉直绷紧！
-      let targetDir = -Math.PI * 0.5 + p.wormCurlDir * 0.22;
-      if (giant && !pullTarget) {
-        const directions = [{ angle: 0, room: state.width - p.x }, { angle: Math.PI, room: p.x },
-          { angle: Math.PI * .5, room: state.height - p.y }, { angle: -Math.PI * .5, room: p.y }];
-        directions.sort((a, b) => b.room - a.room);
-        targetDir = directions[0].angle + p.wormCurlDir * .10;
-      }
-      if (pullTarget) {
+      const seed = Number.isFinite(p.wormSeed) ? p.wormSeed : 0;
+      // Giants stand almost exactly upright; normal plugs have a small stable
+      // lean. Position never changes their direction or randomises their shape.
+      let targetDir = -Math.PI * .5 + Math.sin(seed) * (giant ? .045 : .105);
+      if (pullTarget && Math.hypot(pullTarget.x - originX, pullTarget.y - originY) > .5) {
         targetDir = Math.atan2(pullTarget.y - originY, pullTarget.x - originX);
       }
-      let dir = targetDir;
-
+      const dx = Math.cos(targetDir), dy = Math.sin(targetDir);
+      const bow = pullTarget ? 0 : Math.sin(seed * 1.7) * Math.min(1.1, extrudedLen * .018);
       for (let i = 0; i < count; i++) {
-        const distFromRoot = (i / (count - 1)) * extrudedLen;
+        const t = i / (count - 1), distFromRoot = t * extrudedLen;
         const distFromTip = extrudedLen - distFromRoot;
-        pts.push({ x: cx, y: cy, distFromRoot, distFromTip, hasDarkCap: !p.snappedCap });
-
-        if (!pullTarget) {
-          const bend = p.wormCurlDir * (0.055 + (distFromRoot / 28) * 0.085)
-            + Math.sin(distFromTip * 0.35 + p.wormSeed) * 0.045;
-          dir += bend * (giant ? .12 : 1);
-        }
-        cx += Math.cos(dir) * (extrudedLen / (count - 1));
-        cy += Math.sin(dir) * (extrudedLen / (count - 1));
+        const shoulder = Math.sin(t * Math.PI) * bow;
+        pts.push({ x: originX + dx * distFromRoot - dy * shoulder,
+          y: originY + dy * distFromRoot + dx * shoulder,
+          distFromRoot, distFromTip, hasDarkCap: !p.snappedCap });
       }
       return pts;
     }
@@ -5273,15 +5765,15 @@ function foodIllustration(itemId) {
       const root = points[0], tip = points[points.length - 1];
       const length = Math.hypot(tip.x - root.x, tip.y - root.y) || 1;
       const nx = -(tip.y - root.y) / length, ny = (tip.x - root.x) / length;
-      const spacing = fanStep ?? Math.min(7, Math.max(4.5, tip.distFromRoot * .12));
+      const spacing = fanStep ?? Math.min(9, Math.max(7, tip.distFromRoot * .14));
       return Array.from({ length: count }, (_, strand) => {
         const slot = strand - (count - 1) * .5;
-        const angle = slot * .20, scale = 1;
+        const angle = slot * .045, scale = 1;
         const cos = Math.cos(angle), sin = Math.sin(angle);
         let travelled = 0;
         const curve = points.map((point, index) => {
           const dx = (point.x - root.x) * scale, dy = (point.y - root.y) * scale;
-          const spread = slot * spacing * Math.sin(index / Math.max(1, points.length - 1) * Math.PI * .5);
+          const spread = slot * spacing * (index / Math.max(1, points.length - 1));
           return { x: root.x + dx * cos - dy * sin + nx * spread,
             y: root.y + dx * sin + dy * cos + ny * spread,
             hasDarkCap: point.hasDarkCap !== false };
@@ -5321,22 +5813,190 @@ function foodIllustration(itemId) {
     }
 
     function blackheadBodyThickness(p) {
-      return Math.max(2.1, p.radius * .21) * (p.blackheadSize === 'giant' ? 2.8 : 1);
+      return Math.max(3.5, p.radius * .24) * (p.blackheadSize === 'giant' ? 2.1 : 1);
     }
 
     function getBlackheadRenderData(p, progress = p.extrudeProgress, pullTarget = null) {
       const count = getBlackheadCount(p);
-      const thickness = blackheadBodyThickness(p) * (count > 1 ? .72 : 1);
+      const thickness = blackheadBodyThickness(p) * (count > 1 ? .84 : 1);
       const points = computeRealisticBlackheadCurve(p, progress, 0, 0, pullTarget);
       const curves = blackheadBundleCurves(points, count, null, getBlackheadLengths(p));
       return { thickness, curves: fitBlackheadCurves(curves, state.width, state.height,
         p.x + (p.tentOffsetX || 0), p.y + (p.tentOffsetY || 0), thickness + 4) };
     }
 
+    // One source of truth for the enlarged view and the working jaws. Curves
+    // are converted to canvas coordinates AFTER the normal edge fitting.
+    function getTweezerStrandData(p, progress = p.extrudeProgress) {
+      const ox = p.x + (p.tentOffsetX || 0), oy = p.y + (p.tentOffsetY || 0);
+      const tw = state.tweezers;
+      const pulling = tw.clampedPimple === p ? { x: tw.curTipX - ox, y: tw.curTipY - oy } : null;
+      let data = { curves: [], thickness: Math.max(2.4, p.radius * .24) };
+      if (p.type === 'blackhead') {
+        data = getBlackheadRenderData(p, progress, pulling);
+        if (p.sharedPore?.mode === 'together' && data.curves[0]) {
+          data = { ...data, curves: [...data.curves, sharedWhiteheadCurve(data.curves[0])] };
+        }
+      } else if (p.sharedPore || p.poreSequence?.index > 0) {
+        const mouth = getPimpleMouthOffsets(p)[0];
+        const whiteProgress = .30 + (1 - Math.min(.36, p.pusRemaining) / .36) * .70;
+        const points = computeRealisticBlackheadCurve({ ...p, snappedCap: true, linkedPore: false },
+          whiteProgress, mouth.x, mouth.y, pulling);
+        data.curves = [sharedWhiteheadCurve(points)];
+      }
+      return { thickness: data.thickness, curves: data.curves.map(curve => curve.map(point => ({
+        ...point, x: point.x + ox, y: point.y + oy
+      }))) };
+    }
+
+    function getTweezerVisualTip(p = state.tweezers.clampedPimple) {
+      if (!p) return { x: state.tweezers.curTipX, y: state.tweezers.curTipY };
+      const { curves } = getTweezerStrandData(p);
+      const strand = curves[Math.min(state.tweezers.grabbedStrand || 0, curves.length - 1)];
+      const tip = strand?.[strand.length - 1];
+      return tip ? { x: tip.x, y: tip.y } : { x: state.tweezers.curTipX, y: state.tweezers.curTipY };
+    }
+
+    function getTweezerHandleAngle(tip, pore) {
+      const outward = Math.atan2(tip.y - pore.y, tip.x - pore.x);
+      const preferred = outward + Math.PI * .22;
+      const angles = [preferred, outward - Math.PI * .22, outward, preferred + Math.PI];
+      let best = preferred, bestScore = Infinity;
+      angles.forEach((angle, preference) => {
+        const cos = Math.cos(angle), sin = Math.sin(angle);
+        let overflow = 0;
+        for (const x of [0, 76]) for (const y of [-9, 9]) {
+          const px = tip.x + x * cos - y * sin, py = tip.y + x * sin + y * cos;
+          overflow += Math.max(0, 5 - px) + Math.max(0, px - state.width + 5);
+          overflow += Math.max(0, 5 - py) + Math.max(0, py - state.height + 5);
+        }
+        const score = overflow * 10 + preference;
+        if (score < bestScore) { bestScore = score; best = angle; }
+      });
+      return best;
+    }
+
+    function getTweezerExtractionGeometry(p, focusX = state.pointer.x, focusY = state.pointer.y) {
+      const tw = state.tweezers, margin = 8;
+      const shortWide = state.height < 240 && state.width >= state.height * 2.3;
+      const panelW = Math.max(1, Math.min(shortWide ? 456 : CONFIG.INTERACTION.EXTRACTION_LOUPE_MAX_WIDTH,
+        shortWide ? Math.max(280, state.width * .55) : Math.max(184, state.width * .60), state.width - margin * 2));
+      const panelH = Math.max(1, Math.min(CONFIG.INTERACTION.EXTRACTION_LOUPE_MAX_HEIGHT,
+        Math.max(206, state.height * .62), state.height - margin * 2));
+      const inset = Math.min(8, panelW * .06, panelH * .05);
+      const header = Math.min(shortWide ? 16 : 25, panelH * .15), footer = Math.min(shortWide ? 19 : 33, panelH * .19);
+      const viewW = Math.max(1, panelW - inset * 2), viewH = Math.max(1, panelH - header - footer);
+      const actual = getTweezerStrandData(p);
+      const planned = getTweezerStrandData(p, 1);
+      const pore = getPimpleMouths(p)[0];
+      const tip = getTweezerVisualTip(p);
+      const boundsFor = (data) => {
+        const mouthRadius = Math.max(10, p.radius * .85);
+        const bounds = { left: pore.x - mouthRadius, top: pore.y - mouthRadius,
+          right: pore.x + mouthRadius, bottom: pore.y + mouthRadius };
+        const include = (x, y, radius) => {
+          bounds.left = Math.min(bounds.left, x - radius); bounds.right = Math.max(bounds.right, x + radius);
+          bounds.top = Math.min(bounds.top, y - radius); bounds.bottom = Math.max(bounds.bottom, y + radius);
+        };
+        for (const mouth of getPimpleMouths(p)) include(mouth.x, mouth.y, mouthRadius);
+        for (const curve of data.curves) for (const point of curve) include(point.x, point.y, data.thickness + 3);
+        const selected = data.curves[Math.min(tw.grabbedStrand || 0, data.curves.length - 1)];
+        const contact = selected?.[selected.length - 1] || tip;
+        include(contact.x, contact.y, 10);
+        const angle = getTweezerHandleAngle(contact, pore);
+        include(contact.x + Math.cos(angle) * 18, contact.y + Math.sin(angle) * 18, 6);
+        return bounds;
+      };
+      const subject = boundsFor(actual), full = boundsFor(planned);
+      const plannedStrand = planned.curves[Math.min(tw.grabbedStrand || 0, planned.curves.length - 1)];
+      const plannedTip = plannedStrand?.[plannedStrand.length - 1] || tip;
+      const dx = plannedTip.x - pore.x, dy = plannedTip.y - pore.y;
+      const length = Math.hypot(dx, dy) || 1;
+      const key = `${state.width}:${state.height}:${p.id}`;
+      if (tw.clampedPimple === p && tw.loupePlacement?.key !== key) {
+        tw.loupePlacement = null; tw.loupeZoom = null; tw.loupeRotation = null;
+      }
+      let rotation = shortWide && Math.abs(dy) > Math.abs(dx) ? (dy < 0 ? Math.PI * .5 : -Math.PI * .5) : 0;
+      if (tw.clampedPimple === p) {
+        if (tw.loupeRotation === null) tw.loupeRotation = rotation;
+        rotation = tw.loupeRotation;
+      }
+      // Reserve the whole extraction before it starts, including a small gap
+      // after the root detaches. Growth never chases the finger out of frame.
+      // On a short landscape board, reserve travel along the pull direction and
+      // turn a vertical extraction sideways instead of shrinking its details.
+      const padding = shortWide ? 5 : 16;
+      const travelX = shortWide ? dx / length * 14 : 0, travelY = shortWide ? dy / length * 14 : 0;
+      const frame = { left: Math.min(subject.left, full.left) - padding + Math.min(0, travelX),
+        top: Math.min(subject.top, full.top) - padding + Math.min(0, travelY),
+        right: Math.max(subject.right, full.right) + padding + Math.max(0, travelX),
+        bottom: Math.max(subject.bottom, full.bottom) + padding + Math.max(0, travelY) };
+      const quarterTurn = rotation !== 0;
+      let zoom = Math.min(CONFIG.INTERACTION.EXTRACTION_LOUPE_MAX_ZOOM,
+        (quarterTurn ? viewH : viewW) / Math.max(1, frame.right - frame.left),
+        (quarterTurn ? viewW : viewH) / Math.max(1, frame.bottom - frame.top));
+      if (tw.clampedPimple === p) {
+        // Changing direction can need more room; avoid zoom pumping back in.
+        tw.loupeZoom = tw.loupeZoom === null ? zoom : Math.min(tw.loupeZoom, zoom);
+        zoom = tw.loupeZoom;
+      }
+      const sourceW = (quarterTurn ? viewH : viewW) / zoom, sourceH = (quarterTurn ? viewW : viewH) / zoom;
+      const source = { x: (frame.left + frame.right - sourceW) * .5,
+        y: (frame.top + frame.bottom - sourceH) * .5, width: sourceW, height: sourceH };
+      const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+      let placement = tw.loupePlacement?.key === key ? tw.loupePlacement : null;
+      if (!placement) {
+        const candidates = [
+          [focusX + 42, focusY - panelH * .65], [focusX - panelW - 42, focusY - panelH * .65],
+          [focusX - panelW * .5, focusY - panelH - 42], [focusX - panelW * .5, focusY + 42],
+          [margin, margin], [state.width - panelW - margin, margin],
+          [margin, state.height - panelH - margin], [state.width - panelW - margin, state.height - panelH - margin]
+        ].map(([x, y], preference) => {
+          const px = clamp(x, margin, state.width - panelW - margin), py = clamp(y, margin, state.height - panelH - margin);
+          const distanceTo = (cx, cy) => Math.hypot(clamp(cx, px, px + panelW) - cx, clamp(cy, py, py + panelH) - cy);
+          const fingerOverlap = Math.max(0, 38 - distanceTo(focusX, focusY));
+          const poreOverlap = Math.max(0, 24 - distanceTo(pore.x, pore.y));
+          const trayOverlap = state.trophyTrayItems.length || state.flyingTrophies.length
+            ? Math.max(0, 42 - distanceTo(state.width - 54, 66)) : 0;
+          return { x: px, y: py, key, score: fingerOverlap * 10 + poreOverlap * 3 + trayOverlap * 2
+            + Math.hypot(px - x, py - y) * .10 + preference };
+        });
+        candidates.sort((a, b) => a.score - b.score);
+        placement = candidates[0];
+        if (tw.clampedPimple === p) tw.loupePlacement = placement;
+      }
+      const panel = { x: placement.x, y: placement.y, width: panelW, height: panelH };
+      return { panel, view: { x: panel.x + inset, y: panel.y + header, width: viewW, height: viewH },
+        source, zoom, rotation, subject, pore, tip, curves: actual.curves, thickness: actual.thickness };
+    }
+
+    function getTweezerExtractionTransform(geometry) {
+      const { source, view, zoom, rotation = 0 } = geometry;
+      const a = Math.cos(rotation) * zoom, b = Math.sin(rotation) * zoom;
+      const c = -b, d = a;
+      const x = source.x + source.width * .5, y = source.y + source.height * .5;
+      return { a, b, c, d, e: view.x + view.width * .5 - a * x - c * y,
+        f: view.y + view.height * .5 - b * x - d * y };
+    }
+
+    function projectTweezerExtractionPoint(geometry, point) {
+      const m = getTweezerExtractionTransform(geometry);
+      return { x: m.a * point.x + m.c * point.y + m.e, y: m.b * point.x + m.d * point.y + m.f };
+    }
+
+    function holdTweezerExtractionResult(p, focusX, focusY) {
+      const geometry = getTweezerExtractionGeometry(p, focusX, focusY);
+      const dx = geometry.tip.x - geometry.pore.x, dy = geometry.tip.y - geometry.pore.y;
+      const length = Math.hypot(dx, dy) || 1;
+      state.tweezers.loupeRelease = { ...geometry, duration: CONFIG.INTERACTION.EXTRACTION_LOUPE_RELEASE_SEC,
+        remaining: CONFIG.INTERACTION.EXTRACTION_LOUPE_RELEASE_SEC, direction: { x: dx / length, y: dy / length },
+        handleAngle: getTweezerHandleAngle(geometry.tip, geometry.pore), type: p.type };
+    }
+
     function getBlackheadResidueData(residue) {
       const item = state.collectionLedger[residue.collectionId];
       const count = normalizedBlackheadCount(item?.blackheadCount);
-      const thickness = residue.thickness * (count > 1 ? .72 : 1);
+      const thickness = Math.max(3.5, residue.thickness) * (count > 1 ? .84 : 1);
       const curves = blackheadBundleCurves(residue.pts, count, null, lengthProfile(item, count));
       return { thickness, curves: fitBlackheadCurves(curves, state.width, state.height, 0, 0, thickness + 3) };
     }
@@ -5352,20 +6012,19 @@ function foodIllustration(itemId) {
 
     function renderBlackheadBundle(targetCtx, points, thickness, count, isCreamy, shadowOff = 2.2, fanStep = null, lengths = null) {
       const strands = blackheadBundleCurves(points, count, fanStep, lengths);
-      const width = strands.length > 1 ? Math.max(1.35, thickness * .72) : thickness;
+      const width = strands.length > 1 ? thickness * .84 : thickness;
       for (const strand of strands) renderRealisticSebumFilament(targetCtx, strand, width, isCreamy, shadowOff);
     }
 
     function renderCollectedBlackheadBundle(collectionId, flying = false) {
       const item = state.collectionLedger[collectionId];
       const count = normalizedBlackheadCount(item?.blackheadCount), giant = item?.blackheadSize === 'giant';
-      if (count === 1 && !giant) return false;
-      const length = 13 * (giant ? 2.6 : 1);
+      const length = giant ? 38 : 19;
       const points = Array.from({ length: 15 }, (_, index) => ({ x: 0, y: 5 - index / 14 * length,
         distFromRoot: index / 14 * length, distFromTip: (1 - index / 14) * length, hasDarkCap: true }));
       ctx.save();
-      if (!flying) ctx.scale(giant ? .5 : .65, giant ? .5 : .65);
-      renderBlackheadBundle(ctx, points, giant ? 4 : 1.5, count, state.styleMode === 'creamy', .5, giant ? 4 : 1.8, lengthProfile(item, count));
+      if (!flying) ctx.scale(giant ? .46 : .60, giant ? .46 : .60);
+      renderBlackheadBundle(ctx, points, giant ? 6 : 3.1, count, state.styleMode === 'creamy', .5, giant ? 8 : 5, lengthProfile(item, count));
       ctx.restore();
       return true;
     }
@@ -5465,6 +6124,94 @@ function foodIllustration(itemId) {
       return p?.type === 'blackhead' && !p.linkedPore && !p.sharedPore ? normalizedBlackheadCount(p.blackheadCount) : 1;
     }
 
+    function getRevealedBlackheadCount(p) {
+      const revealed = p?.state >= P_STATE.OOZING
+        || (p?.state === P_STATE.EXTRUDING && p.extrudeProgress > .04);
+      return revealed ? getBlackheadCount(p) : 1;
+    }
+
+    const blockedPoreActions = new WeakMap();
+
+    function poreNeedsFreshAction(p) {
+      return Boolean(p && blockedPoreActions.has(p) && blockedPoreActions.get(p) === state.actionSerial);
+    }
+
+    function validPoreSequence(p) {
+      const sequence = p.poreSequence;
+      if (sequence == null) return true;
+      return typeof sequence === 'object' && !Array.isArray(sequence)
+        && Number.isInteger(sequence.count) && sequence.count >= 2 && sequence.count <= 4
+        && Number.isInteger(sequence.index) && sequence.index >= 0 && sequence.index < sequence.count
+        && ['blackhead', 'whitehead'].includes(p.type) && !p.linkedPore && !p.sharedPore && getBlackheadCount(p) === 1
+        && (sequence.index === 0 || p.state >= P_STATE.EXTRUDING)
+        && (p.state < P_STATE.OOZING || sequence.index === sequence.count - 1);
+    }
+
+    function validPoreSequenceLedger(data) {
+      const ledger = data.collectionLedger;
+      for (const p of data.pimples) {
+        const sequence = p.poreSequence;
+        const initial = data.initialPimples?.find(item => item.id === p.id);
+        if (Boolean(sequence) !== Boolean(initial?.poreSequence)) return false;
+        if (!sequence) continue;
+        if (!initial?.poreSequence || initial.poreSequence.count !== sequence.count
+          || initial.poreSequence.index !== 0 || initial.type !== p.type) return false;
+        const kind = p.type === 'blackhead' ? 'blackhead' : 'seed';
+        for (let index = 0; index < sequence.count; index++) {
+          const id = trophyIdFor(p, kind, index), item = ledger[id];
+          if (index < sequence.index && (!item?.rewards.extract || item.location === 'skin')) return false;
+          if (index > sequence.index && item) return false;
+          if (index === sequence.index && p.state >= P_STATE.OOZING && (!item?.rewards.extract || item.location === 'skin')) return false;
+          if (item && (item.rewards.extract !== true || item.kind !== kind || item.sourcePimpleId !== p.id || item.sequenceIndex !== index
+            || !sameCollectedVariant(item, p, kind))) return false;
+          if (item?.location === 'skin' && data.surfaceResidues.filter(r => r.collectionId === id).length !== 1) return false;
+          if (item?.location === 'flight' && data.flyingTrophies.filter(r => r.collectionId === id).length !== 1) return false;
+          if (item?.location === 'tray' && data.trophyTrayItems.length < 20
+            && data.trophyTrayItems.filter(r => r.collectionId === id).length !== 1) return false;
+        }
+      }
+      for (const [id, item] of Object.entries(ledger)) {
+        const match = /^(blackhead|seed):(-?\d+)(?::core:([2-4]))?$/.exec(id);
+        if (!match) { if (id.includes(':core:')) return false; continue; }
+        const p = data.pimples.find(p => p.id === Number(match[2])), index = Number(match[3] || 1) - 1;
+        if (!p?.poreSequence) { if (match[3]) return false; continue; }
+        if (index >= p.poreSequence.count || index > p.poreSequence.index
+          || item.kind !== (p.type === 'blackhead' ? 'blackhead' : 'seed')
+          || id !== trophyIdFor(p, item.kind, index)) return false;
+      }
+      return true;
+    }
+
+    function collectCurrentSequenceCore(p) {
+      const id = trophyIdFor(p), item = state.collectionLedger[id];
+      if (!item?.rewards.extract) return false;
+      if (item.location === 'skin') {
+        const residue = state.surfaceResidues.find(r => r.collectionId === id);
+        if (!residue || !launchTrophyToDish(residue.x, residue.y, item.kind, residue.wormLen || 24, id)) return false;
+        state.surfaceResidues = state.surfaceResidues.filter(r => r.collectionId !== id);
+        rewardTrophyOnce(id, 'collect', 45, p.x, p.y);
+      }
+      return state.collectionLedger[id].location !== 'skin';
+    }
+
+    function advancePoreSequence(p) {
+      const sequence = p.poreSequence;
+      if (!sequence || sequence.index >= sequence.count - 1) return false;
+      sequence.index += 1;
+      Object.assign(p, { state: P_STATE.EXTRUDING, pressure: 0, swellVisual: 0,
+        extrudeProgress: p.type === 'blackhead' ? .12 : 0, pusRemaining: p.type === 'whitehead' ? .36 : 0,
+        surfacePusMound: 0, pierced: true, snappedCap: false, hardSqueezeWarned: false,
+        ruptureTimer: 0, oozeEmitAccum: 0, wipeProgress: 0, healProgress: 0,
+        bloodDropSize: 0, serousDropSize: 0, tentOffsetX: 0, tentOffsetY: 0 });
+      blockedPoreActions.set(p, state.actionSerial);
+      triggerHaptic([9, 45, 15]);
+      spawnFloatingText(p.x, p.y - 22, '还有一颗！', '#a36f52');
+      updateHUD();
+      setHint('咦，里面还有一颗！松手后，再轻挤一次，也可以夹住取出。', 'good');
+      saveCurrentSession(true);
+      return true;
+    }
+
     function validBlackheadCount(p) {
       if (p.blackheadCount === undefined) return true;
       return Number.isInteger(p.blackheadCount) && p.blackheadCount >= 1 && p.blackheadCount <= 4
@@ -5551,8 +6298,9 @@ function foodIllustration(itemId) {
         p.bloodDropSize = 0;
         p.serousDropSize = 0;
         p.tentOffsetX = p.tentOffsetY = 0;
-        setHint('黑头已取出，同一个洞口里还有一颗白头。继续轻挤，或用细胞夹缓缓取出。', 'good');
+        blockedPoreActions.set(p, state.actionSerial);
         updateHUD();
+        setHint('黑头已取出，同一个洞口里还有一颗白头。松手后，再轻挤一次或夹住取出。', 'good');
         return true;
       }
       shared.phase = 'done';
@@ -5562,11 +6310,17 @@ function foodIllustration(itemId) {
 
     function canFinishPoreFromResidue(p) {
       return p && p.state === P_STATE.OOZING && p.bloodDropSize <= .1
-        && (!p.sharedPore || (p.sharedPore.phase === 'done'
-          && !state.surfaceResidues.some(residue => residue.pimpleId === p.id)));
+        && (!p.sharedPore || p.sharedPore.phase === 'done')
+        && (!p.poreSequence || p.poreSequence.index === p.poreSequence.count - 1)
+        && (!(p.sharedPore || p.poreSequence) || !state.surfaceResidues.some(residue => residue.pimpleId === p.id));
     }
 
     function enterOozingStage(p, pluckedCleanly = false) {
+      if (p.poreSequence) {
+        if (!collectCurrentSequenceCore(p)) return;
+        if (advancePoreSequence(p)) return;
+        pluckedCleanly = !state.surfaceResidues.some(residue => residue.pimpleId === p.id);
+      }
       if (advanceSharedPore(p)) return;
       p.state = P_STATE.OOZING;
       p.pressure = 0;
@@ -5740,6 +6494,11 @@ function foodIllustration(itemId) {
         return;
       }
 
+      if (poreNeedsFreshAction(hit)) {
+        setHint('又露出一颗，松手后再开始下一次操作。', 'good');
+        return;
+      }
+
       if (needleActionFor(hit) === 'extract') {
         hit.extrudeProgress = 1;
         sound.playPop('blackhead');
@@ -5789,6 +6548,11 @@ function foodIllustration(itemId) {
 
     function startTweezerGrab(pt) {
       sound.unlock();
+      state.tweezers.loupeRelease = null;
+      state.tweezers.loupePlacement = null;
+      state.tweezers.loupeZoom = null;
+      state.tweezers.loupeRotation = null;
+      state.tweezers.grabbedStrand = 0;
       // 1) 夹取掉在脸上的黑头脂栓或固态白芯飞入弯盘
       for (let i = state.surfaceResidues.length - 1; i >= 0; i--) {
         const res = state.surfaceResidues[i];
@@ -5842,6 +6606,10 @@ function foodIllustration(itemId) {
       }
 
       rememberPointerCareTarget({ x: target.x, y: target.y }, true);
+      if (poreNeedsFreshAction(target)) {
+        setHint('又露出一颗，松手后再夹住这一颗。', 'good');
+        return;
+      }
       if (!canTweezePimple(target)) {
         setHint(tweezerPreparationHint(target), 'normal');
         return;
@@ -5855,6 +6623,14 @@ function foodIllustration(itemId) {
       if (target.state === P_STATE.EXTRUDING) {
         sound.playTweezerClamp();
         triggerHaptic(15);
+        if (target.type === 'blackhead') {
+          let nearest = Infinity;
+          getTweezerStrandData(target).curves.slice(0, getBlackheadCount(target)).forEach((strand, index) => {
+            const tip = strand[strand.length - 1];
+            const distance = Math.hypot(pt.x - tip.x, pt.y - tip.y);
+            if (distance < nearest) { nearest = distance; state.tweezers.grabbedStrand = index; }
+          });
+        }
         state.tweezers.clampedPimple = target;
         state.tweezers.grabStartX = pt.x;
         state.tweezers.grabStartY = pt.y;
@@ -5865,7 +6641,7 @@ function foodIllustration(itemId) {
         state.tweezers.pullDist = 0;
         state.tweezers.pullRatio = 0;
         state.tweezers.dangerRatio = 0;
-        setHint('已经夹住，观察放大镜，缓慢向外拖动。', 'good');
+        setHint('已经夹住，观察大特写里从根部到顶端的变化，缓慢向外拖动。', 'good');
       }
     }
 
@@ -5910,7 +6686,7 @@ function foodIllustration(itemId) {
       // A full-length drag can be a fraction of a floating-point pixel short.
       if (1 - tw.pullRatio < 1e-8) tw.pullRatio = 1;
 
-      const fixedMouth = p.sharedPore || getBlackheadCount(p) > 1 || p.blackheadSize === 'giant' || p.whiteheadSize === 'large';
+      const fixedMouth = p.sharedPore || p.poreSequence || getBlackheadCount(p) > 1 || p.blackheadSize === 'giant' || p.whiteheadSize === 'large';
       p.tentOffsetX = fixedMouth ? 0 : (pullVecX / pullVecLen) * tw.pullRatio * 4.2;
       p.tentOffsetY = fixedMouth ? 0 : (pullVecY / pullVecLen) * tw.pullRatio * 4.2;
 
@@ -5919,6 +6695,7 @@ function foodIllustration(itemId) {
       }
 
       if (tw.pullRatio >= 1) {
+        holdTweezerExtractionResult(p, pt.x, pt.y);
         tw.clampedPimple = null;
         p.tentOffsetX = 0;
         p.tentOffsetY = 0;
@@ -6077,6 +6854,37 @@ function foodIllustration(itemId) {
       return best;
     }
 
+    function squeezeTargetsFor(target) {
+      if (!target || !state.pimples.includes(target)) return [];
+      // Shared blackhead/whitehead openings keep their deliberate two-stage
+      // treatment. A group never starts by squeezing an already empty pore.
+      if (target.type !== 'blackhead' || target.sharedPore || target.poreSequence || target.state >= P_STATE.OOZING) return [target];
+      const reach = Math.min(92, Math.max(72, target.radius * 4.2));
+      const neighbors = state.pimples.filter(p => p !== target && p.type === 'blackhead'
+        && !p.sharedPore && !p.poreSequence && p.state < P_STATE.OOZING
+        && Math.hypot(p.x - target.x, p.y - target.y) <= reach)
+        .sort((a, b) => Math.hypot(a.x - target.x, a.y - target.y) - Math.hypot(b.x - target.x, b.y - target.y) || a.id - b.id);
+      return [target, ...neighbors.slice(0, 3)];
+    }
+
+    function activeSqueezeTargets() {
+      const ptr = state.pointer;
+      const group = ptr.squeezeTargets.length ? ptr.squeezeTargets : ptr.lockedPimple ? [ptr.lockedPimple] : [];
+      return group.filter(p => state.pimples.includes(p) && p.state < P_STATE.OOZING
+        && (p === ptr.lockedPimple || (p.type === 'blackhead' && !p.sharedPore && !p.poreSequence)));
+    }
+
+    function lockSqueezeTarget(target, preserveGroup = false) {
+      const ptr = state.pointer;
+      // Small midpoint movements within one patch must not drop slower pores
+      // when the first pore finishes. Moving to a different patch retargets it.
+      if (preserveGroup && target && ptr.squeezeTargets.includes(target) && activeSqueezeTargets().length) return;
+      if (ptr.lockedPimple === target && ptr.squeezeTargets.length) return;
+      ptr.lockedPimple = target;
+      ptr.squeezeTargets = squeezeTargetsFor(target);
+      if (ptr.squeezeTargets.length > 1) setHint(`这一片 ${ptr.squeezeTargets.length} 处黑头，一次轻推一起挤出。`, 'good');
+    }
+
     function keyboardCareTargets() {
       const targets = state.pimples.map(p => ({ kind: 'pimple', item: p, x: p.x, y: p.y }));
       if (state.currentTool === 'swab' || state.currentTool === 'tweezers') {
@@ -6108,7 +6916,8 @@ function foodIllustration(itemId) {
       if (target.kind === 'residue') return '皮肤残留';
       if (target.kind === 'splatter') return '镜片飞溅';
       const p = target.item;
-      const name = getBlackheadCount(p) > 1 ? `同洞 ${getBlackheadCount(p)} 根黑头` : p.sharedPore && p.sharedPore.phase !== 'done'
+      const count = getRevealedBlackheadCount(p);
+      const name = count > 1 ? `同洞 ${count} 根黑头` : p.sharedPore && p.sharedPore.phase !== 'done'
         ? p.sharedPore.phase === 'whitehead' ? '同洞剩余白头' : '同洞黑头和白头'
         : {blackhead: '黑头', whitehead: '白头', cyst: '深层目标'}[p.type];
       const status = p.iced ? '已敷膜' : p.state >= P_STATE.HEALING ? '已清理'
@@ -6212,7 +7021,7 @@ function foodIllustration(itemId) {
         ptr.mode = 'two-finger';
         ptr.anchorX = p.x;
         ptr.anchorY = p.y;
-        ptr.lockedPimple = p;
+        lockSqueezeTarget(p);
         ptr.axisAngle = p.type === 'cyst' ? p.targetAngle : 0;
         ptr.initSpan = Math.max(96, CONFIG.INTERACTION.CYST_TOO_NARROW_SPAN_PX + 12);
         ptr.curSpan = ptr.initSpan;
@@ -6224,7 +7033,9 @@ function foodIllustration(itemId) {
         ptr.p2 = {x: p.x + dx, y: p.y + dy};
         ptr.smoothP1 = {...ptr.p1};
         ptr.smoothP2 = {...ptr.p2};
-        setHint('键盘辅助：正沿目标两侧温和挤压，松开即可停手。', 'normal');
+        setHint(ptr.squeezeTargets.length > 1
+          ? `键盘辅助：正在轻挤相邻 ${ptr.squeezeTargets.length} 处黑头，松开即可停手。`
+          : '键盘辅助：正沿目标两侧温和挤压，松开即可停手。', 'normal');
       } else if (care.tool === 'tweezers') {
         ptr.mode = 'tweezers';
         care.pullX = target.x < state.width * .5 ? .8 : -.8;
@@ -6266,7 +7077,7 @@ function foodIllustration(itemId) {
       const ptr = state.pointer;
       if (care.tool === 'squeeze') {
         const p = target.item;
-        if (p.state >= P_STATE.OOZING) {
+        if (p.state >= P_STATE.OOZING && !activeSqueezeTargets().length) {
           finishKeyboardCare(true);
           setHint('当前目标已排空。换清洁棉签，继续擦净残留。', 'good');
           return;
@@ -6410,7 +7221,10 @@ function foodIllustration(itemId) {
         e.preventDefault();
         if (state.settled || state.paused || state.iceFinishing) return;
         const incoming = Array.from(e.changedTouches || []);
+        const waitingForLift = !state.pointer.active && canvasTouchIds.size > 0
+          && state.pimples.some(poreNeedsFreshAction);
         incoming.forEach((touch, index) => canvasTouchIds.add(touchIdentity(touch, index)));
+        if (waitingForLift) return;
         const allTouches = e.targetTouches ? Array.from(e.targetTouches) : Array.from(e.touches).filter((touch, index) => canvasTouchIds.has(touchIdentity(touch, index)));
         if (!allTouches.length) return;
         if (state.pointer.active && (state.currentTool !== 'squeeze' || state.pointer.mode === 'two-finger')) return;
@@ -6497,9 +7311,9 @@ function foodIllustration(itemId) {
           state.pointer.initSpan = Math.max(50, span);
           state.pointer.curSpan = span;
           state.pointer.axisAngle = Math.atan2(t2.y - t1.y, t2.x - t1.x);
-          state.pointer.lockedPimple = findNearestSqueezeTarget(
+          lockSqueezeTarget(findNearestSqueezeTarget(
             midX, midY, CONFIG.INTERACTION.TWO_FINGER_CAPTURE_PX
-          );
+          ));
           rememberPointerCareTarget(state.pointer.lockedPimple || { x: midX, y: midY }, true);
           state.pointer.rawForce = 0.08;
         } else if (touches.length === 1) {
@@ -6544,9 +7358,9 @@ function foodIllustration(itemId) {
             state.pointer.anchorY = midY;
             state.pointer.curSpan = span;
             state.pointer.axisAngle = Math.atan2(t2.y - t1.y, t2.x - t1.x);
-            state.pointer.lockedPimple = findNearestSqueezeTarget(
+            lockSqueezeTarget(findNearestSqueezeTarget(
               midX, midY, CONFIG.INTERACTION.TWO_FINGER_CAPTURE_PX
-            );
+            ), true);
             rememberPointerCareTarget(state.pointer.lockedPimple || { x: midX, y: midY }, true);
 
             const shrink = Math.max(0, state.pointer.initSpan - span);
@@ -6723,7 +7537,7 @@ function foodIllustration(itemId) {
       let dist = Math.hypot(dx, dy);
 
       if (dist < 14) {
-        const defaultAng = target ? target.targetAngle : 0;
+        const defaultAng = target?.type === 'cyst' ? target.targetAngle : 0;
         dist = target && target.type === 'cyst' ? 48 : 38;
         dx = Math.cos(defaultAng) * dist;
         dy = Math.sin(defaultAng) * dist;
@@ -6736,7 +7550,7 @@ function foodIllustration(itemId) {
 
       state.pointer.active = true;
       state.pointer.mode = 'mirror-pinch';
-      state.pointer.lockedPimple = target;
+      lockSqueezeTarget(target);
       state.pointer.anchorX = cx;
       state.pointer.anchorY = cy;
       state.pointer.initSpan = startHalf * 2;
@@ -6795,7 +7609,12 @@ function foodIllustration(itemId) {
       state.pointer.mode = 'none';
       state.pointer.rawForce = 0;
       state.pointer.lockedPimple = null;
+      state.pointer.squeezeTargets = [];
       state.tweezers.clampedPimple = null;
+      state.tweezers.loupePlacement = null;
+      state.tweezers.loupeZoom = null;
+      state.tweezers.loupeRotation = null;
+      if (state.paused || state.settled || state.currentTool !== 'tweezers') state.tweezers.loupeRelease = null;
       if (state.paused || state.settled || !careControl.owned) sound.pause();
       else sound.setTension(0);
       saveCurrentSession();
@@ -6853,6 +7672,13 @@ function foodIllustration(itemId) {
       const frameScale = dt * 60;
       updateKeyboardCare(dt);
 
+      if (state.tweezers.loupeRelease) {
+        state.tweezers.loupeRelease.remaining -= dt;
+        if (state.tweezers.loupeRelease.remaining <= 0 || state.currentTool !== 'tweezers') {
+          state.tweezers.loupeRelease = null;
+        }
+      }
+
       if (state.cameraShake > 0) {
         state.cameraShake = reducedMotion ? 0 : Math.max(0, state.cameraShake - dt * 30);
       }
@@ -6907,8 +7733,10 @@ function foodIllustration(itemId) {
       }
 
       let activeTensionAudio = 0;
+      const squeezedThisFrame = new Set();
       if (ptr.active && (ptr.mode === 'two-finger' || ptr.mode === 'mirror-pinch') && ptr.squeezeForce > 0.12) {
         const target = ptr.lockedPimple;
+        const group = activeSqueezeTargets();
         if (!target) {
           if (ptr.squeezeForce > 0.42) {
             addDamage(
@@ -6918,6 +7746,28 @@ function foodIllustration(itemId) {
               '这里没有需要清理的目标，移到瑕疵两侧再轻推。'
             );
             sound.playWarnHurt();
+          }
+        } else if (group.length) {
+          for (const p of group) {
+            if (poreNeedsFreshAction(p)) continue;
+            squeezedThisFrame.add(p);
+            const index = ptr.squeezeTargets.indexOf(p);
+            const force = ptr.squeezeForce * (index <= 0 ? 1 : 0.95 - index * 0.03);
+            if (p.state === P_STATE.INTACT) {
+              applySqueezeToIntact(p, force, ptr.axisAngle, ptr.initSpan, dt);
+              activeTensionAudio = Math.max(activeTensionAudio, force * 0.6, p.pressure);
+            } else if (p.state === P_STATE.EXTRUDING) {
+              applySqueezeToExtruding(p, force, ptr.axisAngle, dt);
+              activeTensionAudio = Math.max(activeTensionAudio, force * 0.68);
+            }
+          }
+          // A continuous group gesture ends when the whole patch is empty. It
+          // cannot immediately damage the first pore or award the group twice.
+          if (ptr.squeezeTargets.length > 1 && !activeSqueezeTargets().length) {
+            const count = ptr.squeezeTargets.length;
+            releasePointer();
+            activeTensionAudio = 0;
+            setHint(`一口气挤出 ${count} 处！用细胞夹收集，或用棉签一起擦净。`, 'good');
           }
         } else if (target.state === P_STATE.OOZING) {
           if (ptr.squeezeForce > 0.40) {
@@ -6931,19 +7781,13 @@ function foodIllustration(itemId) {
             );
             sound.playWarnHurt();
           }
-        } else if (target.state === P_STATE.INTACT) {
-          applySqueezeToIntact(target, ptr.squeezeForce, ptr.axisAngle, ptr.initSpan, dt);
-          activeTensionAudio = Math.max(ptr.squeezeForce * 0.6, target.pressure);
-        } else if (target.state === P_STATE.EXTRUDING) {
-          applySqueezeToExtruding(target, ptr.squeezeForce, ptr.axisAngle, dt);
-          activeTensionAudio = ptr.squeezeForce * 0.68;
         }
       }
       sound.setTension(activeTensionAudio);
       updatePressureFeedback();
 
       for (const p of state.pimples) {
-        const isBeingSqueezed = ptr.active && ptr.lockedPimple === p && ptr.squeezeForce > 0.12;
+        const isBeingSqueezed = squeezedThisFrame.has(p);
         if (!isBeingSqueezed && p.state === P_STATE.INTACT) {
           p.pressure = Math.max(0, p.pressure - p.cfg.decayRate * dt);
         }
@@ -7032,6 +7876,7 @@ function foodIllustration(itemId) {
     }
 
     function applySqueezeToIntact(p, force, axisAngle, initSpan, dt) {
+      if (poreNeedsFreshAction(p)) return;
       const alreadyWarned = p.hardSqueezeWarned;
       recordSqueezePressure(p, force, dt);
       const steamEase = p.steamed >= 0.75 ? (state.upgrades.steamer ? 1.65 : 1.40) : 1.0;
@@ -7140,6 +7985,7 @@ function foodIllustration(itemId) {
     }
 
     function applySqueezeToExtruding(p, force, axisAngle, dt) {
+      if (poreNeedsFreshAction(p)) return;
       recordSqueezePressure(p, force, dt);
       const steamEase = p.steamed >= 0.75 ? (state.upgrades.steamer ? 1.55 : 1.35) : 1.0;
 
@@ -7345,16 +8191,32 @@ function foodIllustration(itemId) {
       ctx.save();
       renderLensSplatters();
 
-      // 10) 先渲染双手与器械（不含顶层UI），以便 2.2X 光学微距放大镜实时捕获器械针尖与毛孔的精准咬合画面！
+      // Draw the real working tip before the optical view samples the scene.
       renderRealisticHandsAndTools();
 
-      // 11) 当按住精密器械（粉刺针 / 细胞夹）时，在手指上方绘制 2.2X 偏振微距光学放大镜 (Optical Loupe)！
-      if (ptr.active && (ptr.mode === 'needle' || ptr.mode === 'tweezers')) {
+      // Needle aiming stays compact; extraction gets a full-length close-up.
+      if ((ptr.active && (ptr.mode === 'needle' || ptr.mode === 'tweezers'))
+        || (state.currentTool === 'tweezers' && state.tweezers.loupeRelease)) {
         renderPrecisionMagnifierLoupe(ptr.x, ptr.y);
       }
 
       // 12) 右上角医用不锈钢战利品弯盘 + 正在飞入弯盘的抛物线脂栓动画！
+      // The collection flight passes behind the close-up. Sampling it into the
+      // lens, or painting it over the held plug, would show a duplicate bundle.
+      ctx.save();
+      if (state.currentTool === 'tweezers') {
+        const tw = state.tweezers;
+        const extraction = tw.clampedPimple
+          ? getTweezerExtractionGeometry(tw.clampedPimple, ptr.x, ptr.y) : tw.loupeRelease;
+        if (extraction) {
+          const panel = extraction.panel;
+          ctx.beginPath(); ctx.rect(0, 0, w, h);
+          ctx.rect(panel.x - 2, panel.y - 2, panel.width + 4, panel.height + 4);
+          ctx.clip('evenodd');
+        }
+      }
       renderTrophyDishAndFlyingPlugs(w);
+      ctx.restore();
 
       // 13) 收尾全屏冰感清凉水波
       if (state.iceFinishing) {
@@ -7412,10 +8274,107 @@ function foodIllustration(itemId) {
       ctx.restore();
     }
 
-    /**
-     * 2.2X 偏振微距光学瞄准放大镜（解决触屏手指遮挡痛点，提供手术级精准视觉！）
-     */
+    function extractionPanelPath(targetCtx, x, y, width, height, radius) {
+      const r = Math.min(radius, width * .5, height * .5);
+      targetCtx.beginPath(); targetCtx.moveTo(x + r, y);
+      targetCtx.lineTo(x + width - r, y); targetCtx.quadraticCurveTo(x + width, y, x + width, y + r);
+      targetCtx.lineTo(x + width, y + height - r); targetCtx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+      targetCtx.lineTo(x + r, y + height); targetCtx.quadraticCurveTo(x, y + height, x, y + height - r);
+      targetCtx.lineTo(x, y + r); targetCtx.quadraticCurveTo(x, y, x + r, y); targetCtx.closePath();
+    }
+
+    function drawTweezerBlades(targetCtx, tip, angle, isClamped) {
+      const gap = isClamped ? .5 : 4.2;
+      targetCtx.save(); targetCtx.translate(tip.x, tip.y); targetCtx.rotate(angle);
+      targetCtx.lineCap = 'round'; targetCtx.lineWidth = 2.6;
+      targetCtx.strokeStyle = state.upgrades.tweezers ? '#e4e8d2' : '#ebe9dc';
+      targetCtx.beginPath(); targetCtx.moveTo(0, -gap);
+      targetCtx.quadraticCurveTo(22, -gap - 3.5, 72, -7); targetCtx.stroke();
+      targetCtx.strokeStyle = state.upgrades.tweezers ? '#85946f' : '#929e83';
+      targetCtx.beginPath(); targetCtx.moveTo(0, gap);
+      targetCtx.quadraticCurveTo(22, gap + 3.5, 72, 7); targetCtx.stroke();
+      targetCtx.restore();
+    }
+
+    function renderTweezerExtractionLoupe(focusX, focusY) {
+      const tw = state.tweezers, release = tw.clampedPimple ? null : tw.loupeRelease;
+      const geometry = release || (tw.clampedPimple && getTweezerExtractionGeometry(tw.clampedPimple, focusX, focusY));
+      if (!geometry) return;
+      const { panel, view, source } = geometry, dpr = state.dpr;
+      // A resize cancels only the short completed presentation; the new live
+      // extraction camera is recomputed for its current viewport dimensions.
+      if (release && (panel.x + panel.width > state.width || panel.y + panel.height > state.height)) {
+        tw.loupeRelease = null; return;
+      }
+      const sample = renderTweezerExtractionLoupe.sample || document.createElement('canvas');
+      renderTweezerExtractionLoupe.sample = sample;
+      const sampleW = Math.max(1, Math.round(view.width * dpr)), sampleH = Math.max(1, Math.round(view.height * dpr));
+      if (sample.width !== sampleW || sample.height !== sampleH) { sample.width = sampleW; sample.height = sampleH; }
+      const sampleCtx = sample.getContext('2d');
+      sampleCtx.setTransform(1, 0, 0, 1, 0, 0);
+      sampleCtx.fillStyle = '#e9e6d8'; sampleCtx.fillRect(0, 0, sampleW, sampleH);
+      const sx = Math.max(0, source.x * dpr), sy = Math.max(0, source.y * dpr);
+      const sw = Math.max(0, Math.min(canvas.width, (source.x + source.width) * dpr) - sx);
+      const sh = Math.max(0, Math.min(canvas.height, (source.y + source.height) * dpr) - sy);
+      const projection = getTweezerExtractionTransform(geometry);
+      const pixelX = sampleW / view.width, pixelY = sampleH / view.height;
+      // Background, plug and jaws use the same undistorted optical projection.
+      sampleCtx.setTransform(projection.a * pixelX, projection.b * pixelY,
+        projection.c * pixelX, projection.d * pixelY,
+        (projection.e - view.x) * pixelX, (projection.f - view.y) * pixelY);
+      if (sw > 0 && sh > 0) sampleCtx.drawImage(canvas, sx, sy, sw, sh, sx / dpr, sy / dpr, sw / dpr, sh / dpr);
+
+      if (release) {
+        const elapsed = 1 - release.remaining / release.duration;
+        const ease = motionPreference?.matches ? 1 : 1 - Math.pow(1 - elapsed, 3);
+        const distance = 5 + ease * 9;
+        const dx = release.direction.x * distance, dy = release.direction.y * distance;
+        const curves = release.curves.map(curve => curve.map(point => ({ ...point, x: point.x + dx, y: point.y + dy })));
+        sampleCtx.save();
+        for (const strand of curves) renderRealisticSebumFilament(sampleCtx, strand, release.thickness, state.styleMode === 'creamy', 1.6);
+        drawTweezerBlades(sampleCtx, { x: release.tip.x + dx, y: release.tip.y + dy }, release.handleAngle, true);
+        sampleCtx.restore();
+      }
+
+      const progress = release ? 1 : Math.max(0, Math.min(1, tw.pullRatio));
+      const atRisk = !release && tw.dangerRatio > .78;
+      const ink = atRisk ? '#965b49' : '#526b48';
+      ctx.save();
+      ctx.shadowColor = 'rgba(61, 57, 40, .22)'; ctx.shadowBlur = 11; ctx.shadowOffsetY = 4;
+      extractionPanelPath(ctx, panel.x, panel.y, panel.width, panel.height, 12);
+      ctx.fillStyle = 'rgba(247, 244, 231, .98)'; ctx.fill();
+      ctx.shadowColor = 'transparent'; ctx.strokeStyle = '#9aa58a'; ctx.lineWidth = 1.2; ctx.stroke();
+      ctx.save(); extractionPanelPath(ctx, view.x, view.y, view.width, view.height, 7); ctx.clip();
+      ctx.drawImage(sample, view.x, view.y, view.width, view.height);
+      const glass = ctx.createLinearGradient(view.x, view.y, view.x + view.width, view.y + view.height);
+      glass.addColorStop(0, 'rgba(255, 249, 234, .07)'); glass.addColorStop(.5, 'rgba(255, 249, 234, 0)');
+      glass.addColorStop(1, 'rgba(215, 224, 202, .025)');
+      ctx.fillStyle = glass; ctx.fillRect(view.x, view.y, view.width, view.height); ctx.restore();
+      ctx.strokeStyle = 'rgba(105, 120, 86, .30)'; ctx.lineWidth = .8;
+      extractionPanelPath(ctx, view.x, view.y, view.width, view.height, 7); ctx.stroke();
+      ctx.font = '600 11px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif';
+      ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.fillStyle = '#4c5544';
+      ctx.fillText(release ? '完整取出' : '夹取特写', panel.x + 11, panel.y + (view.y - panel.y) * .5);
+      ctx.textAlign = 'right'; ctx.font = '500 10px -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif';
+      ctx.fillStyle = '#77816a'; ctx.fillText('根部 → 顶端', panel.x + panel.width - 11, panel.y + (view.y - panel.y) * .5);
+      const footerY = view.y + view.height;
+      const footerH = panel.y + panel.height - footerY;
+      const footerTextY = footerY + Math.min(12, footerH * .42);
+      const barY = footerY + footerH * .72, barH = Math.min(3, footerH * .12);
+      ctx.font = `500 ${Math.min(10, footerH * .55)}px -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif`;
+      ctx.textAlign = 'left'; ctx.fillStyle = ink;
+      ctx.fillText(release ? '已完整取出' : atRisk ? '放慢一点，保持夹稳' : '缓慢拉出，看清全过程', panel.x + 11, footerTextY);
+      ctx.textAlign = 'right'; ctx.fillText(`${Math.round(progress * 100)}%`, panel.x + panel.width - 11, footerTextY);
+      ctx.fillStyle = '#d7dbc9'; ctx.fillRect(view.x + 3, barY, view.width - 6, barH);
+      ctx.fillStyle = ink; ctx.fillRect(view.x + 3, barY, (view.width - 6) * progress, barH);
+      ctx.restore();
+    }
+
+    /** Compact 2.2× needle aiming; tweezers use the full extraction window. */
     function renderPrecisionMagnifierLoupe(focusX, focusY) {
+      if (state.currentTool === 'tweezers' && (state.tweezers.clampedPimple || state.tweezers.loupeRelease)) {
+        renderTweezerExtractionLoupe(focusX, focusY); return;
+      }
       const margin = 12;
       const R = Math.max(1, Math.min(
         CONFIG.INTERACTION.LOUPE_RADIUS_PX,
@@ -7522,65 +8481,7 @@ function foodIllustration(itemId) {
       ctx.stroke();
       ctx.restore();
 
-      if (state.currentTool === 'tweezers' && state.tweezers.clampedPimple) {
-        const tw = state.tweezers;
-        const panelW = Math.min(98, state.width - 16);
-        const panelH = 32;
-        const gap = 8;
-        const candidates = [
-          [lx - panelW * 0.5, ly - R - gap - panelH],
-          [lx - panelW * 0.5, ly + R + gap],
-          [lx + R + gap, ly - panelH * 0.5],
-          [lx - R - gap - panelW, ly - panelH * 0.5],
-          [8, 8],
-          [state.width - panelW - 8, 8],
-          [8, state.height - panelH - 8],
-          [state.width - panelW - 8, state.height - panelH - 8]
-        ].map(([x, y], preference) => {
-          const px = clamp(x, 8, state.width - panelW - 8);
-          const py = clamp(y, 8, state.height - panelH - 8);
-          const distanceTo = (cx, cy) => Math.hypot(clamp(cx, px, px + panelW) - cx, clamp(cy, py, py + panelH) - cy);
-          const lensOverlap = Math.max(0, R + 4 - distanceTo(lx, ly));
-          const fingerOverlap = Math.max(0, 30 - distanceTo(focusX, focusY));
-          const clipping = Math.hypot(px - x, py - y);
-          return { px, py, score: lensOverlap * 6 + fingerOverlap * 5 + clipping + preference };
-        });
-        candidates.sort((a, b) => a.score - b.score);
-        const { px, py } = candidates[0];
-        const atRisk = tw.dangerRatio > 0.78;
-        const ink = atRisk ? '#965b49' : '#526b48';
-        const progress = Math.max(0, Math.min(1, tw.pullRatio));
-        ctx.save();
-        ctx.fillStyle = 'rgba(247, 244, 231, 0.96)';
-        ctx.strokeStyle = 'rgba(92, 108, 77, 0.26)';
-        ctx.lineWidth = 0.8;
-        ctx.beginPath();
-        ctx.moveTo(px + 5, py);
-        ctx.lineTo(px + panelW - 5, py);
-        ctx.quadraticCurveTo(px + panelW, py, px + panelW, py + 5);
-        ctx.lineTo(px + panelW, py + panelH - 5);
-        ctx.quadraticCurveTo(px + panelW, py + panelH, px + panelW - 5, py + panelH);
-        ctx.lineTo(px + 5, py + panelH);
-        ctx.quadraticCurveTo(px, py + panelH, px, py + panelH - 5);
-        ctx.lineTo(px, py + 5);
-        ctx.quadraticCurveTo(px, py, px + 5, py);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-        ctx.font = '500 11px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif';
-        ctx.textBaseline = 'alphabetic';
-        ctx.textAlign = 'left';
-        ctx.fillStyle = '#4c5544';
-        ctx.fillText(`夹取 ${Math.round(progress * 100)}%`, px + 8, py + 13);
-        ctx.textAlign = 'right';
-        ctx.fillStyle = ink;
-        ctx.fillText(atRisk ? '放慢' : '匀速', px + panelW - 8, py + 13);
-        ctx.fillStyle = '#d7dbc9';
-        ctx.fillRect(px + 8, py + 22, panelW - 16, 3);
-        ctx.fillStyle = ink;
-        ctx.fillRect(px + 8, py + 22, (panelW - 16) * progress, 3);
-        ctx.restore();
-      }
+
     }
 
     /**
@@ -7626,16 +8527,7 @@ function foodIllustration(itemId) {
         ctx.translate(-25 + item.ox, -7 + item.oy);
         ctx.rotate(item.rot);
         if (item.kind === 'blackhead') {
-          if (!renderCollectedBlackheadBundle(item.collectionId)) {
-            ctx.fillStyle = '#f5e49c';
-            ctx.beginPath();
-            ctx.ellipse(0, 1.6, 2.2, 4.5, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#241108';
-            ctx.beginPath();
-            ctx.arc(0, -2.6, 1.75, 0, Math.PI * 2);
-            ctx.fill();
-          }
+          renderCollectedBlackheadBundle(item.collectionId);
           if (state.collectionLedger[item.collectionId]?.pairedWhitehead === true) {
             ctx.fillStyle = '#fff6df';
             ctx.beginPath(); ctx.ellipse(4.2, 1.4, 1.8, 3.7, -.35, 0, Math.PI * 2); ctx.fill();
@@ -7656,8 +8548,8 @@ function foodIllustration(itemId) {
         const t = Math.min(1, ft.progress);
         const ease = 1 - Math.pow(1 - t, 2);
         const item = state.collectionLedger[ft.collectionId];
-        const radius = item?.blackheadSize === 'giant' ? 60 : item?.whiteheadSize === 'large' ? 16
-          : normalizedBlackheadCount(item?.blackheadCount) > 1 ? 26 : 12;
+        const radius = item?.blackheadSize === 'giant' ? 70 : item?.whiteheadSize === 'large' ? 16
+          : normalizedBlackheadCount(item?.blackheadCount) > 1 ? 36 : ft.kind === 'blackhead' ? 20 : 12;
         const sc = Math.min(1 + Math.sin(t * Math.PI) * .45, Math.max(.1, (Math.min(w, state.height) - 8) / (radius * 2)));
         const margin = radius * sc + 2;
         const fx = Math.max(margin, Math.min(w - margin, ft.sx + (ft.tx - ft.sx) * ease));
@@ -7669,16 +8561,7 @@ function foodIllustration(itemId) {
         ctx.scale(sc, sc);
 
         if (ft.kind === 'blackhead') {
-          if (!renderCollectedBlackheadBundle(ft.collectionId, true)) {
-            ctx.fillStyle = '#f5e49c';
-            ctx.beginPath();
-            ctx.ellipse(0, 2.2, 2.8, 6.2, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#241108';
-            ctx.beginPath();
-            ctx.arc(0, -3.6, 2.3, 0, Math.PI * 2);
-            ctx.fill();
-          }
+          renderCollectedBlackheadBundle(ft.collectionId, true);
           if (state.collectionLedger[ft.collectionId]?.pairedWhitehead === true) {
             ctx.fillStyle = '#fff6df';
             ctx.beginPath(); ctx.ellipse(5.5, 2, 2.4, 5.2, -.35, 0, Math.PI * 2); ctx.fill();
@@ -7716,6 +8599,7 @@ function foodIllustration(itemId) {
     }
 
     function renderRealPinchedSkinMesh(ptr) {
+      if (poreNeedsFreshAction(ptr.lockedPimple)) return;
       const f = Math.min(1, ptr.squeezeForce);
       const p1 = ptr.smoothP1;
       const p2 = ptr.smoothP2;
@@ -7795,7 +8679,7 @@ function foodIllustration(itemId) {
 
     function renderPimple(p, isCreamy, cleanForSnapshot = false) {
       const ptr = state.pointer;
-      const isTarget = ptr.active && ptr.lockedPimple === p && ptr.squeezeForce > 0.05;
+      const isTarget = ptr.active && ptr.lockedPimple === p && ptr.squeezeForce > 0.05 && !poreNeedsFreshAction(p);
       const isClampedByTweezer = state.tweezers.clampedPimple === p;
 
       if (p.state === P_STATE.HEALED) {
@@ -7877,7 +8761,7 @@ function foodIllustration(itemId) {
       if (p.type === 'blackhead') {
         renderRealBlackhead(p, isCreamy, healFade);
       } else if (p.type === 'whitehead') {
-        if (p.sharedPore) renderSharedPoreContents(p, isCreamy);
+        if (p.sharedPore || p.poreSequence?.index > 0) renderSharedPoreContents(p, isCreamy);
         else renderRealWhitehead(p, isCreamy, healFade);
       } else {
         renderRealCyst(p, isCreamy, healFade);
@@ -7992,7 +8876,10 @@ function foodIllustration(itemId) {
         ctx.fillStyle = skin; ctx.beginPath(); ctx.arc(0, 0, r * 1.12, 0, Math.PI * 2); ctx.fill();
       }
       if (p.state === P_STATE.OOZING || p.state === P_STATE.HEALING) return;
-      const poreR = r * (.35 + swell * .07) * (p.steamed >= .75 ? 1.12 : 1) * (p.linkedPore ? .82 : 1) * (p.blackheadSize === 'giant' ? 1.25 : 1);
+      // Hidden strands share one ordinary cap; their number is only revealed
+      // by the filaments once squeezing actually exposes the contents.
+      const poreR = Math.max(5.5, r * (.38 + swell * .07))
+        * (p.steamed >= .75 ? 1.12 : 1) * (p.linkedPore ? .82 : 1) * (p.blackheadSize === 'giant' ? 1.25 : 1);
       const aspect = .78 + Math.sin(p.shape.p2) * .07;
       const mouths = getPimpleMouthOffsets(p);
       if (p.linkedPore && p.state !== P_STATE.EXTRUDING) {
@@ -8010,21 +8897,6 @@ function foodIllustration(itemId) {
           if (p.pierced || p.steamed >= .75) {
             ctx.fillStyle = 'rgba(241,224,181,.75)';
             beginOrganicPath(ctx, mouth.x, lift + .45, cap * 1.08, cap * aspect * 1.14, p.shape, 1.5); ctx.fill();
-          }
-          const count = getBlackheadCount(p);
-          if (count > 1) {
-            const tipR = poreR * (count === 2 ? .38 : .30);
-            for (let strand = 0; strand < count; strand++) {
-              const angle = strand / count * Math.PI * 2 - Math.PI * .5;
-              const tx = mouth.x + Math.cos(angle) * poreR * .48;
-              const ty = lift + Math.sin(angle) * poreR * .42;
-              const tip = ctx.createLinearGradient(tx - tipR, ty - tipR, tx + tipR, ty + tipR);
-              tip.addColorStop(0, isCreamy ? '#6a5540' : '#514031');
-              tip.addColorStop(1, '#2e251d');
-              ctx.fillStyle = tip;
-              ctx.beginPath(); ctx.ellipse(tx, ty, tipR, tipR * .82, angle, 0, Math.PI * 2); ctx.fill();
-            }
-            continue;
           }
           const plug = ctx.createLinearGradient(mouth.x - cap, lift - cap, mouth.x + cap, lift + cap);
           plug.addColorStop(0, isCreamy ? '#76634e' : '#594939');
@@ -8158,13 +9030,13 @@ function foodIllustration(itemId) {
     }
 
     function renderSharedPoreContents(p, isCreamy, blackheadPoints = null) {
-      if (!p.sharedPore || p.state >= P_STATE.OOZING) return;
+      if (!(p.sharedPore || p.poreSequence?.index > 0) || p.state >= P_STATE.OOZING) return;
       const thick = Math.max(2.4, p.radius * .24);
       if (blackheadPoints) {
         renderRealisticSebumFilament(ctx, sharedWhiteheadCurve(blackheadPoints), thick, isCreamy, 1.8);
         return;
       }
-      if (p.sharedPore.phase !== 'whitehead') return;
+      if (p.sharedPore ? p.sharedPore.phase !== 'whitehead' : p.type !== 'whitehead') return;
       // The second content rises from the original opening; neither the pore nor
       // its hit target shifts when the first plug has been removed.
       const mouth = getPimpleMouthOffsets(p)[0];
@@ -8530,12 +9402,17 @@ function foodIllustration(itemId) {
 
       if (state.currentTool === 'squeeze' || ptr.mode === 'two-finger' || ptr.mode === 'mirror-pinch') return;
 
-      const hx = ptr.active && ptr.mode !== 'two-finger' && ptr.mode !== 'mirror-pinch'
+      let hx = ptr.active && ptr.mode !== 'two-finger' && ptr.mode !== 'mirror-pinch'
         ? ptr.x
         : ptr.hoverX;
-      const hy = ptr.active && ptr.mode !== 'two-finger' && ptr.mode !== 'mirror-pinch'
+      let hy = ptr.active && ptr.mode !== 'two-finger' && ptr.mode !== 'mirror-pinch'
         ? ptr.y
         : ptr.hoverY;
+      if (state.currentTool === 'tweezers') {
+        if (state.tweezers.clampedPimple) {
+          const tip = getTweezerVisualTip(); hx = tip.x; hy = tip.y;
+        } else if (state.tweezers.loupeRelease) return;
+      }
       if (hx < 0 || hy < 0 || hx > state.width || hy > state.height) return;
 
       // Move only the handle; the working tip stays exactly on the contact point.
@@ -8656,33 +9533,10 @@ function foodIllustration(itemId) {
       } else if (state.currentTool === 'tweezers') {
         const tw = state.tweezers;
         const isClamped = Boolean(tw.clampedPimple);
-        const gap = isClamped ? 0.5 : 4.2;
-
-        ctx.save();
-        ctx.translate(hx, hy);
-        ctx.rotate(handleAngle(-Math.PI * 0.28));
-
-        const isUpgraded = state.upgrades.tweezers;
-        const bladeColorTop = isUpgraded ? '#e4e8d2' : '#ebe9dc';
-        const bladeColorBot = isUpgraded ? '#85946f' : '#929e83';
-
-        ctx.strokeStyle = bladeColorTop;
-        ctx.lineWidth = 2.6;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(0, -gap);
-        ctx.quadraticCurveTo(22, -gap - 3.5, 72, -7);
-        ctx.stroke();
-
-        ctx.strokeStyle = bladeColorBot;
-        ctx.lineWidth = 2.6;
-        ctx.beginPath();
-        ctx.moveTo(0, gap);
-        ctx.quadraticCurveTo(22, gap + 3.5, 72, 7);
-        ctx.stroke();
-        ctx.restore();
-
-        // Progress and speed guidance are placed beside the loupe, clear of the finger.
+        const tip = { x: hx, y: hy };
+        const angle = isClamped ? getTweezerHandleAngle(tip, getPimpleMouths(tw.clampedPimple)[0])
+          : handleAngle(-Math.PI * .28);
+        drawTweezerBlades(ctx, tip, angle, isClamped);
       } else if (state.currentTool === 'swab') {
         ctx.save();
         ctx.translate(hx, hy);
@@ -8828,44 +9682,11 @@ function foodIllustration(itemId) {
           if (item.kind === 'blackhead') {
             const profile = state.collectionLedger[item.collectionId];
             const count = normalizedBlackheadCount(profile?.blackheadCount);
-            if (count > 1 || profile?.blackheadSize === 'giant') {
-              const giant = profile?.blackheadSize === 'giant', length = giant ? 44 : 28;
-              const points = Array.from({ length: 20 }, (_, index) => ({x:0,y:14-index/19*length,
-                distFromRoot:index/19*length,distFromTip:(1-index/19)*length,hasDarkCap:true}));
-              const curves = fitBlackheadCurves(blackheadBundleCurves(points,count,5,lengthProfile(profile,count)),cellW-8,48,(cellW-8)/2,24,7);
-              for (const curve of curves) renderRealisticSebumFilament(trayZoomCtx,curve,giant?3.8:2.3,state.styleMode==='creamy',1);
-            } else {
-            // Smooth ivory body, with oxidation restricted to its very tip.
-            const g = trayZoomCtx.createLinearGradient(-8, 0, 8, 0);
-            g.addColorStop(0, '#e9dbb4');
-            g.addColorStop(.4, '#fcf4d9');
-            g.addColorStop(1, '#eddfbc');
-            trayZoomCtx.fillStyle = g;
-            trayZoomCtx.beginPath();
-            trayZoomCtx.moveTo(-4.5, -14);
-            trayZoomCtx.quadraticCurveTo(0, -19, 4.5, -14);
-            trayZoomCtx.quadraticCurveTo(8.5, 4, 5.5, 15);
-            trayZoomCtx.quadraticCurveTo(0, 20, -5.5, 15);
-            trayZoomCtx.quadraticCurveTo(-8.5, 4, -4.5, -14);
-            trayZoomCtx.fill();
-
-            trayZoomCtx.save();
-            trayZoomCtx.clip();
-            trayZoomCtx.fillStyle = '#3a2b20';
-            trayZoomCtx.beginPath();
-            trayZoomCtx.ellipse(0, -15, 5.2, 3.3, 0, 0, Math.PI * 2);
-            trayZoomCtx.fill();
-            trayZoomCtx.restore();
-
-            // 水润高光条
-            trayZoomCtx.strokeStyle = 'rgba(255, 255, 255, 0.48)';
-            trayZoomCtx.lineWidth = 1.8;
-            trayZoomCtx.lineCap = 'round';
-            trayZoomCtx.beginPath();
-            trayZoomCtx.moveTo(-2.5, -6);
-            trayZoomCtx.quadraticCurveTo(-4, 5, -2, 13);
-            trayZoomCtx.stroke();
-            }
+            const giant = profile?.blackheadSize === 'giant', length = giant ? 44 : 30;
+            const points = Array.from({ length: 20 }, (_, index) => ({x:0,y:14-index/19*length,
+              distFromRoot:index/19*length,distFromTip:(1-index/19)*length,hasDarkCap:true}));
+            const curves = fitBlackheadCurves(blackheadBundleCurves(points,count,7,lengthProfile(profile,count)),cellW-8,48,(cellW-8)/2,24,7);
+            for (const curve of curves) renderRealisticSebumFilament(trayZoomCtx,curve,giant?5.2:3.6,state.styleMode==='creamy',1);
             if (profile?.pairedWhitehead === true) {
               trayZoomCtx.fillStyle='#fff6df';trayZoomCtx.beginPath();trayZoomCtx.ellipse(10,5,4,8,-.25,0,Math.PI*2);trayZoomCtx.fill();
             }
@@ -9030,6 +9851,7 @@ function foodIllustration(itemId) {
     function openSettlementModal() {
       const record = recordCompletedCare();
       if (!record) return;
+      clearHungerReminderPresentation();
       state.paused = true;
       const level = record.wardrobeLevel || state.runLevel;
       const gifts = [...(record.wardrobeGifts || []), ...(record.dreamGifts || []), ...(record.foodGifts || [])].map(rewardItem).filter(Boolean);
@@ -9053,7 +9875,7 @@ function foodIllustration(itemId) {
       document.getElementById('btn-next-face').textContent = '进入第 ' + wardrobeProgress.level + ' 关';
       document.getElementById('btn-retry-care-goal').hidden = true;
       document.getElementById('btn-open-clinic-from-res').hidden = true;
-      document.getElementById('gift-discovery').hidden = true;
+      clearGiftPresentation();
       persistSaveData();
       state.compareSplit = 0.5;
       resultModalEl.classList.add('open');
@@ -9156,6 +9978,7 @@ function foodIllustration(itemId) {
       if (modal.id === 'storage-gate-modal' || !careControl.owned) return;
       if (modal.id === 'home-modal') return;
       if (modal.id === 'wardrobe-modal') { closeWardrobe(); return; }
+      if (modal.id === 'hunger-modal') { dismissHungerReminder(); return; }
       modal.classList.remove('open');
       if (modal.id === 'reset-modal') {
         const returnToClinic = pendingTreatmentChange?.returnToClinic;
@@ -9168,9 +9991,11 @@ function foodIllustration(itemId) {
       if (modal === clinicModalEl && state.settled) resultModalEl.classList.add('open');
       state.paused = Boolean(document.querySelector('.modal-backdrop.open'));
       releasePointer();
+      queueHungerReminder();
     }
 
     function bindUIControls() {
+      bindGiftNoticeInteractions();
       const settings = document.getElementById('game-settings-slots');
       settings.append(document.getElementById('btn-sound'), document.getElementById('btn-help'));
       document.getElementById('btn-start-adventure').addEventListener('click', startAdventure);
@@ -9407,16 +10232,18 @@ function foodIllustration(itemId) {
         if (open === activeModal) return;
         if (open) {
           if (!activeModal) previousFocus = document.activeElement;
+          if (activeModal?.id === 'hunger-modal' && open.id === 'wardrobe-modal') previousFocus = canvas;
           activeModal = open;
           panels.forEach(panel => { panel.inert = true; });
           const first = modalFocusTargets(open)[0];
           if (first) first.focus({ preventScroll: true });
         } else {
           const leavingHome = activeModal?.id === 'home-modal';
+          const leavingHunger = activeModal?.id === 'hunger-modal';
           activeModal = null;
           panels.forEach(panel => { panel.inert = false; });
           const restore = leavingHome ? document.getElementById('current-level')
-            : previousFocus?.isConnected && previousFocus !== document.body
+            : leavingHunger ? canvas : previousFocus?.isConnected && previousFocus !== document.body
             && !previousFocus.disabled && !previousFocus.closest('[hidden], [inert], .modal-backdrop:not(.open)')
             && previousFocus.getClientRects().length ? previousFocus : canvas;
           restore.focus({ preventScroll: true });
@@ -9456,6 +10283,7 @@ function foodIllustration(itemId) {
       const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
 
       releasePointer();
+      state.tweezers.loupeRelease = null;
       state.pointer.squeezeForce = 0;
       state.pointer.hoverX = -999;
       state.pointer.hoverY = -999;
@@ -9500,6 +10328,7 @@ function foodIllustration(itemId) {
     }
 
     function stopSceneFrames() {
+      if (!canRenderCare()) state.tweezers.loupeRelease = null;
       if (rafId !== null) cancelAnimationFrame(rafId);
       rafId = null;
       lastTime = null;
@@ -9513,7 +10342,8 @@ function foodIllustration(itemId) {
 
     function sceneHasMotion() {
       if (state.pointer.active || state.keyboardCare.active || state.iceFinishing
-        || state.cameraShake > 0 || state.trayPulse > 0 || state.pointer.squeezeForce > 0) return true;
+        || state.cameraShake > 0 || state.trayPulse > 0 || state.pointer.squeezeForce > 0
+        || state.tweezers.loupeRelease) return true;
       if ([state.flyingTrophies, state.flyingParticles, state.steamPuffs, state.dewDrops,
         state.lensSplatters, state.floatingTexts].some(items => items.length)) return true;
       return state.pimples.some(p => p.state === P_STATE.RUPTURED || p.state === P_STATE.HEALING
@@ -9558,6 +10388,7 @@ function foodIllustration(itemId) {
       bindCanvasInteractions();
       bindKeyboardCare();
       bindCareStorage();
+      bindHungerReminders();
       bindSceneScheduling();
       resizeCanvas();
       careControlReady = startCareStorage().then(ready => {
