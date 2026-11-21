@@ -732,20 +732,114 @@
     .reward-result .reward-illustration svg { flex: 0 1 104px; min-width: 0; }
     .modal-card { background: #fff9fc; border-color: #f1d0e1; }
     #practice-guide { color: #a16e8c; background: #fff3f9; border-color: #efd2e2; }
-    .dream-scene { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+    .dream-scene { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
     .dream-prop { position: absolute; width: 90px; }
     .dream-prop svg { width: 100%; height: auto; }
     .dream-prop-pet { left: 2%; bottom: 90px; }
     .dream-prop-toy { right: 2%; bottom: 90px; width: 75px; }
     .dream-prop-room { right: 0; top: 34%; width: 100px; }
     .dream-prop-ride { left: -3%; top: 25%; width: 115px; }
-    .dream-prop-bag { right: 1%; top: 9%; width: 70px; }
+    .dream-prop-bag { right: 1%; top: 20%; width: 70px; }
     @media (max-width: 700px) { .dream-prop { width: 66px; } .dream-prop-room { width: 80px; } .dream-prop-ride { width: 90px; } .dream-prop-bag { width: 56px; } .dream-prop-toy { width: 60px; } .appetite-box { padding: 8px 10px; margin-top: 6px; } }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
 
     /* Keep the approved raster colors and proportions untouched. */
     .girl-stage { background: #fff; }
     .girl-portrait svg.kawaii-character { height: 420px; max-width: 360px; filter: none; }
+    /* The mirror stays in view; only the collection scrolls. */
+    #wardrobe-modal .modal-card { display: flex; flex-direction: column; height: min(820px, calc(100dvh - 32px)); overflow: hidden; padding: 24px; }
+    #wardrobe-modal .modal-header { flex: 0 0 auto; padding-right: 48px; }
+    #wardrobe-modal .story-close { position: absolute; right: 20px; top: 18px; z-index: 10; }
+    #wardrobe-modal .wardrobe-layout { flex: 1; min-height: 0; margin-top: 12px; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 22px; align-items: stretch; overflow: hidden; }
+    .wardrobe-mirror { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+    .wardrobe-view-controls { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; color: #a16b88; font-size: 12px; }
+    .wardrobe-view-controls > span { letter-spacing: 2px; }
+    .wardrobe-view-controls button { border: 1px solid #ecd6e2; background: #fff; border-radius: 20px; min-height: 36px; padding: 6px 12px; color: #a16b88; font-size: 12px; }
+    .wardrobe-view-controls button[aria-pressed='true'] { background: #ffe4f0; border-color: #dda0be; color: #a2507c; }
+    .wardrobe-look { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); flex: 1; min-height: 180px; max-height: 480px; gap: 8px; }
+    .wardrobe-look.has-detail { grid-template-columns: minmax(0, 1fr) minmax(108px, .72fr); }
+    .wardrobe-look .girl-stage { display: flex; align-items: center; justify-content: center; min-width: 0; min-height: 0; padding: 5px; border-radius: 28px; }
+    #wardrobe-girl { width: 100%; height: 100%; }
+    #wardrobe-girl > svg.kawaii-character { height: 100%; max-height: 470px; max-width: 100%; }
+    .girl-portrait.girl-interact { display: block; width: 100%; padding: 0; border: 0; background: transparent; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .girl-interact:focus-visible { outline: 2px solid #d887b0; outline-offset: 3px; border-radius: 18px; }
+    .girl-previous { position: absolute; inset: 0; display: grid; place-items: center; background: #fff; pointer-events: none; }
+    .girl-previous > svg.kawaii-character { width: 100%; height: 100%; max-width: 100%; }
+    .girl-portrait[aria-busy='true']::after { content: '换装中…'; position: absolute; z-index: 4; bottom: 12px; left: 50%; transform: translateX(-50%); white-space: nowrap; font: 12px/1.6 system-ui; padding: 3px 12px; border-radius: 20px; background: #fff3faf0; color: #aa5c85; }
+    .wardrobe-detail { align-self: center; min-width: 0; padding: 8px; border: 1px solid #eed4e3; border-radius: 22px; background: #fff; text-align: center; overflow: hidden; }
+    #wardrobe-detail-art { height: 190px; overflow: hidden; }
+    #wardrobe-detail-art > svg { display: block; height: 100%; width: 100%; overflow: hidden; }
+    #wardrobe-detail-label { margin-top: 8px; font-size: 11px; line-height: 1.5; color: #a1748d; }
+    .wardrobe-mirror > .girl-caption { margin: 10px 0 0; text-align: center; font-size: 13px; min-height: 20px; }
+    #wardrobe-status { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; text-align: center; min-height: 44px; margin: 6px 0 0; padding: 7px 10px; border-radius: 12px; background: #fff0f7; color: #a45b7d; font-size: 13px; line-height: 1.5; }
+    .wardrobe-mirror .appetite-box { width: 100%; max-width: none; margin: 8px 0 0; }
+    .wardrobe-shelf { min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; padding: 0 5px 12px 0; }
+    .wardrobe-shelf .wardrobe-tabs { position: sticky; top: 0; z-index: 5; margin-bottom: 12px; box-shadow: 0 6px 0 #fff9fc; }
+    .wardrobe-item, .dream-wish { transition: background .18s, border-color .18s, transform .18s; }
+    .wardrobe-item:active, button.dream-wish:active { transform: scale(.96); }
+    .look-retry { margin: 6px auto 0; border: 1px solid #e1b2cb; border-radius: 15px; color: #a1537d; background: #fff; padding: 6px 12px; min-height: 36px; }
+    .wardrobe-look .dream-prop-pet { left: 0; bottom: 3%; width: 62px; }
+    .wardrobe-look .dream-prop-toy { right: 0; bottom: 3%; width: 55px; }
+    .wardrobe-look .dream-prop-room { right: 0; top: 46%; width: 67px; }
+    .wardrobe-look .dream-prop-ride { left: -2%; top: 34%; width: 75px; }
+    .wardrobe-look .dream-prop-bag { right: 0; top: 20%; width: 49px; }
+    .wardrobe-look.has-detail .dream-prop { width: 42px; }
+    .wardrobe-look.has-detail .dream-prop-ride { width: 53px; }
+    .character-effect { position: absolute; z-index: 5; inset: 0; overflow: hidden; pointer-events: none; }
+    .character-effect span { position: absolute; color: #e5a1bd; font-size: 21px; left: var(--effect-x); top: var(--effect-y); animation: character-sparkle 1.3s ease-out both; animation-delay: var(--effect-delay); }
+    .modal-backdrop.open .girl-interact > svg .kawaii-body { transform-origin: 435px 1005px; animation: girl-breathe 4.8s ease-in-out infinite; }
+    .girl-portrait.is-dressed > svg { transform-origin: 50% 95%; animation: girl-dress-reaction 1.1s ease-in-out; }
+    .girl-portrait.is-accessorized > svg, .girl-portrait.is-greeting > svg { transform-origin: 50% 95%; animation: girl-greeting .9s ease-in-out; }
+    .girl-portrait.is-fed { animation: none; }
+    .girl-portrait.is-fed > svg { transform-origin: 50% 95%; animation: happy-meal .95s ease-in-out; }
+    .dream-prop.is-arriving { transform-origin: 50% 90%; animation: prop-arrive .75s cubic-bezier(.2,.75,.25,1); }
+    .modal-backdrop.open .dream-prop-pet svg { transform-origin: 50% 90%; animation: pet-breathe 3.7s ease-in-out infinite; }
+    @keyframes girl-breathe { 0%,100% { transform: translateY(0) rotate(-.15deg); } 50% { transform: translateY(-3px) scaleY(1.003) rotate(.15deg); } }
+    @keyframes girl-dress-reaction { 0%,100% { transform: translateY(0) rotate(0); } 25% { transform: translateY(-7px) rotate(-3deg); } 58% { transform: translateY(-3px) rotate(3deg); } 80% { transform: translateY(-2px) rotate(-1deg); } }
+    @keyframes girl-greeting { 0%,100% { transform: rotate(0) translateY(0); } 35% { transform: rotate(3deg) translateY(3px); } 70% { transform: rotate(-1.5deg) translateY(-2px); } }
+    @keyframes prop-arrive { 0% { opacity: 0; transform: translateY(12px) scale(.6); } 60% { opacity: 1; transform: translateY(-5px) scale(1.08); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+    @keyframes pet-breathe { 0%,100% { transform: rotate(-1deg); } 50% { transform: rotate(1deg) translateY(-2px); } }
+    @keyframes character-sparkle { 0% { opacity: 0; transform: translateY(5px) scale(.5); } 24% { opacity: 1; } 100% { opacity: 0; transform: translateY(-40px) scale(1.15) rotate(15deg); } }
+    @media (max-width: 700px) {
+      #wardrobe-modal .modal-card { height: calc(100dvh - 20px - var(--safe-top) - var(--safe-bottom)); padding: 16px; }
+      #wardrobe-modal .story-close { top: 10px; right: 12px; }
+      #wardrobe-modal .wardrobe-heading { font-size: 22px; margin-bottom: 0; }
+      #wardrobe-modal .wardrobe-layout { display: flex; flex-direction: column; gap: 12px; margin-top: 7px; }
+      .wardrobe-mirror { flex: 0 0 auto; }
+      .wardrobe-view-controls { margin-bottom: 4px; }
+      .wardrobe-view-controls button { min-height: 32px; padding: 4px 11px; }
+      .wardrobe-look { flex: none; height: clamp(155px, 26dvh, 235px); min-height: 0; max-height: none; }
+      .wardrobe-look.has-detail { grid-template-columns: minmax(0, 1fr) minmax(105px, .8fr); }
+      #wardrobe-girl > svg.kawaii-character { height: 100%; }
+      .wardrobe-look .girl-stage { border-radius: 20px; padding: 2px; }
+      #wardrobe-detail-art { height: clamp(110px, 18dvh, 168px); }
+      #wardrobe-detail-label { margin-top: 4px; }
+      .wardrobe-mirror > .girl-caption { font-size: 11px; min-height: 17px; margin-top: 5px; }
+      #wardrobe-status { min-height: 38px; margin-top: 3px; padding: 6px 8px; font-size: 12px; }
+      .wardrobe-shelf { flex: 1; min-height: 100px; border-top: 1px solid #f2dbe7; padding-top: 0; }
+      .wardrobe-item svg { height: 48px; width: 48px; }
+      .wardrobe-item { padding: 6px 3px; font-size: 11px; }
+      .wardrobe-item small { font-size: 10px; }
+      .wardrobe-look .dream-prop { width: 45px; }
+      .wardrobe-look .dream-prop-ride { width: 60px; }
+    }
+    @media (max-width: 700px) and (max-height: 650px) {
+      #wardrobe-modal .modal-card { padding: 12px; }
+      .wardrobe-look { height: 140px; }
+      #wardrobe-detail-art { height: 100px; }
+      .wardrobe-mirror > .girl-caption { display: none; }
+      .wardrobe-view-controls > span { font-size: 11px; }
+      .wardrobe-mirror .appetite-box { padding: 5px 8px; margin-top: 5px; }
+      .wardrobe-mirror .appetite-label { font-size: 11px; }
+    }
+    @media (max-height: 500px) and (orientation: landscape) {
+      #wardrobe-modal .modal-card { padding: 14px; }
+      #wardrobe-modal .wardrobe-layout { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 16px; }
+      .wardrobe-look { flex: 1; min-height: 100px; height: auto; }
+      .wardrobe-mirror > .girl-caption { display: none; }
+      #wardrobe-detail-art { height: 100px; }
+      .wardrobe-shelf { border-top: 0; padding-top: 0; }
+    }
     @media (max-width: 700px) {
       .home-grid .girl-portrait svg.kawaii-character { height: clamp(250px, 38dvh, 340px); }
       .wardrobe-layout .girl-portrait svg.kawaii-character { height: 300px; }
@@ -850,7 +944,7 @@
         <div class="story-brand">PINK LITTLE WISHES</div>
         <div class="home-grid">
           <div class="home-copy"><p class="story-eyebrow">一点点，把心愿变成真的</p><h2 id="home-title">她的粉色<br>小心愿</h2><p class="home-intro">发现小美味，收集小漂亮。</p><div class="home-promise"><span>轻松清理</span><span>甜甜投喂</span><span>可爱装扮</span></div><div class="home-buttons"><button id="btn-start-adventure" class="primary-btn" type="button">开始冒险</button><button id="btn-home-wardrobe" class="secondary-btn" type="button">心愿与美食</button><p id="home-progress-note" class="home-progress-note">今天会遇到什么小惊喜？</p></div></div>
-          <div class="girl-stage"><div id="home-dream-scene" class="dream-scene"></div><div id="home-girl" class="girl-portrait"></div><p id="home-girl-caption" class="girl-caption">「一起实现小心愿吧。」</p><div id="home-hunger" class="appetite-box"></div></div>
+          <div class="girl-stage"><div id="home-dream-scene" class="dream-scene"></div><button id="home-girl" class="girl-portrait girl-interact" type="button" aria-label="和女孩打个招呼"></button><div id="home-character-effect" class="character-effect" aria-hidden="true"></div><p id="home-girl-caption" class="girl-caption">「一起实现小心愿吧。」</p><button id="home-look-retry" class="look-retry" type="button" data-retry-look hidden>重新加载装扮</button><div id="home-hunger" class="appetite-box"></div></div>
         </div>
       </div>
     </div>
@@ -858,11 +952,14 @@
     <div id="wardrobe-modal" class="modal-backdrop story-modal" role="dialog" aria-modal="true" aria-labelledby="wardrobe-title">
       <div class="modal-card"><button id="btn-close-wardrobe" class="story-close" type="button" aria-label="关闭衣橱">×</button>
         <div class="modal-header"><h2 id="wardrobe-title" class="wardrobe-heading">她的小心愿</h2></div>
-        <div class="wardrobe-layout"><div class="girl-stage"><div id="wardrobe-dream-scene" class="dream-scene"></div><div id="wardrobe-girl" class="girl-portrait"></div><p id="wardrobe-girl-caption" class="girl-caption">今天也喜欢你。</p><div id="wardrobe-hunger" class="appetite-box"></div></div>
-          <div><div class="wardrobe-tabs" role="tablist" aria-label="女孩的小收藏"><button id="wardrobe-tab-outfits" type="button" role="tab" aria-selected="true" aria-controls="wardrobe-outfits-panel">心愿册</button><button id="wardrobe-tab-food" type="button" role="tab" aria-selected="false" aria-controls="wardrobe-food-panel" tabindex="-1">美食篮</button></div>
+        <div class="wardrobe-layout"><div class="wardrobe-mirror">
+          <div class="wardrobe-view-controls"><span>她的换装镜</span><div role="group" aria-label="查看装扮细节"><button type="button" data-preview-focus="full" aria-pressed="true">全身</button><button type="button" data-preview-focus="face" aria-pressed="false">看脸</button></div></div>
+          <div id="wardrobe-look" class="wardrobe-look"><div class="girl-stage"><div id="wardrobe-dream-scene" class="dream-scene"></div><button id="wardrobe-girl" class="girl-portrait girl-interact" type="button" aria-label="和女孩打个招呼"></button><div id="wardrobe-character-effect" class="character-effect" aria-hidden="true"></div></div><div id="wardrobe-detail" class="wardrobe-detail" hidden><div id="wardrobe-detail-art"></div><p id="wardrobe-detail-label"></p></div></div>
+          <p id="wardrobe-girl-caption" class="girl-caption">今天也喜欢你。</p><p id="wardrobe-status" role="status" aria-live="polite" aria-atomic="true">选一件喜欢的，看看她的新模样。</p><button id="wardrobe-look-retry" class="look-retry" type="button" data-retry-look hidden>重新加载装扮</button><div id="wardrobe-hunger" class="appetite-box" hidden></div>
+          </div>
+          <div class="wardrobe-shelf"><div class="wardrobe-tabs" role="tablist" aria-label="女孩的小收藏"><button id="wardrobe-tab-outfits" type="button" role="tab" aria-selected="true" aria-controls="wardrobe-outfits-panel">心愿册</button><button id="wardrobe-tab-food" type="button" role="tab" aria-selected="false" aria-controls="wardrobe-food-panel" tabindex="-1">美食篮</button></div>
             <section id="wardrobe-outfits-panel" role="tabpanel" aria-labelledby="wardrobe-tab-outfits"><h3 id="wardrobe-owned-title" class="wardrobe-section-title" hidden>已经拥有</h3><div id="wardrobe-collection" class="wardrobe-items"></div><div id="wardrobe-reset" class="wardrobe-reset" hidden><button type="button" data-equip="reset:all">恢复最初装扮</button></div><h3 id="wardrobe-wish-title" class="wardrobe-section-title">想变漂亮</h3><div id="wardrobe-preview" class="wardrobe-wishes"></div><div id="dream-preview"></div><div id="wardrobe-coming-soon" class="wardrobe-coming-soon" hidden><strong>敬请期待</strong></div></section>
             <section id="wardrobe-food-panel" role="tabpanel" aria-labelledby="wardrobe-tab-food" hidden><p class="food-intro">一份美味，吃掉一点小饥饿。</p><div id="wardrobe-food-collection" class="food-items"></div><p id="wardrobe-food-empty" class="food-empty">等一份小美味掉进篮子里。</p></section>
-            <p id="wardrobe-status" role="status" aria-live="polite"></p>
           </div>
         </div>
       </div>
@@ -1903,9 +2000,9 @@ function girlIllustration(equipped = {}) {
   const faceLock=changedLook?`<g clip-path="url(#${id}-face-lock)">${approved}</g>`:'';
   const skinArt=skin==='mask_pearl'?`<g clip-path="url(#${id}-skin)" filter="url(#${id}-skin-light)">${approved}</g>`:'';
   const eyeArt=eyes==='natural'?'':`<g clip-path="url(#${id}-irises)" filter="url(#${id}-eye-color)">${approved}</g>`;
-  const lipArt=lips==='natural'?'':`<g clip-path="url(#${id}-mouth)" filter="url(#${id}-lip-color)">${approved}</g>`;
+  const lipArt=lips==='natural'?'':`<g clip-path="url(#${id}-mouth)"><g filter="url(#${id}-lip-color)">${approved}</g><path d="M433 157C440 161 449 157 456 151L456 155C450 160 442 163 434 161Z" fill="${lips==='lipstick_rose'?'#c76f87':'#e6a080'}" opacity=".66"/><path d="M439 159Q445 159 450 156" fill="none" stroke="#ffe3d9" stroke-width=".8" opacity=".7"/></g>`;
   const lashArt=lashes==='natural'?'':`<g fill="none" stroke="#745242" stroke-width="1.45" stroke-linecap="round"><path d="M391 126Q400 119 412 124M451 110Q460 101 473 107M391 126L387 122M394 123L391 119M471 105L474 100M475 110L479 106"/></g>`;
-  return `<svg class="dressup-girl kawaii-character" data-character-art="kawaii-approved-v1" xmlns="http://www.w3.org/2000/svg" viewBox="170 -52 530 1084" role="img" aria-label="日系卡哇伊女孩的装扮：${description}" focusable="false">${defs}
+  return `<svg class="dressup-girl kawaii-character" data-character-art="kawaii-approved-v1" xmlns="http://www.w3.org/2000/svg" viewBox="170 -52 530 1084" role="img" aria-label="日系卡哇伊女孩的装扮：${description}" focusable="false">${defs}<g class="kawaii-body">
     <g data-dressup-slot="dress" data-equipped="${dress}" clip-path="url(#${id}-figure)">${outfit}</g>
     <g data-dressup-slot="hairstyle" data-equipped="${hairstyle}">${faceLock}</g>
     <g data-dressup-slot="skin" data-equipped="${skin}">${skinArt}</g>
@@ -1914,7 +2011,7 @@ function girlIllustration(equipped = {}) {
     <g data-dressup-slot="lashes" data-equipped="${lashes}">${lashArt}</g>
     ${kawaiiShoesMarkup(shoes)}${kawaiiJewelryMarkup(bracelet,necklace)}
     <g data-dressup-slot="hair" data-equipped="${hair}">${kawaiiHeadAccessoryMarkup(hair)}</g>
-  </svg>`;
+  </g></svg>`;
 }
 
 function kawaiiIconCrop(art, bounds) {
@@ -2063,7 +2160,154 @@ function foodIllustration(itemId) {
     let giftNoticeTimer = null;
     const giftFlightTimers = new Set();
     let wardrobeTab = 'outfits';
-    let feedingAnimationTimer = null;
+    let wardrobePreviewFocus = 'full';
+    let wardrobeVisualRevision = 0;
+    let wardrobeVisualReady = Promise.resolve(true);
+    let characterReactionTimer = null;
+    const wardrobeAssetLoads = new Map();
+    const WARDROBE_DETAIL_VIEWS = Object.freeze({
+      face: {box: '360 76 155 122', label: '面部近景 · 妆容与护理'},
+      hair: {box: '290 -45 300 365', label: '发型与发饰'},
+      dress: {box: '235 190 405 630', label: '裙装细节'},
+      shoes: {box: '285 875 235 149', label: '鞋履细节'},
+      bracelet: {box: '542 470 82 110', label: '手链细节'},
+      necklace: {box: '407 197 92 102', label: '项链细节'}
+    });
+
+    function renderWardrobeDetail() {
+      const detail = document.getElementById('wardrobe-detail');
+      const view = WARDROBE_DETAIL_VIEWS[wardrobePreviewFocus];
+      detail.hidden = !view;
+      document.getElementById('wardrobe-look').classList.toggle('has-detail', Boolean(view));
+      document.getElementById('wardrobe-detail-art').innerHTML = view
+        ? girlIllustration(wardrobeProgress.equipped).replace('viewBox="170 -52 530 1084"', 'viewBox="' + view.box + '"') : '';
+      document.getElementById('wardrobe-detail-label').textContent = view?.label || '';
+      for (const button of document.querySelectorAll('[data-preview-focus]')) {
+        button.setAttribute('aria-pressed', String(button.dataset.previewFocus === wardrobePreviewFocus));
+      }
+    }
+
+    function setWardrobePreviewFocus(focus) {
+      wardrobePreviewFocus = Object.prototype.hasOwnProperty.call(WARDROBE_DETAIL_VIEWS, focus) ? focus : 'full';
+      renderWardrobeDetail();
+    }
+
+    function wardrobeFocusForSlot(slot) {
+      return ['skin', 'eyes', 'lips', 'lashes'].includes(slot) ? 'face'
+        : ['hair', 'hairstyle'].includes(slot) ? 'hair' : WARDROBE_DETAIL_VIEWS[slot] ? slot : 'full';
+    }
+
+    function loadWardrobeAsset(src) {
+      if (wardrobeAssetLoads.has(src)) return wardrobeAssetLoads.get(src);
+      const ready = new Promise((resolve, reject) => {
+        const picture = new Image();
+        let settled = false;
+        const finish = error => {
+          if (settled) return;
+          settled = true; clearTimeout(timeout); picture.onload = picture.onerror = null;
+          if (error) reject(error); else resolve(src);
+        };
+        const timeout = setTimeout(() => finish(new Error('Character image timed out')), 12000);
+        picture.onload = () => {
+          const decoded = typeof picture.decode === 'function' ? picture.decode() : Promise.resolve();
+          Promise.resolve(decoded).then(() => finish(), () => finish(new Error('Character image could not be decoded')));
+        };
+        picture.onerror = () => finish(new Error('Character image could not be loaded'));
+        picture.src = src;
+      });
+      wardrobeAssetLoads.set(src, ready);
+      ready.catch(() => { if (wardrobeAssetLoads.get(src) === ready) wardrobeAssetLoads.delete(src); });
+      return ready;
+    }
+
+    function renderGirlPortraits() {
+      const revision = ++wardrobeVisualRevision;
+      const equipped = wardrobeProgress.equipped;
+      for (const prefix of ['home', 'wardrobe']) {
+        const portrait = document.getElementById(prefix + '-girl');
+        const previous = portrait.querySelector('.girl-previous svg') || portrait.querySelector(':scope > svg');
+        const backup = previous?.cloneNode(true);
+        portrait.innerHTML = girlIllustration(equipped);
+        portrait.setAttribute('aria-busy', 'true');
+        if (backup) {
+          // Keep the last visible illustration until all selected artwork is ready.
+          // Its decorative backup must not impersonate the current equipped layers.
+          backup.removeAttribute('role'); backup.removeAttribute('aria-label');
+          for (const layer of backup.querySelectorAll('[data-dressup-slot], [data-equipped]')) {
+            layer.removeAttribute('data-dressup-slot'); layer.removeAttribute('data-equipped');
+          }
+          const cover = document.createElement('span');
+          cover.className = 'girl-previous'; cover.setAttribute('aria-hidden', 'true');
+          cover.append(backup); portrait.append(cover);
+        }
+        document.getElementById(prefix + '-look-retry').hidden = true;
+      }
+      renderWardrobeDetail();
+      const sources = new Set([kawaiiAssetPath(), kawaiiAssetPath(equipped.dress, equipped.hairstyle)]);
+      if (Object.prototype.hasOwnProperty.call(KAWAII_SHOE_ASSETS, equipped.shoes)) sources.add(KAWAII_SHOE_ASSETS[equipped.shoes]);
+      wardrobeVisualReady = Promise.all([...sources].map(loadWardrobeAsset)).then(() => {
+        if (revision !== wardrobeVisualRevision) return false;
+        for (const prefix of ['home', 'wardrobe']) {
+          const portrait = document.getElementById(prefix + '-girl');
+          portrait.querySelector('.girl-previous')?.remove();
+          portrait.setAttribute('aria-busy', 'false');
+        }
+        return true;
+      }).catch(() => {
+        if (revision !== wardrobeVisualRevision) return false;
+        for (const prefix of ['home', 'wardrobe']) {
+          document.getElementById(prefix + '-girl').setAttribute('aria-busy', 'false');
+          document.getElementById(prefix + '-look-retry').hidden = false;
+        }
+        document.getElementById('wardrobe-status').textContent = '这件装扮的图片没加载出来，点“重新加载装扮”再试一次。';
+        return false;
+      });
+    }
+
+    function playGirlReaction(kind, caption) {
+      if (characterReactionTimer) clearTimeout(characterReactionTimer);
+      const classes = ['is-dressed', 'is-accessorized', 'is-fed', 'is-greeting'];
+      for (const prefix of ['home', 'wardrobe']) {
+        const portrait = document.getElementById(prefix + '-girl');
+        portrait.classList.remove(...classes);
+        if (caption) document.getElementById(prefix + '-girl-caption').textContent = caption;
+        const effect = document.getElementById(prefix + '-character-effect');
+        effect.replaceChildren();
+        if (!portrait.closest('.modal-backdrop.open')) continue;
+        if (!motionPreference?.matches) {
+          void portrait.offsetWidth; portrait.classList.add('is-' + kind);
+          for (let index = 0; index < 5; index++) {
+            const sparkle = document.createElement('span');
+            sparkle.textContent = kind === 'fed' || kind === 'greeting' ? '♥' : '✦';
+            sparkle.style.setProperty('--effect-x', [22, 75, 30, 66, 48][index] + '%');
+            sparkle.style.setProperty('--effect-y', [35, 28, 55, 48, 20][index] + '%');
+            sparkle.style.setProperty('--effect-delay', index * 65 + 'ms');
+            effect.append(sparkle);
+          }
+        }
+      }
+      characterReactionTimer = setTimeout(() => {
+        for (const portrait of document.querySelectorAll('.girl-interact')) portrait.classList.remove(...classes);
+        for (const effect of document.querySelectorAll('.character-effect')) effect.replaceChildren();
+        characterReactionTimer = null;
+      }, 1650);
+    }
+
+    function finishWardrobeFeedback(message, kind, caption) {
+      const revision = wardrobeVisualRevision;
+      document.getElementById('wardrobe-status').textContent = '正在换装，马上就好…';
+      wardrobeVisualReady.then(ready => {
+        if (!ready || revision !== wardrobeVisualRevision || !careControl.owned) return;
+        document.getElementById('wardrobe-status').textContent = message;
+        playGirlReaction(kind, caption);
+      });
+    }
+
+    function greetGirl(event) {
+      if (!ensureCareControl()) return;
+      playGirlReaction('greeting', '「你来啦，今天也一起玩吧！」');
+      sound.playUI('outfit', event);
+    }
 
     function normalizeWardrobeProgress(raw) {
       const known = new Set(WARDROBE_ITEMS.map(item => item.id));
@@ -2300,24 +2544,27 @@ function foodIllustration(itemId) {
       if (resetSlot && resetSlot !== 'all' && !Object.prototype.hasOwnProperty.call(WARDROBE_DEFAULTS, resetSlot)) return false;
       if (!resetSlot && !['none', 'patched'].includes(id) && (!item || !wardrobeProgress.unlocked.includes(id))) return false;
       const focusedItem = document.activeElement?.closest('#wardrobe-modal [data-equip]')?.dataset.equip;
+      const removing = Boolean(item && wardrobeProgress.equipped[item.slot] === id);
       if (resetSlot === 'all') wardrobeProgress.equipped = { ...WARDROBE_DEFAULTS };
       else if (resetSlot) wardrobeProgress.equipped[resetSlot] = WARDROBE_DEFAULTS[resetSlot];
       else {
         const slot = id === 'none' ? 'hair' : id === 'patched' ? 'dress' : item.slot;
-        wardrobeProgress.equipped[slot] = id;
+        wardrobeProgress.equipped[slot] = removing ? WARDROBE_DEFAULTS[slot] : id;
       }
+      wardrobePreviewFocus = item ? wardrobeFocusForSlot(item.slot) : resetSlot && resetSlot !== 'all' ? wardrobeFocusForSlot(resetSlot) : 'full';
       persistSaveData();
       renderWardrobe();
       if (focusedItem) document.querySelector('#wardrobe-modal [data-equip="' + focusedItem + '"]')?.focus({ preventScroll: true });
-      document.getElementById('wardrobe-status').textContent = item?.id === 'mask_pearl' ? '敷好啦，她的肤色变得白皙透亮了。'
-        : item ? (item.apply ? '用好啦，' : '换好啦，') + item.name + '很适合她。' : '已经恢复啦。';
+      const message = removing ? '已收好' + item.name + '，也可以再换回来。'
+        : item ? (item.apply ? '用好啦 · ' : '换好啦 · ') + item.name + (item.id === 'mask_pearl' ? '，肤色更透亮了。' : '') : '已经恢复最初的装扮啦。';
+      finishWardrobeFeedback(message, item?.slot === 'dress' || item?.slot === 'hairstyle' ? 'dressed' : 'accessorized',
+        removing ? '「这样也很好看呢。」' : item?.apply ? '「让我照照镜子，好喜欢！」' : '「你选的，我很喜欢！」');
       sound.playUI('outfit', event, item);
       return true;
     }
 
     function renderWardrobe() {
-      document.getElementById('home-girl').innerHTML = girlIllustration(wardrobeProgress.equipped);
-      document.getElementById('wardrobe-girl').innerHTML = girlIllustration(wardrobeProgress.equipped);
+      renderGirlPortraits();
       const dressed = wardrobeProgress.equipped.dress !== 'patched';
       document.getElementById('home-girl-caption').textContent = dressed ? '「今天也要漂漂亮亮！」'
         : wardrobeProgress.equipped.hair !== 'none' ? '「和你一起，真开心。」' : '「一起实现小心愿吧。」';
@@ -2339,8 +2586,8 @@ function foodIllustration(itemId) {
         const button = document.createElement('button');
         button.type = 'button'; button.className = 'wardrobe-item'; button.dataset.equip = item.id;
         button.setAttribute('aria-pressed', String(equipped));
-        button.setAttribute('aria-label', item.name + (equipped ? '，正在使用' : '，' + action));
-        button.innerHTML = wardrobeItemIllustration(item.id) + item.name + '<small>' + (equipped ? '正在使用' : action) + '</small>';
+        button.setAttribute('aria-label', item.name + (equipped ? '，正在使用，点击取下' : '，' + action));
+        button.innerHTML = wardrobeItemIllustration(item.id) + item.name + '<small>' + (equipped ? item.apply ? '已使用·取消' : '已穿戴·取下' : action) + '</small>';
         container.append(button);
       }
       const preview = document.getElementById('wardrobe-preview');
@@ -2410,6 +2657,7 @@ function foodIllustration(itemId) {
 
     function setWardrobeTab(tab) {
       wardrobeTab = tab === 'food' ? 'food' : 'outfits';
+      document.getElementById('wardrobe-hunger').hidden = wardrobeTab !== 'food';
       for (const key of ['outfits', 'food']) {
         const selected = wardrobeTab === key, button = document.getElementById('wardrobe-tab-' + key);
         button.setAttribute('aria-selected', String(selected)); button.tabIndex = selected ? 0 : -1;
@@ -2422,9 +2670,12 @@ function foodIllustration(itemId) {
       if (!item || !wardrobeProgress.dreams.includes(id) || !ensureCareControl()) return false;
       wardrobeProgress.dreamEquipped[item.slot] = wardrobeProgress.dreamEquipped[item.slot] === id ? 'none' : id;
       const equipped = wardrobeProgress.dreamEquipped[item.slot] === id;
+      wardrobePreviewFocus = 'full';
       persistSaveData(); renderWardrobe();
       document.querySelector('[data-dream-equip="' + id + '"]')?.focus({preventScroll: true});
-      document.getElementById('wardrobe-status').textContent = equipped ? '又实现一个小心愿！' : '先收好啦。';
+      document.getElementById('wardrobe-status').textContent = equipped ? item.name + '已经来到她身边啦！' : '先把' + item.name + '收好啦。';
+      playGirlReaction('accessorized', equipped ? '「有你们陪着，真开心！」' : '「下次再一起玩。」');
+      if (equipped && !motionPreference?.matches) for (const prop of document.querySelectorAll('.dream-prop[data-equipped="' + id + '"]')) prop.classList.add('is-arriving');
       sound.playUI('outfit', event, item);
       return true;
     }
@@ -2439,15 +2690,14 @@ function foodIllustration(itemId) {
       wardrobeProgress.pantry[id]--;
       if (wardrobeProgress.pantry[id] === 0) delete wardrobeProgress.pantry[id];
       wardrobeProgress.hunger = Math.max(0, wardrobeProgress.hunger - item.satiety);
+      wardrobePreviewFocus = 'full';
       persistSaveData(); renderWardrobe();
       document.getElementById('wardrobe-status').textContent = '谢谢你的款待！';
       document.getElementById('home-girl-caption').textContent = '「谢谢你的款待！」';
       document.getElementById('wardrobe-girl-caption').textContent = '「谢谢你的款待！」';
       const next = document.querySelector('[data-feed="' + id + '"]:not(:disabled)') || document.getElementById('wardrobe-tab-food');
       next.focus({preventScroll: true});
-      if (feedingAnimationTimer) clearTimeout(feedingAnimationTimer);
-      for (const portrait of document.querySelectorAll('.girl-portrait')) { portrait.classList.remove('is-fed'); void portrait.offsetWidth; portrait.classList.add('is-fed'); }
-      feedingAnimationTimer = setTimeout(() => { for (const portrait of document.querySelectorAll('.girl-portrait')) portrait.classList.remove('is-fed'); feedingAnimationTimer = null; }, 750);
+      playGirlReaction('fed', '「好好吃，谢谢你的款待！」');
       sound.playUI('feed', event);
       return true;
     }
@@ -2489,7 +2739,7 @@ function foodIllustration(itemId) {
       wardrobeReturnModal?.classList.remove('open');
       releasePointer(); state.paused = true;
       renderWardrobe();
-      document.getElementById('wardrobe-status').textContent = '';
+      document.getElementById('wardrobe-status').textContent = '选一件喜欢的，看看她的新模样。';
       document.getElementById('wardrobe-modal').classList.add('open');
       sound.pause();
       sound.playUI('open', event);
@@ -8928,6 +9178,13 @@ function foodIllustration(itemId) {
       document.getElementById('btn-result-home').addEventListener('click', showAdventureHome);
       for (const id of ['btn-wardrobe', 'btn-home-wardrobe', 'btn-open-wardrobe-result']) document.getElementById(id).addEventListener('click', openWardrobe);
       document.getElementById('btn-close-wardrobe').addEventListener('click', closeWardrobe);
+      for (const portrait of document.querySelectorAll('.girl-interact')) portrait.addEventListener('click', greetGirl);
+      for (const button of document.querySelectorAll('[data-preview-focus]')) button.addEventListener('click', () => setWardrobePreviewFocus(button.dataset.previewFocus));
+      for (const button of document.querySelectorAll('[data-retry-look]')) button.addEventListener('click', () => {
+        if (!ensureCareControl()) return;
+        renderGirlPortraits();
+        finishWardrobeFeedback('装扮已加载好啦。', 'accessorized', '「这次看清楚了吗？」');
+      });
       document.getElementById('wardrobe-modal').addEventListener('click', event => {
         const button = event.target.closest('[data-equip]');
         if (button && !button.disabled) equipWardrobeItem(button.dataset.equip, event);
