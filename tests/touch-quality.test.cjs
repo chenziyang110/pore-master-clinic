@@ -16,8 +16,10 @@ test('a finger outside the canvas cannot become its primary or second touch', as
   assert.equal(g.state('state.pointer.secondTouchId'),33);
   assert.equal(g.state('state.pointer.mode'),'two-finger');
   g.touch('touchmove',[second,outside,inside],[outside]);
-  assert.equal(g.state('state.pointer.anchorX'),p.x);
-  assert.equal(g.state('state.pointer.anchorY'),p.y);
+  // The midpoint is computed from two screen coordinates; allow only floating
+  // point roundoff, while still detecting capture of either unrelated finger.
+  assert.ok(Math.abs(g.state('state.pointer.anchorX')-p.x)<1e-9);
+  assert.ok(Math.abs(g.state('state.pointer.anchorY')-p.y)<1e-9);
   g.touch('touchend',[outside,inside],[second]);
   assert.equal(g.state('state.pointer.active'),false);
   assert.deepEqual(g.runtimeErrors,[]);

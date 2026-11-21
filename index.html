@@ -575,10 +575,17 @@
     #wardrobe-status { font-size: 14px; min-height: 44px; line-height: 1.6; }
     .girl-portrait.is-fed { animation: happy-meal .7s ease-in-out; }
     @keyframes happy-meal { 0%,100% { transform: translateY(0) rotate(0); } 28% { transform: translateY(-6px) rotate(-2deg); } 65% { transform: translateY(-3px) rotate(2deg); } }
-    .gift-discovery { position: absolute; inset: 18px 14px auto; z-index: 24; margin: 0 auto; max-width: 350px; display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 16px; background: #fffcf2f5; border: 1px solid #e5d7b7; box-shadow: 0 8px 35px #684c2820; pointer-events: none; }
-    .gift-discovery svg { width: 64px; height: 64px; flex: 0 0 64px; }
-    .gift-discovery strong { display: block; color: #8a6543; font-size: 15px; margin-bottom: 5px; }
-    .gift-discovery p { color: #74745f; font-size: 12px; line-height: 1.7; }
+    .gift-discovery { position: absolute; inset: 10px 12px auto; z-index: 24; margin: 0 auto; max-width: 328px; display: flex; align-items: center; gap: 8px; padding: 8px 6px 8px 10px; border-radius: 15px; background: #fffcf2f5; border: 1px solid #e5d7b7; box-shadow: 0 5px 20px #684c2820; pointer-events: auto; touch-action: none; user-select: none; cursor: grab; transform: translateY(var(--gift-drag-y, 0px)); transition: transform .18s ease-out, opacity .18s ease-out; }
+    .gift-discovery > svg { width: 44px; height: 44px; flex: 0 0 44px; pointer-events: none; }
+    .gift-discovery .gift-copy { flex: 1; min-width: 0; }
+    .gift-discovery strong { display: block; color: #8a6543; font-size: 14px; line-height: 1.4; }
+    .gift-discovery p { color: #74745f; font-size: 12px; line-height: 1.5; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+    .gift-discovery .gift-swipe-hint { display: block; margin-top: 2px; color: #9b7285; font-size: 11px; line-height: 1.3; }
+    .gift-discovery .gift-dismiss { align-self: stretch; flex: 0 0 36px; min-height: 44px; padding: 0; border: 0; border-radius: 9px; background: transparent; color: #9b647f; font-size: 24px; line-height: 1; cursor: pointer; touch-action: manipulation; }
+    .gift-discovery .gift-dismiss:hover { background: #eed4e35c; }
+    .gift-discovery .gift-dismiss:focus-visible { outline: 2px solid #ad5d89; outline-offset: -3px; }
+    .gift-discovery.is-dragging { transition: none; cursor: grabbing; }
+    .gift-discovery.is-dismissing { opacity: 0; transform: translateY(calc(-100% - 20px)); pointer-events: none; }
     #gift-flight-layer { position: absolute; inset: 0; z-index: 25; overflow: hidden; pointer-events: none; }
     .gift-flight { position: absolute; width: 82px; height: 82px; transform: translate(-50%, -50%) scale(.12); transform-origin: center; filter: drop-shadow(0 5px 8px #72532926); animation: gift-emerge 1.8s ease-out forwards; }
     .gift-flight svg { display: block; width: 100%; height: 100%; }
@@ -589,7 +596,7 @@
       78% { opacity: 1; transform: translate(-50%, -50%) translate(var(--gift-end-x), var(--gift-end-y)) scale(1) rotate(0); }
       100% { opacity: 0; transform: translate(-50%, -50%) translate(var(--gift-end-x), var(--gift-end-y)) scale(.95) rotate(0); }
     }
-    @media (prefers-reduced-motion: reduce) { .gift-flight { animation: none !important; transform: translate(-50%, -50%) scale(.7); } }
+    @media (prefers-reduced-motion: reduce) { .gift-flight { animation: none !important; transform: translate(-50%, -50%) scale(.7); } .gift-discovery { transition: none; } }
     #result-modal .result-heading { display: block; text-align: center; }
     #result-modal .modal-card { max-width: 460px; border-radius: 22px; padding: 28px; }
     #result-modal .result-kicker { letter-spacing: 2px; }
@@ -909,7 +916,7 @@
           <p id="keyboard-care-status" class="keyboard-care-status" role="status" aria-live="polite" hidden></p>
           <span id="keyboard-care-help" class="visually-hidden">键盘辅助：左或上选择上一处，右或下选择下一处；1–5 切换工具，按住空格或回车使用，松开停手；粉刺针在松键时破口，Esc 取消。清理完后按 6 涂冰膜。</span>
           <div class="canvas-topline" hidden><ol class="care-stages" aria-label="护理流程"><li data-care-stage="0" aria-current="step"><span>01</span>热敷</li><li data-care-stage="1"><span>02</span>清理</li><li data-care-stage="2"><span>03</span>舒缓</li></ol><span id="canvas-status" class="canvas-status">已软化 0 / 8</span></div>
-          <div id="gift-discovery" class="gift-discovery" role="status" aria-live="polite" hidden></div>
+          <div id="gift-discovery" class="gift-discovery" role="region" aria-label="发现礼物" hidden></div>
           <div id="gift-flight-layer" aria-hidden="true"></div>
           <div class="ice-cta-group"><button id="btn-ice-finish" class="ice-finish-cta" type="button">涂抹舒缓冰膜</button><button id="btn-ice-quick" class="ice-quick-btn" type="button">一键敷膜 · 完成护理</button></div>
           <div class="macro-frame-overlay"></div><div id="macro-reticle" class="macro-reticle" hidden>鼻翼沟与内侧脸颊 · 自然肌理</div>
@@ -1138,13 +1145,13 @@
         BLACKHEAD: {
           id: 'blackhead',
           name: '黑头粉刺',
-          radiusRange: [11.5, 15],
+          radiusRange: [14, 18],
           popThreshold: 0.26,
           extrudeRate: 0.64,
           piercedBoost: 1.55,
           steamBoost: 1.45,
           decayRate: 0.45,
-          wormTotalLenRange: [24, 36],
+          wormTotalLenRange: [34, 46],
           scorePop: 145,
           scoreTweezeBonus: 85,
           scoreWipe: 45
@@ -2158,6 +2165,9 @@ function foodIllustration(itemId) {
     let adventureEntered = false;
     let wardrobeReturnModal = null;
     let giftNoticeTimer = null;
+    let giftNoticeRevision = 0;
+    let giftNoticeGesture = null;
+    let giftNoticeItems = [];
     const giftFlightTimers = new Set();
     let wardrobeTab = 'outfits';
     let wardrobePreviewFocus = 'full';
@@ -2443,9 +2453,128 @@ function foodIllustration(itemId) {
         : DREAM_ITEMS.some(item => item.id === id) ? dreamItemIllustration(id) : wardrobeItemIllustration(id);
     }
 
+    function resetGiftNoticeGesture() {
+      const notice = document.getElementById('gift-discovery'), gesture = giftNoticeGesture;
+      giftNoticeGesture = null;
+      notice.classList.remove('is-dragging');
+      notice.style.removeProperty('--gift-drag-y');
+      notice.style.removeProperty('opacity');
+      if (gesture?.kind === 'pointer' && notice.hasPointerCapture?.(gesture.id)) notice.releasePointerCapture(gesture.id);
+    }
+
+    function dismissGiftNotice(immediate = false, restoreFocus = true) {
+      const notice = document.getElementById('gift-discovery');
+      if (restoreFocus && notice.contains(document.activeElement) && !state.paused) canvas.focus({preventScroll: true});
+      const revision = ++giftNoticeRevision;
+      if (giftNoticeTimer !== null) clearTimeout(giftNoticeTimer);
+      giftNoticeTimer = null;
+      resetGiftNoticeGesture();
+      giftNoticeItems = [];
+      if (immediate || motionPreference?.matches || notice.hidden) {
+        notice.hidden = true;
+        notice.classList.remove('is-dismissing');
+        return;
+      }
+      notice.classList.add('is-dismissing');
+      giftNoticeTimer = setTimeout(() => {
+        if (revision !== giftNoticeRevision) return;
+        notice.hidden = true;
+        notice.classList.remove('is-dismissing');
+        giftNoticeTimer = null;
+      }, 180);
+    }
+
+    function scheduleGiftNoticeDismiss(delay = 2800) {
+      const notice = document.getElementById('gift-discovery'), revision = ++giftNoticeRevision;
+      if (giftNoticeTimer !== null) clearTimeout(giftNoticeTimer);
+      giftNoticeTimer = null;
+      if (notice.hidden || giftNoticeGesture || notice.contains(document.activeElement)) return;
+      giftNoticeTimer = setTimeout(() => {
+        if (revision === giftNoticeRevision) dismissGiftNotice();
+      }, delay);
+    }
+
+    function showGiftNotice(item) {
+      const notice = document.getElementById('gift-discovery'), focused = notice.contains(document.activeElement);
+      const previous = notice.hidden || notice.classList.contains('is-dismissing') ? [] : giftNoticeItems;
+      giftNoticeItems = [...new Set([...previous, item.id])];
+      resetGiftNoticeGesture();
+      notice.classList.remove('is-dismissing');
+      const items = giftNoticeItems.map(rewardItem).filter(Boolean);
+      const headline = items.some(found => !found.satiety) ? '你的运气超棒！' : items.length > 1 ? '找到几份小美味！' : '找到小美味！';
+      notice.innerHTML = rewardItemIllustration(item.id) + '<div class="gift-copy"><div role="status" aria-live="polite" aria-atomic="true"><strong>'
+        + headline + '</strong><p>' + items.map(found => found.name).join('、') + ' · 过关带回家</p></div><span class="gift-swipe-hint" aria-hidden="true">上滑收起</span></div>'
+        + '<button class="gift-dismiss" type="button" aria-label="关闭礼物提示" title="关闭礼物提示">×</button>';
+      notice.dataset.itemIds = giftNoticeItems.join(',');
+      notice.hidden = false;
+      if (focused) notice.querySelector('.gift-dismiss').focus({preventScroll: true});
+      scheduleGiftNoticeDismiss();
+    }
+
+    function bindGiftNoticeInteractions() {
+      const notice = document.getElementById('gift-discovery');
+      const begin = (event, point, id, kind) => {
+        if (notice.hidden || notice.classList.contains('is-dismissing') || giftNoticeGesture
+          || event.target.closest('button') || event.isPrimary === false) return;
+        giftNoticeGesture = {id, kind, startX: point.clientX, startY: point.clientY};
+        scheduleGiftNoticeDismiss();
+        notice.classList.add('is-dragging');
+        if (kind === 'pointer') notice.setPointerCapture?.(id);
+        event.preventDefault(); event.stopPropagation();
+      };
+      const move = (event, point, id) => {
+        const gesture = giftNoticeGesture;
+        if (!gesture || gesture.id !== id) return;
+        const dy = Math.min(0, point.clientY - gesture.startY), dx = point.clientX - gesture.startX;
+        const shift = -dy > Math.abs(dx) * .8 ? Math.max(-150, dy) : 0;
+        if (!motionPreference?.matches) {
+          notice.style.setProperty('--gift-drag-y', shift + 'px');
+          notice.style.opacity = String(Math.max(.15, 1 + shift / 160));
+        }
+        event.preventDefault(); event.stopPropagation();
+      };
+      const end = (event, point, id, cancelled = false) => {
+        const gesture = giftNoticeGesture;
+        if (!gesture || gesture.id !== id) return;
+        const dy = point ? point.clientY - gesture.startY : 0, dx = point ? point.clientX - gesture.startX : 0;
+        resetGiftNoticeGesture();
+        if (!cancelled && dy <= -28 && -dy > Math.abs(dx) * 1.15) dismissGiftNotice();
+        else scheduleGiftNoticeDismiss(2000);
+        event.preventDefault(); event.stopPropagation();
+      };
+      if (window.PointerEvent) {
+        notice.addEventListener('pointerdown', event => { if (event.button === 0) begin(event, event, event.pointerId, 'pointer'); });
+        notice.addEventListener('pointermove', event => move(event, event, event.pointerId));
+        notice.addEventListener('pointerup', event => end(event, event, event.pointerId));
+        notice.addEventListener('pointercancel', event => end(event, null, event.pointerId, true));
+        notice.addEventListener('lostpointercapture', event => end(event, null, event.pointerId, true));
+      } else {
+        notice.addEventListener('touchstart', event => {
+          if (event.touches.length === 1) { const point = event.touches[0]; begin(event, point, point.identifier, 'touch'); }
+        }, {passive: false});
+        notice.addEventListener('touchmove', event => {
+          const point = [...event.changedTouches].find(touch => touch.identifier === giftNoticeGesture?.id);
+          if (point) move(event, point, point.identifier);
+        }, {passive: false});
+        for (const type of ['touchend', 'touchcancel']) notice.addEventListener(type, event => {
+          const point = [...event.changedTouches].find(touch => touch.identifier === giftNoticeGesture?.id);
+          if (point) end(event, point, point.identifier, type === 'touchcancel');
+        }, {passive: false});
+        notice.addEventListener('mousedown', event => { if (event.button === 0) begin(event, event, 'mouse', 'mouse'); });
+        window.addEventListener('mousemove', event => { if (giftNoticeGesture?.kind === 'mouse') move(event, event, 'mouse'); });
+        window.addEventListener('mouseup', event => { if (giftNoticeGesture?.kind === 'mouse') end(event, event, 'mouse'); });
+      }
+      notice.addEventListener('click', event => { if (event.target.closest('.gift-dismiss')) { event.stopPropagation(); dismissGiftNotice(); } });
+      notice.addEventListener('keydown', event => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); dismissGiftNotice(); } });
+      notice.addEventListener('focusin', () => scheduleGiftNoticeDismiss());
+      notice.addEventListener('focusout', event => { if (!notice.contains(event.relatedTarget)) scheduleGiftNoticeDismiss(2000); });
+      window.addEventListener('blur', clearGiftPresentation);
+      window.addEventListener('pagehide', clearGiftPresentation);
+      document.addEventListener('visibilitychange', () => { if (document.hidden) clearGiftPresentation(); });
+    }
+
     function clearGiftPresentation() {
-      document.getElementById('gift-discovery').hidden = true;
-      if (giftNoticeTimer) { clearTimeout(giftNoticeTimer); giftNoticeTimer = null; }
+      dismissGiftNotice(true, false);
       for (const timer of giftFlightTimers) clearTimeout(timer);
       giftFlightTimers.clear();
       document.getElementById('gift-flight-layer').replaceChildren();
@@ -2484,15 +2613,7 @@ function foodIllustration(itemId) {
       state.discoveredGifts.push(id);
       animateWardrobeFind(p, item);
       sound.playGiftFound(p.x / state.width);
-      const notice = document.getElementById('gift-discovery');
-      notice.innerHTML = rewardItemIllustration(id) + '<div><strong>' + (item.satiety ? '找到小美味！' : '你的运气超棒！')
-        + '</strong><p>' + item.name + ' · 过关带回家</p></div>';
-      notice.hidden = !motionPreference?.matches;
-      if (giftNoticeTimer) clearTimeout(giftNoticeTimer);
-      giftNoticeTimer = setTimeout(() => {
-        notice.hidden = false;
-        giftNoticeTimer = setTimeout(() => { notice.hidden = true; giftNoticeTimer = null; }, 3800);
-      }, motionPreference?.matches ? 0 : 1000);
+      showGiftNotice(item);
       saveCurrentSession(true);
       return true;
     }
@@ -2704,6 +2825,7 @@ function foodIllustration(itemId) {
 
     function showAdventureHome(event) {
       if (!careControl.owned) return;
+      clearGiftPresentation();
       releasePointer();
       document.querySelectorAll('.modal-backdrop.open').forEach(modal => modal.classList.remove('open'));
       state.paused = true;
@@ -2734,6 +2856,7 @@ function foodIllustration(itemId) {
 
     function openWardrobe(event) {
       if (!ensureCareControl()) return;
+      clearGiftPresentation();
       if (event?.currentTarget?.dataset.openTab) wardrobeTab = event.currentTarget.dataset.openTab;
       wardrobeReturnModal = document.querySelector('.modal-backdrop.open');
       wardrobeReturnModal?.classList.remove('open');
@@ -2858,7 +2981,8 @@ function foodIllustration(itemId) {
         axisAngle: 0,
         initAxisCos: 1,
         initAxisSin: 0,
-        lockedPimple: null
+        lockedPimple: null,
+        squeezeTargets: []
       }
     };
 
@@ -4179,7 +4303,10 @@ function foodIllustration(itemId) {
         }
       }
 
-      const idealRows = Math.max(1, Math.round(Math.sqrt(count * (bottom - top) / Math.max(1, right - left))));
+      // Layout uses immutable geometry only: a shared pore can change from
+      // blackhead to whitehead during care without changing its saved position.
+      const idealRows = count <= 4 ? 1
+        : Math.max(1, Math.round(Math.sqrt(count * (bottom - top) / Math.max(1, right - left))));
       let chosen = null;
       for (let step = 0; step < 50 && !chosen; step++) {
         const scale = 1 - step * 0.02;
@@ -4200,7 +4327,11 @@ function foodIllustration(itemId) {
             y += rowHeight + gap;
           }
           if (!feasible) continue;
-          const score = Math.abs(rows.length - idealRows) * 0.7 + slack / rows.length + (bottom - (y - gap)) / Math.max(1, bottom - top) * 0.25;
+          // Give tall plugs the upper row when packing quality is similar, so
+          // upright growth is less likely to cover a neighboring pore above it.
+          const tallRows = rows.flatMap((row, index) => row.filter(p => (p.baseRadius || p.radius) > CONFIG.TYPES.BLACKHEAD.radiusRange[1]).map(() => index));
+          const tallPenalty = tallRows.length ? tallRows.reduce((sum, row) => sum + row, 0) / tallRows.length / Math.max(1, rows.length - 1) * 0.18 : 0;
+          const score = Math.abs(rows.length - idealRows) * 0.7 + slack / rows.length + (bottom - (y - gap)) / Math.max(1, bottom - top) * 0.25 + tallPenalty;
           if (score < bestScore) { bestScore = score; chosen = { scale, metrics, totalHeight: y - gap - top }; }
         }
       }
@@ -4217,14 +4348,18 @@ function foodIllustration(itemId) {
       }
 
       const freeHeight = Math.max(0, bottom - top - chosen.totalHeight);
-      let y = top + (chosen.metrics.length === 1 ? freeHeight * 0.5 : freeHeight * 0.15);
-      const rowGap = gap + (chosen.metrics.length > 1 ? freeHeight * 0.7 / (chosen.metrics.length - 1) : 0);
+      // Keep a compact patch of distinct pores instead of stretching every row
+      // across the canvas. Nearby blackheads can share one squeeze gesture.
+      const extraRowGap = chosen.metrics.length > 1 ? Math.min(12, freeHeight / (chosen.metrics.length - 1)) : 0;
+      let y = top + Math.max(0, freeHeight - extraRowGap * (chosen.metrics.length - 1)) * 0.55;
+      const rowGap = gap + extraRowGap;
       const positions = [];
       chosen.metrics.forEach((metric, rowIndex) => {
         const rowRight = y < 94 ? Math.max(left + (right - left) * 0.45, Math.min(right, width - 104)) : right;
-        const extra = Math.max(0, rowRight - left - metric.width) / metric.row.length;
+        const extra = Math.min(10, Math.max(0, rowRight - left - metric.width) / metric.row.length);
         const row = seededRand(seed + rowIndex * 17.3) > 0.5 ? metric.row : [...metric.row].reverse();
-        let x = left;
+        const spareWidth = Math.max(0, rowRight - left - metric.width - extra * metric.row.length);
+        let x = left + spareWidth * (0.44 + seededRand(seed + rowIndex * 7.9) * 0.12);
         for (const p of row) {
           const radius = (p.baseRadius || p.radius) * chosen.scale;
           const footprint = radius * outline;
@@ -4237,8 +4372,8 @@ function foodIllustration(itemId) {
       });
       // Break up the packing rows with bounded, seeded movement. Every accepted
       // move retains the clearances, so even a crowded case stays valid.
-      const travel = Math.min(width, height) * 0.12;
-      for (let pass = 0; pass < 32; pass++) {
+      const travel = Math.min(6, width * 0.02, height * 0.02);
+      for (let pass = 0; pass < 4; pass++) {
         for (const p of positions) {
           const footprint = p.radius * outline;
           const x = p.x + (seededRand(seed + pass * 79.7 + p.id * 23.1) - 0.5) * travel * 2;
@@ -4421,6 +4556,7 @@ function foodIllustration(itemId) {
       state.pointer.active = false;
       state.pointer.squeezeForce = 0;
       state.pointer.lockedPimple = null;
+      state.pointer.squeezeTargets = [];
       state.tweezers.clampedPimple = null;
       sound.setTension(0);
 
@@ -4819,7 +4955,7 @@ function foodIllustration(itemId) {
     const TOOL_GUIDANCE = {
       steam: '按住热敷，软软的就能夹啦。',
       needle: '对准尖端，松开挑开；移出操作区可取消。',
-      squeeze: '轻轻向中间推，双指也能捏。',
+      squeeze: '按住向中间轻推，相邻黑头一起出；双指也能捏。',
       tweezers: '黑头软化就能夹；白头与深层先轻挤到露头，再慢慢拉。',
       swab: '轻轻擦干净；再点棉签换新。'
     };
@@ -5217,38 +5353,29 @@ function foodIllustration(itemId) {
         originY += mouth.y;
       }
       const giant = p.blackheadSize === 'giant';
-      const extrudedLen = Math.max(2.5, p.wormTotalLen * progress * (giant ? 3 : 1));
+      // A plug rises from its fixed opening. Grow a short, thick column instead
+      // of accumulating turns into the old banana / curled-worm silhouette.
+      // The floor also gives older saved rounds the same readable minimum.
+      const extrudedLen = Math.max(5.5, Math.max(34, p.wormTotalLen) * progress * (giant ? 2.2 : 1));
       const stepPx = 1.6;
       const count = Math.max(3, Math.ceil(extrudedLen / stepPx) + 1);
       const pts = [];
-
-      let cx = originX;
-      let cy = originY;
-      // 若正被细胞夹夹住拉扯，曲线朝镊尖方向自然拉直绷紧！
-      let targetDir = -Math.PI * 0.5 + p.wormCurlDir * 0.22;
-      if (giant && !pullTarget) {
-        const directions = [{ angle: 0, room: state.width - p.x }, { angle: Math.PI, room: p.x },
-          { angle: Math.PI * .5, room: state.height - p.y }, { angle: -Math.PI * .5, room: p.y }];
-        directions.sort((a, b) => b.room - a.room);
-        targetDir = directions[0].angle + p.wormCurlDir * .10;
-      }
+      const seed = Number.isFinite(p.wormSeed) ? p.wormSeed : 0;
+      // Giants stand almost exactly upright; normal plugs have a small stable
+      // lean. Position never changes their direction or randomises their shape.
+      let targetDir = -Math.PI * .5 + Math.sin(seed) * (giant ? .045 : .105);
       if (pullTarget) {
         targetDir = Math.atan2(pullTarget.y - originY, pullTarget.x - originX);
       }
-      let dir = targetDir;
-
+      const dx = Math.cos(targetDir), dy = Math.sin(targetDir);
+      const bow = pullTarget ? 0 : Math.sin(seed * 1.7) * Math.min(1.1, extrudedLen * .018);
       for (let i = 0; i < count; i++) {
-        const distFromRoot = (i / (count - 1)) * extrudedLen;
+        const t = i / (count - 1), distFromRoot = t * extrudedLen;
         const distFromTip = extrudedLen - distFromRoot;
-        pts.push({ x: cx, y: cy, distFromRoot, distFromTip, hasDarkCap: !p.snappedCap });
-
-        if (!pullTarget) {
-          const bend = p.wormCurlDir * (0.055 + (distFromRoot / 28) * 0.085)
-            + Math.sin(distFromTip * 0.35 + p.wormSeed) * 0.045;
-          dir += bend * (giant ? .12 : 1);
-        }
-        cx += Math.cos(dir) * (extrudedLen / (count - 1));
-        cy += Math.sin(dir) * (extrudedLen / (count - 1));
+        const shoulder = Math.sin(t * Math.PI) * bow;
+        pts.push({ x: originX + dx * distFromRoot - dy * shoulder,
+          y: originY + dy * distFromRoot + dx * shoulder,
+          distFromRoot, distFromTip, hasDarkCap: !p.snappedCap });
       }
       return pts;
     }
@@ -5273,15 +5400,15 @@ function foodIllustration(itemId) {
       const root = points[0], tip = points[points.length - 1];
       const length = Math.hypot(tip.x - root.x, tip.y - root.y) || 1;
       const nx = -(tip.y - root.y) / length, ny = (tip.x - root.x) / length;
-      const spacing = fanStep ?? Math.min(7, Math.max(4.5, tip.distFromRoot * .12));
+      const spacing = fanStep ?? Math.min(9, Math.max(7, tip.distFromRoot * .14));
       return Array.from({ length: count }, (_, strand) => {
         const slot = strand - (count - 1) * .5;
-        const angle = slot * .20, scale = 1;
+        const angle = slot * .045, scale = 1;
         const cos = Math.cos(angle), sin = Math.sin(angle);
         let travelled = 0;
         const curve = points.map((point, index) => {
           const dx = (point.x - root.x) * scale, dy = (point.y - root.y) * scale;
-          const spread = slot * spacing * Math.sin(index / Math.max(1, points.length - 1) * Math.PI * .5);
+          const spread = slot * spacing * (index / Math.max(1, points.length - 1));
           return { x: root.x + dx * cos - dy * sin + nx * spread,
             y: root.y + dx * sin + dy * cos + ny * spread,
             hasDarkCap: point.hasDarkCap !== false };
@@ -5321,12 +5448,12 @@ function foodIllustration(itemId) {
     }
 
     function blackheadBodyThickness(p) {
-      return Math.max(2.1, p.radius * .21) * (p.blackheadSize === 'giant' ? 2.8 : 1);
+      return Math.max(3.5, p.radius * .24) * (p.blackheadSize === 'giant' ? 2.1 : 1);
     }
 
     function getBlackheadRenderData(p, progress = p.extrudeProgress, pullTarget = null) {
       const count = getBlackheadCount(p);
-      const thickness = blackheadBodyThickness(p) * (count > 1 ? .72 : 1);
+      const thickness = blackheadBodyThickness(p) * (count > 1 ? .84 : 1);
       const points = computeRealisticBlackheadCurve(p, progress, 0, 0, pullTarget);
       const curves = blackheadBundleCurves(points, count, null, getBlackheadLengths(p));
       return { thickness, curves: fitBlackheadCurves(curves, state.width, state.height,
@@ -5336,7 +5463,7 @@ function foodIllustration(itemId) {
     function getBlackheadResidueData(residue) {
       const item = state.collectionLedger[residue.collectionId];
       const count = normalizedBlackheadCount(item?.blackheadCount);
-      const thickness = residue.thickness * (count > 1 ? .72 : 1);
+      const thickness = Math.max(3.5, residue.thickness) * (count > 1 ? .84 : 1);
       const curves = blackheadBundleCurves(residue.pts, count, null, lengthProfile(item, count));
       return { thickness, curves: fitBlackheadCurves(curves, state.width, state.height, 0, 0, thickness + 3) };
     }
@@ -5352,20 +5479,19 @@ function foodIllustration(itemId) {
 
     function renderBlackheadBundle(targetCtx, points, thickness, count, isCreamy, shadowOff = 2.2, fanStep = null, lengths = null) {
       const strands = blackheadBundleCurves(points, count, fanStep, lengths);
-      const width = strands.length > 1 ? Math.max(1.35, thickness * .72) : thickness;
+      const width = strands.length > 1 ? thickness * .84 : thickness;
       for (const strand of strands) renderRealisticSebumFilament(targetCtx, strand, width, isCreamy, shadowOff);
     }
 
     function renderCollectedBlackheadBundle(collectionId, flying = false) {
       const item = state.collectionLedger[collectionId];
       const count = normalizedBlackheadCount(item?.blackheadCount), giant = item?.blackheadSize === 'giant';
-      if (count === 1 && !giant) return false;
-      const length = 13 * (giant ? 2.6 : 1);
+      const length = giant ? 38 : 19;
       const points = Array.from({ length: 15 }, (_, index) => ({ x: 0, y: 5 - index / 14 * length,
         distFromRoot: index / 14 * length, distFromTip: (1 - index / 14) * length, hasDarkCap: true }));
       ctx.save();
-      if (!flying) ctx.scale(giant ? .5 : .65, giant ? .5 : .65);
-      renderBlackheadBundle(ctx, points, giant ? 4 : 1.5, count, state.styleMode === 'creamy', .5, giant ? 4 : 1.8, lengthProfile(item, count));
+      if (!flying) ctx.scale(giant ? .46 : .60, giant ? .46 : .60);
+      renderBlackheadBundle(ctx, points, giant ? 6 : 3.1, count, state.styleMode === 'creamy', .5, giant ? 8 : 5, lengthProfile(item, count));
       ctx.restore();
       return true;
     }
@@ -6077,6 +6203,37 @@ function foodIllustration(itemId) {
       return best;
     }
 
+    function squeezeTargetsFor(target) {
+      if (!target || !state.pimples.includes(target)) return [];
+      // Shared blackhead/whitehead openings keep their deliberate two-stage
+      // treatment. A group never starts by squeezing an already empty pore.
+      if (target.type !== 'blackhead' || target.sharedPore || target.state >= P_STATE.OOZING) return [target];
+      const reach = Math.min(92, Math.max(72, target.radius * 4.2));
+      const neighbors = state.pimples.filter(p => p !== target && p.type === 'blackhead'
+        && !p.sharedPore && p.state < P_STATE.OOZING
+        && Math.hypot(p.x - target.x, p.y - target.y) <= reach)
+        .sort((a, b) => Math.hypot(a.x - target.x, a.y - target.y) - Math.hypot(b.x - target.x, b.y - target.y) || a.id - b.id);
+      return [target, ...neighbors.slice(0, 3)];
+    }
+
+    function activeSqueezeTargets() {
+      const ptr = state.pointer;
+      const group = ptr.squeezeTargets.length ? ptr.squeezeTargets : ptr.lockedPimple ? [ptr.lockedPimple] : [];
+      return group.filter(p => state.pimples.includes(p) && p.state < P_STATE.OOZING
+        && (p === ptr.lockedPimple || (p.type === 'blackhead' && !p.sharedPore)));
+    }
+
+    function lockSqueezeTarget(target, preserveGroup = false) {
+      const ptr = state.pointer;
+      // Small midpoint movements within one patch must not drop slower pores
+      // when the first pore finishes. Moving to a different patch retargets it.
+      if (preserveGroup && target && ptr.squeezeTargets.includes(target) && activeSqueezeTargets().length) return;
+      if (ptr.lockedPimple === target && ptr.squeezeTargets.length) return;
+      ptr.lockedPimple = target;
+      ptr.squeezeTargets = squeezeTargetsFor(target);
+      if (ptr.squeezeTargets.length > 1) setHint(`这一片 ${ptr.squeezeTargets.length} 处黑头，一次轻推一起挤出。`, 'good');
+    }
+
     function keyboardCareTargets() {
       const targets = state.pimples.map(p => ({ kind: 'pimple', item: p, x: p.x, y: p.y }));
       if (state.currentTool === 'swab' || state.currentTool === 'tweezers') {
@@ -6212,7 +6369,7 @@ function foodIllustration(itemId) {
         ptr.mode = 'two-finger';
         ptr.anchorX = p.x;
         ptr.anchorY = p.y;
-        ptr.lockedPimple = p;
+        lockSqueezeTarget(p);
         ptr.axisAngle = p.type === 'cyst' ? p.targetAngle : 0;
         ptr.initSpan = Math.max(96, CONFIG.INTERACTION.CYST_TOO_NARROW_SPAN_PX + 12);
         ptr.curSpan = ptr.initSpan;
@@ -6224,7 +6381,9 @@ function foodIllustration(itemId) {
         ptr.p2 = {x: p.x + dx, y: p.y + dy};
         ptr.smoothP1 = {...ptr.p1};
         ptr.smoothP2 = {...ptr.p2};
-        setHint('键盘辅助：正沿目标两侧温和挤压，松开即可停手。', 'normal');
+        setHint(ptr.squeezeTargets.length > 1
+          ? `键盘辅助：正在轻挤相邻 ${ptr.squeezeTargets.length} 处黑头，松开即可停手。`
+          : '键盘辅助：正沿目标两侧温和挤压，松开即可停手。', 'normal');
       } else if (care.tool === 'tweezers') {
         ptr.mode = 'tweezers';
         care.pullX = target.x < state.width * .5 ? .8 : -.8;
@@ -6266,7 +6425,7 @@ function foodIllustration(itemId) {
       const ptr = state.pointer;
       if (care.tool === 'squeeze') {
         const p = target.item;
-        if (p.state >= P_STATE.OOZING) {
+        if (p.state >= P_STATE.OOZING && !activeSqueezeTargets().length) {
           finishKeyboardCare(true);
           setHint('当前目标已排空。换清洁棉签，继续擦净残留。', 'good');
           return;
@@ -6497,9 +6656,9 @@ function foodIllustration(itemId) {
           state.pointer.initSpan = Math.max(50, span);
           state.pointer.curSpan = span;
           state.pointer.axisAngle = Math.atan2(t2.y - t1.y, t2.x - t1.x);
-          state.pointer.lockedPimple = findNearestSqueezeTarget(
+          lockSqueezeTarget(findNearestSqueezeTarget(
             midX, midY, CONFIG.INTERACTION.TWO_FINGER_CAPTURE_PX
-          );
+          ));
           rememberPointerCareTarget(state.pointer.lockedPimple || { x: midX, y: midY }, true);
           state.pointer.rawForce = 0.08;
         } else if (touches.length === 1) {
@@ -6544,9 +6703,9 @@ function foodIllustration(itemId) {
             state.pointer.anchorY = midY;
             state.pointer.curSpan = span;
             state.pointer.axisAngle = Math.atan2(t2.y - t1.y, t2.x - t1.x);
-            state.pointer.lockedPimple = findNearestSqueezeTarget(
+            lockSqueezeTarget(findNearestSqueezeTarget(
               midX, midY, CONFIG.INTERACTION.TWO_FINGER_CAPTURE_PX
-            );
+            ), true);
             rememberPointerCareTarget(state.pointer.lockedPimple || { x: midX, y: midY }, true);
 
             const shrink = Math.max(0, state.pointer.initSpan - span);
@@ -6723,7 +6882,7 @@ function foodIllustration(itemId) {
       let dist = Math.hypot(dx, dy);
 
       if (dist < 14) {
-        const defaultAng = target ? target.targetAngle : 0;
+        const defaultAng = target?.type === 'cyst' ? target.targetAngle : 0;
         dist = target && target.type === 'cyst' ? 48 : 38;
         dx = Math.cos(defaultAng) * dist;
         dy = Math.sin(defaultAng) * dist;
@@ -6736,7 +6895,7 @@ function foodIllustration(itemId) {
 
       state.pointer.active = true;
       state.pointer.mode = 'mirror-pinch';
-      state.pointer.lockedPimple = target;
+      lockSqueezeTarget(target);
       state.pointer.anchorX = cx;
       state.pointer.anchorY = cy;
       state.pointer.initSpan = startHalf * 2;
@@ -6795,6 +6954,7 @@ function foodIllustration(itemId) {
       state.pointer.mode = 'none';
       state.pointer.rawForce = 0;
       state.pointer.lockedPimple = null;
+      state.pointer.squeezeTargets = [];
       state.tweezers.clampedPimple = null;
       if (state.paused || state.settled || !careControl.owned) sound.pause();
       else sound.setTension(0);
@@ -6907,8 +7067,10 @@ function foodIllustration(itemId) {
       }
 
       let activeTensionAudio = 0;
+      const squeezedThisFrame = new Set();
       if (ptr.active && (ptr.mode === 'two-finger' || ptr.mode === 'mirror-pinch') && ptr.squeezeForce > 0.12) {
         const target = ptr.lockedPimple;
+        const group = activeSqueezeTargets();
         if (!target) {
           if (ptr.squeezeForce > 0.42) {
             addDamage(
@@ -6918,6 +7080,27 @@ function foodIllustration(itemId) {
               '这里没有需要清理的目标，移到瑕疵两侧再轻推。'
             );
             sound.playWarnHurt();
+          }
+        } else if (group.length) {
+          for (const p of group) {
+            squeezedThisFrame.add(p);
+            const index = ptr.squeezeTargets.indexOf(p);
+            const force = ptr.squeezeForce * (index <= 0 ? 1 : 0.95 - index * 0.03);
+            if (p.state === P_STATE.INTACT) {
+              applySqueezeToIntact(p, force, ptr.axisAngle, ptr.initSpan, dt);
+              activeTensionAudio = Math.max(activeTensionAudio, force * 0.6, p.pressure);
+            } else if (p.state === P_STATE.EXTRUDING) {
+              applySqueezeToExtruding(p, force, ptr.axisAngle, dt);
+              activeTensionAudio = Math.max(activeTensionAudio, force * 0.68);
+            }
+          }
+          // A continuous group gesture ends when the whole patch is empty. It
+          // cannot immediately damage the first pore or award the group twice.
+          if (ptr.squeezeTargets.length > 1 && !activeSqueezeTargets().length) {
+            const count = ptr.squeezeTargets.length;
+            releasePointer();
+            activeTensionAudio = 0;
+            setHint(`一口气挤出 ${count} 处！用细胞夹收集，或用棉签一起擦净。`, 'good');
           }
         } else if (target.state === P_STATE.OOZING) {
           if (ptr.squeezeForce > 0.40) {
@@ -6931,19 +7114,13 @@ function foodIllustration(itemId) {
             );
             sound.playWarnHurt();
           }
-        } else if (target.state === P_STATE.INTACT) {
-          applySqueezeToIntact(target, ptr.squeezeForce, ptr.axisAngle, ptr.initSpan, dt);
-          activeTensionAudio = Math.max(ptr.squeezeForce * 0.6, target.pressure);
-        } else if (target.state === P_STATE.EXTRUDING) {
-          applySqueezeToExtruding(target, ptr.squeezeForce, ptr.axisAngle, dt);
-          activeTensionAudio = ptr.squeezeForce * 0.68;
         }
       }
       sound.setTension(activeTensionAudio);
       updatePressureFeedback();
 
       for (const p of state.pimples) {
-        const isBeingSqueezed = ptr.active && ptr.lockedPimple === p && ptr.squeezeForce > 0.12;
+        const isBeingSqueezed = squeezedThisFrame.has(p);
         if (!isBeingSqueezed && p.state === P_STATE.INTACT) {
           p.pressure = Math.max(0, p.pressure - p.cfg.decayRate * dt);
         }
@@ -7626,16 +7803,7 @@ function foodIllustration(itemId) {
         ctx.translate(-25 + item.ox, -7 + item.oy);
         ctx.rotate(item.rot);
         if (item.kind === 'blackhead') {
-          if (!renderCollectedBlackheadBundle(item.collectionId)) {
-            ctx.fillStyle = '#f5e49c';
-            ctx.beginPath();
-            ctx.ellipse(0, 1.6, 2.2, 4.5, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#241108';
-            ctx.beginPath();
-            ctx.arc(0, -2.6, 1.75, 0, Math.PI * 2);
-            ctx.fill();
-          }
+          renderCollectedBlackheadBundle(item.collectionId);
           if (state.collectionLedger[item.collectionId]?.pairedWhitehead === true) {
             ctx.fillStyle = '#fff6df';
             ctx.beginPath(); ctx.ellipse(4.2, 1.4, 1.8, 3.7, -.35, 0, Math.PI * 2); ctx.fill();
@@ -7656,8 +7824,8 @@ function foodIllustration(itemId) {
         const t = Math.min(1, ft.progress);
         const ease = 1 - Math.pow(1 - t, 2);
         const item = state.collectionLedger[ft.collectionId];
-        const radius = item?.blackheadSize === 'giant' ? 60 : item?.whiteheadSize === 'large' ? 16
-          : normalizedBlackheadCount(item?.blackheadCount) > 1 ? 26 : 12;
+        const radius = item?.blackheadSize === 'giant' ? 70 : item?.whiteheadSize === 'large' ? 16
+          : normalizedBlackheadCount(item?.blackheadCount) > 1 ? 36 : ft.kind === 'blackhead' ? 20 : 12;
         const sc = Math.min(1 + Math.sin(t * Math.PI) * .45, Math.max(.1, (Math.min(w, state.height) - 8) / (radius * 2)));
         const margin = radius * sc + 2;
         const fx = Math.max(margin, Math.min(w - margin, ft.sx + (ft.tx - ft.sx) * ease));
@@ -7669,16 +7837,7 @@ function foodIllustration(itemId) {
         ctx.scale(sc, sc);
 
         if (ft.kind === 'blackhead') {
-          if (!renderCollectedBlackheadBundle(ft.collectionId, true)) {
-            ctx.fillStyle = '#f5e49c';
-            ctx.beginPath();
-            ctx.ellipse(0, 2.2, 2.8, 6.2, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#241108';
-            ctx.beginPath();
-            ctx.arc(0, -3.6, 2.3, 0, Math.PI * 2);
-            ctx.fill();
-          }
+          renderCollectedBlackheadBundle(ft.collectionId, true);
           if (state.collectionLedger[ft.collectionId]?.pairedWhitehead === true) {
             ctx.fillStyle = '#fff6df';
             ctx.beginPath(); ctx.ellipse(5.5, 2, 2.4, 5.2, -.35, 0, Math.PI * 2); ctx.fill();
@@ -7992,7 +8151,9 @@ function foodIllustration(itemId) {
         ctx.fillStyle = skin; ctx.beginPath(); ctx.arc(0, 0, r * 1.12, 0, Math.PI * 2); ctx.fill();
       }
       if (p.state === P_STATE.OOZING || p.state === P_STATE.HEALING) return;
-      const poreR = r * (.35 + swell * .07) * (p.steamed >= .75 ? 1.12 : 1) * (p.linkedPore ? .82 : 1) * (p.blackheadSize === 'giant' ? 1.25 : 1);
+      const bundle = getBlackheadCount(p) > 1;
+      const poreR = Math.max(5.5, r * ((bundle ? .46 : .38) + swell * .07))
+        * (p.steamed >= .75 ? 1.12 : 1) * (p.linkedPore ? .82 : 1) * (p.blackheadSize === 'giant' ? 1.25 : 1);
       const aspect = .78 + Math.sin(p.shape.p2) * .07;
       const mouths = getPimpleMouthOffsets(p);
       if (p.linkedPore && p.state !== P_STATE.EXTRUDING) {
@@ -8013,7 +8174,7 @@ function foodIllustration(itemId) {
           }
           const count = getBlackheadCount(p);
           if (count > 1) {
-            const tipR = poreR * (count === 2 ? .38 : .30);
+            const tipR = Math.max(3, poreR * (count === 2 ? .40 : .34));
             for (let strand = 0; strand < count; strand++) {
               const angle = strand / count * Math.PI * 2 - Math.PI * .5;
               const tx = mouth.x + Math.cos(angle) * poreR * .48;
@@ -8828,44 +8989,11 @@ function foodIllustration(itemId) {
           if (item.kind === 'blackhead') {
             const profile = state.collectionLedger[item.collectionId];
             const count = normalizedBlackheadCount(profile?.blackheadCount);
-            if (count > 1 || profile?.blackheadSize === 'giant') {
-              const giant = profile?.blackheadSize === 'giant', length = giant ? 44 : 28;
-              const points = Array.from({ length: 20 }, (_, index) => ({x:0,y:14-index/19*length,
-                distFromRoot:index/19*length,distFromTip:(1-index/19)*length,hasDarkCap:true}));
-              const curves = fitBlackheadCurves(blackheadBundleCurves(points,count,5,lengthProfile(profile,count)),cellW-8,48,(cellW-8)/2,24,7);
-              for (const curve of curves) renderRealisticSebumFilament(trayZoomCtx,curve,giant?3.8:2.3,state.styleMode==='creamy',1);
-            } else {
-            // Smooth ivory body, with oxidation restricted to its very tip.
-            const g = trayZoomCtx.createLinearGradient(-8, 0, 8, 0);
-            g.addColorStop(0, '#e9dbb4');
-            g.addColorStop(.4, '#fcf4d9');
-            g.addColorStop(1, '#eddfbc');
-            trayZoomCtx.fillStyle = g;
-            trayZoomCtx.beginPath();
-            trayZoomCtx.moveTo(-4.5, -14);
-            trayZoomCtx.quadraticCurveTo(0, -19, 4.5, -14);
-            trayZoomCtx.quadraticCurveTo(8.5, 4, 5.5, 15);
-            trayZoomCtx.quadraticCurveTo(0, 20, -5.5, 15);
-            trayZoomCtx.quadraticCurveTo(-8.5, 4, -4.5, -14);
-            trayZoomCtx.fill();
-
-            trayZoomCtx.save();
-            trayZoomCtx.clip();
-            trayZoomCtx.fillStyle = '#3a2b20';
-            trayZoomCtx.beginPath();
-            trayZoomCtx.ellipse(0, -15, 5.2, 3.3, 0, 0, Math.PI * 2);
-            trayZoomCtx.fill();
-            trayZoomCtx.restore();
-
-            // 水润高光条
-            trayZoomCtx.strokeStyle = 'rgba(255, 255, 255, 0.48)';
-            trayZoomCtx.lineWidth = 1.8;
-            trayZoomCtx.lineCap = 'round';
-            trayZoomCtx.beginPath();
-            trayZoomCtx.moveTo(-2.5, -6);
-            trayZoomCtx.quadraticCurveTo(-4, 5, -2, 13);
-            trayZoomCtx.stroke();
-            }
+            const giant = profile?.blackheadSize === 'giant', length = giant ? 44 : 30;
+            const points = Array.from({ length: 20 }, (_, index) => ({x:0,y:14-index/19*length,
+              distFromRoot:index/19*length,distFromTip:(1-index/19)*length,hasDarkCap:true}));
+            const curves = fitBlackheadCurves(blackheadBundleCurves(points,count,7,lengthProfile(profile,count)),cellW-8,48,(cellW-8)/2,24,7);
+            for (const curve of curves) renderRealisticSebumFilament(trayZoomCtx,curve,giant?5.2:3.6,state.styleMode==='creamy',1);
             if (profile?.pairedWhitehead === true) {
               trayZoomCtx.fillStyle='#fff6df';trayZoomCtx.beginPath();trayZoomCtx.ellipse(10,5,4,8,-.25,0,Math.PI*2);trayZoomCtx.fill();
             }
@@ -9053,7 +9181,7 @@ function foodIllustration(itemId) {
       document.getElementById('btn-next-face').textContent = '进入第 ' + wardrobeProgress.level + ' 关';
       document.getElementById('btn-retry-care-goal').hidden = true;
       document.getElementById('btn-open-clinic-from-res').hidden = true;
-      document.getElementById('gift-discovery').hidden = true;
+      clearGiftPresentation();
       persistSaveData();
       state.compareSplit = 0.5;
       resultModalEl.classList.add('open');
@@ -9171,6 +9299,7 @@ function foodIllustration(itemId) {
     }
 
     function bindUIControls() {
+      bindGiftNoticeInteractions();
       const settings = document.getElementById('game-settings-slots');
       settings.append(document.getElementById('btn-sound'), document.getElementById('btn-help'));
       document.getElementById('btn-start-adventure').addEventListener('click', startAdventure);

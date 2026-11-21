@@ -27,7 +27,9 @@ function squeezeOut(g, p) {
   const angle = p.type === 'cyst' ? p.targetAngle : 0;
   const start = p.type === 'cyst' ? 48 : 38;
   g.click('tool-squeeze');
-  g.mouse('skin-canvas', 'mousedown', p.x+Math.cos(angle)*start, p.y+Math.sin(angle)*start);
+  // Dense patches make a point 38–48 px away a different target. Start on the
+  // intended pore; the real mirror-pinch input supplies its two outer sides.
+  g.mouse('skin-canvas', 'mousedown', p.x, p.y);
   g.mouse(g.w, 'mousemove', p.x+Math.cos(angle)*(start-10), p.y+Math.sin(angle)*(start-10));
   // Feed the ordinary simulation after real input; stop at extraction so the
   // test never adds an unrelated over-squeeze after the target is already empty.
