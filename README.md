@@ -65,6 +65,8 @@
 
 热敷速度比此前约提高一倍，减少等待。皮肤底色也与整体粉色主题协调，保留明暗和微距触感。
 
+细胞夹夹住目标后，会显示更大的拔出特写，同时保留洞口、整根黑头和实际咬合的夹口。取景预留完整拔出所需的空间，多根和巨型黑头会一起纳入画面；拖动时特写窗保持位置，进度直接显示在窗内。夹口跟随被夹住的真实顶端，完整拔出后短暂停留，显示根部脱离洞口的最后一下，再收起特写；飞往收集盘的动画从特写窗后方经过，不遮挡拔出结果。小屏会按可用画布调整窗口，横屏使用更宽的横向特写来容纳长黑头，粉刺针仍使用原来的精细瞄准放大镜。
+
 | 工具 | 快捷键 | 操作 |
 | --- | --- | --- |
 | 热喷 | `1` | 按住并缓慢扫过；充分软化的黑头可以直接夹取 |
@@ -139,6 +141,7 @@ npm test
 - [tests/multi-blackhead.test.cjs](tests/multi-blackhead.test.cjs)：同坑多根、错落长度、巨型黑头、大白头凹坑、手机边界与变体保存一致性。
 - [tests/cluster-squeeze.test.cjs](tests/cluster-squeeze.test.cjs)：相邻多孔的真实鼠标、双指与键盘挤压，取消、部分进度恢复、礼物与收集去重，以及密集布局和旋转恢复。
 - [tests/upright-blackhead.test.cjs](tests/upright-blackhead.test.cjs)：竖直生长、最小粗度、巨型手机边界、保存恢复与托盘外观。
+- [tests/extraction-loupe.test.cjs](tests/extraction-loupe.test.cjs)：拔出特写的完整取景、真实夹口对齐、普通与巨型多根、手机边缘、拔出停留和取消清理，并检查粉刺针放大镜回归。
 - [tests/reward-notice.test.cjs](tests/reward-notice.test.cjs)：提示自动收起、上滑与取消、旧计时器竞争、多个奖励、键盘焦点、减少动态效果与奖励保留。
 - [scripts/browser-smoke.cjs](scripts/browser-smoke.cjs)：五种视口的动态画布稳定性，以及手机与桌面上的礼物飞出、衣橱和装扮截图。
 - 现有输入、声音、存档、跨页接续和渲染测试继续覆盖基础能力。

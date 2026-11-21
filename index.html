@@ -1207,7 +1207,11 @@
         TWEEZER_SNAP_SPEED_PX: 470,
         CYST_TOO_NARROW_SPAN_PX: 38,
         LOUPE_RADIUS_PX: 48,          // 2.2X 偏振微距瞄准放大镜半径
-        LOUPE_ZOOM: 2.2
+        LOUPE_ZOOM: 2.2,
+        EXTRACTION_LOUPE_MAX_WIDTH: 236,
+        EXTRACTION_LOUPE_MAX_HEIGHT: 252,
+        EXTRACTION_LOUPE_MAX_ZOOM: 2.65,
+        EXTRACTION_LOUPE_RELEASE_SEC: .36
       },
       TYPES: {
         BLACKHEAD: {
@@ -3274,6 +3278,11 @@ function foodIllustration(itemId) {
         pullDist: 0,
         pullRatio: 0,
         dangerRatio: 0,
+        grabbedStrand: 0,
+        loupePlacement: null,
+        loupeZoom: null,
+        loupeRotation: null,
+        loupeRelease: null,
         lastX: 0,
         lastY: 0
       },
@@ -4893,6 +4902,10 @@ function foodIllustration(itemId) {
       state.pointer.lockedPimple = null;
       state.pointer.squeezeTargets = [];
       state.tweezers.clampedPimple = null;
+      state.tweezers.loupePlacement = null;
+      state.tweezers.loupeZoom = null;
+      state.tweezers.loupeRotation = null;
+      state.tweezers.loupeRelease = null;
       sound.setTension(0);
 
       const client = currentClient();
@@ -5716,7 +5729,7 @@ function foodIllustration(itemId) {
       // Giants stand almost exactly upright; normal plugs have a small stable
       // lean. Position never changes their direction or randomises their shape.
       let targetDir = -Math.PI * .5 + Math.sin(seed) * (giant ? .045 : .105);
-      if (pullTarget) {
+      if (pullTarget && Math.hypot(pullTarget.x - originX, pullTarget.y - originY) > .5) {
         targetDir = Math.atan2(pullTarget.y - originY, pullTarget.x - originX);
       }
       const dx = Math.cos(targetDir), dy = Math.sin(targetDir);
@@ -5810,6 +5823,174 @@ function foodIllustration(itemId) {
       const curves = blackheadBundleCurves(points, count, null, getBlackheadLengths(p));
       return { thickness, curves: fitBlackheadCurves(curves, state.width, state.height,
         p.x + (p.tentOffsetX || 0), p.y + (p.tentOffsetY || 0), thickness + 4) };
+    }
+
+    // One source of truth for the enlarged view and the working jaws. Curves
+    // are converted to canvas coordinates AFTER the normal edge fitting.
+    function getTweezerStrandData(p, progress = p.extrudeProgress) {
+      const ox = p.x + (p.tentOffsetX || 0), oy = p.y + (p.tentOffsetY || 0);
+      const tw = state.tweezers;
+      const pulling = tw.clampedPimple === p ? { x: tw.curTipX - ox, y: tw.curTipY - oy } : null;
+      let data = { curves: [], thickness: Math.max(2.4, p.radius * .24) };
+      if (p.type === 'blackhead') {
+        data = getBlackheadRenderData(p, progress, pulling);
+        if (p.sharedPore?.mode === 'together' && data.curves[0]) {
+          data = { ...data, curves: [...data.curves, sharedWhiteheadCurve(data.curves[0])] };
+        }
+      } else if (p.sharedPore || p.poreSequence?.index > 0) {
+        const mouth = getPimpleMouthOffsets(p)[0];
+        const whiteProgress = .30 + (1 - Math.min(.36, p.pusRemaining) / .36) * .70;
+        const points = computeRealisticBlackheadCurve({ ...p, snappedCap: true, linkedPore: false },
+          whiteProgress, mouth.x, mouth.y, pulling);
+        data.curves = [sharedWhiteheadCurve(points)];
+      }
+      return { thickness: data.thickness, curves: data.curves.map(curve => curve.map(point => ({
+        ...point, x: point.x + ox, y: point.y + oy
+      }))) };
+    }
+
+    function getTweezerVisualTip(p = state.tweezers.clampedPimple) {
+      if (!p) return { x: state.tweezers.curTipX, y: state.tweezers.curTipY };
+      const { curves } = getTweezerStrandData(p);
+      const strand = curves[Math.min(state.tweezers.grabbedStrand || 0, curves.length - 1)];
+      const tip = strand?.[strand.length - 1];
+      return tip ? { x: tip.x, y: tip.y } : { x: state.tweezers.curTipX, y: state.tweezers.curTipY };
+    }
+
+    function getTweezerHandleAngle(tip, pore) {
+      const outward = Math.atan2(tip.y - pore.y, tip.x - pore.x);
+      const preferred = outward + Math.PI * .22;
+      const angles = [preferred, outward - Math.PI * .22, outward, preferred + Math.PI];
+      let best = preferred, bestScore = Infinity;
+      angles.forEach((angle, preference) => {
+        const cos = Math.cos(angle), sin = Math.sin(angle);
+        let overflow = 0;
+        for (const x of [0, 76]) for (const y of [-9, 9]) {
+          const px = tip.x + x * cos - y * sin, py = tip.y + x * sin + y * cos;
+          overflow += Math.max(0, 5 - px) + Math.max(0, px - state.width + 5);
+          overflow += Math.max(0, 5 - py) + Math.max(0, py - state.height + 5);
+        }
+        const score = overflow * 10 + preference;
+        if (score < bestScore) { bestScore = score; best = angle; }
+      });
+      return best;
+    }
+
+    function getTweezerExtractionGeometry(p, focusX = state.pointer.x, focusY = state.pointer.y) {
+      const tw = state.tweezers, margin = 8;
+      const shortWide = state.height < 240 && state.width >= state.height * 2.3;
+      const panelW = Math.max(1, Math.min(shortWide ? 456 : CONFIG.INTERACTION.EXTRACTION_LOUPE_MAX_WIDTH,
+        shortWide ? Math.max(280, state.width * .55) : Math.max(184, state.width * .60), state.width - margin * 2));
+      const panelH = Math.max(1, Math.min(CONFIG.INTERACTION.EXTRACTION_LOUPE_MAX_HEIGHT,
+        Math.max(206, state.height * .62), state.height - margin * 2));
+      const inset = Math.min(8, panelW * .06, panelH * .05);
+      const header = Math.min(shortWide ? 16 : 25, panelH * .15), footer = Math.min(shortWide ? 19 : 33, panelH * .19);
+      const viewW = Math.max(1, panelW - inset * 2), viewH = Math.max(1, panelH - header - footer);
+      const actual = getTweezerStrandData(p);
+      const planned = getTweezerStrandData(p, 1);
+      const pore = getPimpleMouths(p)[0];
+      const tip = getTweezerVisualTip(p);
+      const boundsFor = (data) => {
+        const mouthRadius = Math.max(10, p.radius * .85);
+        const bounds = { left: pore.x - mouthRadius, top: pore.y - mouthRadius,
+          right: pore.x + mouthRadius, bottom: pore.y + mouthRadius };
+        const include = (x, y, radius) => {
+          bounds.left = Math.min(bounds.left, x - radius); bounds.right = Math.max(bounds.right, x + radius);
+          bounds.top = Math.min(bounds.top, y - radius); bounds.bottom = Math.max(bounds.bottom, y + radius);
+        };
+        for (const mouth of getPimpleMouths(p)) include(mouth.x, mouth.y, mouthRadius);
+        for (const curve of data.curves) for (const point of curve) include(point.x, point.y, data.thickness + 3);
+        const selected = data.curves[Math.min(tw.grabbedStrand || 0, data.curves.length - 1)];
+        const contact = selected?.[selected.length - 1] || tip;
+        include(contact.x, contact.y, 10);
+        const angle = getTweezerHandleAngle(contact, pore);
+        include(contact.x + Math.cos(angle) * 18, contact.y + Math.sin(angle) * 18, 6);
+        return bounds;
+      };
+      const subject = boundsFor(actual), full = boundsFor(planned);
+      const plannedStrand = planned.curves[Math.min(tw.grabbedStrand || 0, planned.curves.length - 1)];
+      const plannedTip = plannedStrand?.[plannedStrand.length - 1] || tip;
+      const dx = plannedTip.x - pore.x, dy = plannedTip.y - pore.y;
+      const length = Math.hypot(dx, dy) || 1;
+      const key = `${state.width}:${state.height}:${p.id}`;
+      if (tw.clampedPimple === p && tw.loupePlacement?.key !== key) {
+        tw.loupePlacement = null; tw.loupeZoom = null; tw.loupeRotation = null;
+      }
+      let rotation = shortWide && Math.abs(dy) > Math.abs(dx) ? (dy < 0 ? Math.PI * .5 : -Math.PI * .5) : 0;
+      if (tw.clampedPimple === p) {
+        if (tw.loupeRotation === null) tw.loupeRotation = rotation;
+        rotation = tw.loupeRotation;
+      }
+      // Reserve the whole extraction before it starts, including a small gap
+      // after the root detaches. Growth never chases the finger out of frame.
+      // On a short landscape board, reserve travel along the pull direction and
+      // turn a vertical extraction sideways instead of shrinking its details.
+      const padding = shortWide ? 5 : 16;
+      const travelX = shortWide ? dx / length * 14 : 0, travelY = shortWide ? dy / length * 14 : 0;
+      const frame = { left: Math.min(subject.left, full.left) - padding + Math.min(0, travelX),
+        top: Math.min(subject.top, full.top) - padding + Math.min(0, travelY),
+        right: Math.max(subject.right, full.right) + padding + Math.max(0, travelX),
+        bottom: Math.max(subject.bottom, full.bottom) + padding + Math.max(0, travelY) };
+      const quarterTurn = rotation !== 0;
+      let zoom = Math.min(CONFIG.INTERACTION.EXTRACTION_LOUPE_MAX_ZOOM,
+        (quarterTurn ? viewH : viewW) / Math.max(1, frame.right - frame.left),
+        (quarterTurn ? viewW : viewH) / Math.max(1, frame.bottom - frame.top));
+      if (tw.clampedPimple === p) {
+        // Changing direction can need more room; avoid zoom pumping back in.
+        tw.loupeZoom = tw.loupeZoom === null ? zoom : Math.min(tw.loupeZoom, zoom);
+        zoom = tw.loupeZoom;
+      }
+      const sourceW = (quarterTurn ? viewH : viewW) / zoom, sourceH = (quarterTurn ? viewW : viewH) / zoom;
+      const source = { x: (frame.left + frame.right - sourceW) * .5,
+        y: (frame.top + frame.bottom - sourceH) * .5, width: sourceW, height: sourceH };
+      const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+      let placement = tw.loupePlacement?.key === key ? tw.loupePlacement : null;
+      if (!placement) {
+        const candidates = [
+          [focusX + 42, focusY - panelH * .65], [focusX - panelW - 42, focusY - panelH * .65],
+          [focusX - panelW * .5, focusY - panelH - 42], [focusX - panelW * .5, focusY + 42],
+          [margin, margin], [state.width - panelW - margin, margin],
+          [margin, state.height - panelH - margin], [state.width - panelW - margin, state.height - panelH - margin]
+        ].map(([x, y], preference) => {
+          const px = clamp(x, margin, state.width - panelW - margin), py = clamp(y, margin, state.height - panelH - margin);
+          const distanceTo = (cx, cy) => Math.hypot(clamp(cx, px, px + panelW) - cx, clamp(cy, py, py + panelH) - cy);
+          const fingerOverlap = Math.max(0, 38 - distanceTo(focusX, focusY));
+          const poreOverlap = Math.max(0, 24 - distanceTo(pore.x, pore.y));
+          const trayOverlap = state.trophyTrayItems.length || state.flyingTrophies.length
+            ? Math.max(0, 42 - distanceTo(state.width - 54, 66)) : 0;
+          return { x: px, y: py, key, score: fingerOverlap * 10 + poreOverlap * 3 + trayOverlap * 2
+            + Math.hypot(px - x, py - y) * .10 + preference };
+        });
+        candidates.sort((a, b) => a.score - b.score);
+        placement = candidates[0];
+        if (tw.clampedPimple === p) tw.loupePlacement = placement;
+      }
+      const panel = { x: placement.x, y: placement.y, width: panelW, height: panelH };
+      return { panel, view: { x: panel.x + inset, y: panel.y + header, width: viewW, height: viewH },
+        source, zoom, rotation, subject, pore, tip, curves: actual.curves, thickness: actual.thickness };
+    }
+
+    function getTweezerExtractionTransform(geometry) {
+      const { source, view, zoom, rotation = 0 } = geometry;
+      const a = Math.cos(rotation) * zoom, b = Math.sin(rotation) * zoom;
+      const c = -b, d = a;
+      const x = source.x + source.width * .5, y = source.y + source.height * .5;
+      return { a, b, c, d, e: view.x + view.width * .5 - a * x - c * y,
+        f: view.y + view.height * .5 - b * x - d * y };
+    }
+
+    function projectTweezerExtractionPoint(geometry, point) {
+      const m = getTweezerExtractionTransform(geometry);
+      return { x: m.a * point.x + m.c * point.y + m.e, y: m.b * point.x + m.d * point.y + m.f };
+    }
+
+    function holdTweezerExtractionResult(p, focusX, focusY) {
+      const geometry = getTweezerExtractionGeometry(p, focusX, focusY);
+      const dx = geometry.tip.x - geometry.pore.x, dy = geometry.tip.y - geometry.pore.y;
+      const length = Math.hypot(dx, dy) || 1;
+      state.tweezers.loupeRelease = { ...geometry, duration: CONFIG.INTERACTION.EXTRACTION_LOUPE_RELEASE_SEC,
+        remaining: CONFIG.INTERACTION.EXTRACTION_LOUPE_RELEASE_SEC, direction: { x: dx / length, y: dy / length },
+        handleAngle: getTweezerHandleAngle(geometry.tip, geometry.pore), type: p.type };
     }
 
     function getBlackheadResidueData(residue) {
@@ -6367,6 +6548,11 @@ function foodIllustration(itemId) {
 
     function startTweezerGrab(pt) {
       sound.unlock();
+      state.tweezers.loupeRelease = null;
+      state.tweezers.loupePlacement = null;
+      state.tweezers.loupeZoom = null;
+      state.tweezers.loupeRotation = null;
+      state.tweezers.grabbedStrand = 0;
       // 1) 夹取掉在脸上的黑头脂栓或固态白芯飞入弯盘
       for (let i = state.surfaceResidues.length - 1; i >= 0; i--) {
         const res = state.surfaceResidues[i];
@@ -6437,6 +6623,14 @@ function foodIllustration(itemId) {
       if (target.state === P_STATE.EXTRUDING) {
         sound.playTweezerClamp();
         triggerHaptic(15);
+        if (target.type === 'blackhead') {
+          let nearest = Infinity;
+          getTweezerStrandData(target).curves.slice(0, getBlackheadCount(target)).forEach((strand, index) => {
+            const tip = strand[strand.length - 1];
+            const distance = Math.hypot(pt.x - tip.x, pt.y - tip.y);
+            if (distance < nearest) { nearest = distance; state.tweezers.grabbedStrand = index; }
+          });
+        }
         state.tweezers.clampedPimple = target;
         state.tweezers.grabStartX = pt.x;
         state.tweezers.grabStartY = pt.y;
@@ -6447,7 +6641,7 @@ function foodIllustration(itemId) {
         state.tweezers.pullDist = 0;
         state.tweezers.pullRatio = 0;
         state.tweezers.dangerRatio = 0;
-        setHint('已经夹住，观察放大镜，缓慢向外拖动。', 'good');
+        setHint('已经夹住，观察大特写里从根部到顶端的变化，缓慢向外拖动。', 'good');
       }
     }
 
@@ -6501,6 +6695,7 @@ function foodIllustration(itemId) {
       }
 
       if (tw.pullRatio >= 1) {
+        holdTweezerExtractionResult(p, pt.x, pt.y);
         tw.clampedPimple = null;
         p.tentOffsetX = 0;
         p.tentOffsetY = 0;
@@ -7416,6 +7611,10 @@ function foodIllustration(itemId) {
       state.pointer.lockedPimple = null;
       state.pointer.squeezeTargets = [];
       state.tweezers.clampedPimple = null;
+      state.tweezers.loupePlacement = null;
+      state.tweezers.loupeZoom = null;
+      state.tweezers.loupeRotation = null;
+      if (state.paused || state.settled || state.currentTool !== 'tweezers') state.tweezers.loupeRelease = null;
       if (state.paused || state.settled || !careControl.owned) sound.pause();
       else sound.setTension(0);
       saveCurrentSession();
@@ -7472,6 +7671,13 @@ function foodIllustration(itemId) {
       const reducedMotion = motionPreference?.matches;
       const frameScale = dt * 60;
       updateKeyboardCare(dt);
+
+      if (state.tweezers.loupeRelease) {
+        state.tweezers.loupeRelease.remaining -= dt;
+        if (state.tweezers.loupeRelease.remaining <= 0 || state.currentTool !== 'tweezers') {
+          state.tweezers.loupeRelease = null;
+        }
+      }
 
       if (state.cameraShake > 0) {
         state.cameraShake = reducedMotion ? 0 : Math.max(0, state.cameraShake - dt * 30);
@@ -7985,16 +8191,32 @@ function foodIllustration(itemId) {
       ctx.save();
       renderLensSplatters();
 
-      // 10) 先渲染双手与器械（不含顶层UI），以便 2.2X 光学微距放大镜实时捕获器械针尖与毛孔的精准咬合画面！
+      // Draw the real working tip before the optical view samples the scene.
       renderRealisticHandsAndTools();
 
-      // 11) 当按住精密器械（粉刺针 / 细胞夹）时，在手指上方绘制 2.2X 偏振微距光学放大镜 (Optical Loupe)！
-      if (ptr.active && (ptr.mode === 'needle' || ptr.mode === 'tweezers')) {
+      // Needle aiming stays compact; extraction gets a full-length close-up.
+      if ((ptr.active && (ptr.mode === 'needle' || ptr.mode === 'tweezers'))
+        || (state.currentTool === 'tweezers' && state.tweezers.loupeRelease)) {
         renderPrecisionMagnifierLoupe(ptr.x, ptr.y);
       }
 
       // 12) 右上角医用不锈钢战利品弯盘 + 正在飞入弯盘的抛物线脂栓动画！
+      // The collection flight passes behind the close-up. Sampling it into the
+      // lens, or painting it over the held plug, would show a duplicate bundle.
+      ctx.save();
+      if (state.currentTool === 'tweezers') {
+        const tw = state.tweezers;
+        const extraction = tw.clampedPimple
+          ? getTweezerExtractionGeometry(tw.clampedPimple, ptr.x, ptr.y) : tw.loupeRelease;
+        if (extraction) {
+          const panel = extraction.panel;
+          ctx.beginPath(); ctx.rect(0, 0, w, h);
+          ctx.rect(panel.x - 2, panel.y - 2, panel.width + 4, panel.height + 4);
+          ctx.clip('evenodd');
+        }
+      }
       renderTrophyDishAndFlyingPlugs(w);
+      ctx.restore();
 
       // 13) 收尾全屏冰感清凉水波
       if (state.iceFinishing) {
@@ -8052,10 +8274,107 @@ function foodIllustration(itemId) {
       ctx.restore();
     }
 
-    /**
-     * 2.2X 偏振微距光学瞄准放大镜（解决触屏手指遮挡痛点，提供手术级精准视觉！）
-     */
+    function extractionPanelPath(targetCtx, x, y, width, height, radius) {
+      const r = Math.min(radius, width * .5, height * .5);
+      targetCtx.beginPath(); targetCtx.moveTo(x + r, y);
+      targetCtx.lineTo(x + width - r, y); targetCtx.quadraticCurveTo(x + width, y, x + width, y + r);
+      targetCtx.lineTo(x + width, y + height - r); targetCtx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+      targetCtx.lineTo(x + r, y + height); targetCtx.quadraticCurveTo(x, y + height, x, y + height - r);
+      targetCtx.lineTo(x, y + r); targetCtx.quadraticCurveTo(x, y, x + r, y); targetCtx.closePath();
+    }
+
+    function drawTweezerBlades(targetCtx, tip, angle, isClamped) {
+      const gap = isClamped ? .5 : 4.2;
+      targetCtx.save(); targetCtx.translate(tip.x, tip.y); targetCtx.rotate(angle);
+      targetCtx.lineCap = 'round'; targetCtx.lineWidth = 2.6;
+      targetCtx.strokeStyle = state.upgrades.tweezers ? '#e4e8d2' : '#ebe9dc';
+      targetCtx.beginPath(); targetCtx.moveTo(0, -gap);
+      targetCtx.quadraticCurveTo(22, -gap - 3.5, 72, -7); targetCtx.stroke();
+      targetCtx.strokeStyle = state.upgrades.tweezers ? '#85946f' : '#929e83';
+      targetCtx.beginPath(); targetCtx.moveTo(0, gap);
+      targetCtx.quadraticCurveTo(22, gap + 3.5, 72, 7); targetCtx.stroke();
+      targetCtx.restore();
+    }
+
+    function renderTweezerExtractionLoupe(focusX, focusY) {
+      const tw = state.tweezers, release = tw.clampedPimple ? null : tw.loupeRelease;
+      const geometry = release || (tw.clampedPimple && getTweezerExtractionGeometry(tw.clampedPimple, focusX, focusY));
+      if (!geometry) return;
+      const { panel, view, source } = geometry, dpr = state.dpr;
+      // A resize cancels only the short completed presentation; the new live
+      // extraction camera is recomputed for its current viewport dimensions.
+      if (release && (panel.x + panel.width > state.width || panel.y + panel.height > state.height)) {
+        tw.loupeRelease = null; return;
+      }
+      const sample = renderTweezerExtractionLoupe.sample || document.createElement('canvas');
+      renderTweezerExtractionLoupe.sample = sample;
+      const sampleW = Math.max(1, Math.round(view.width * dpr)), sampleH = Math.max(1, Math.round(view.height * dpr));
+      if (sample.width !== sampleW || sample.height !== sampleH) { sample.width = sampleW; sample.height = sampleH; }
+      const sampleCtx = sample.getContext('2d');
+      sampleCtx.setTransform(1, 0, 0, 1, 0, 0);
+      sampleCtx.fillStyle = '#e9e6d8'; sampleCtx.fillRect(0, 0, sampleW, sampleH);
+      const sx = Math.max(0, source.x * dpr), sy = Math.max(0, source.y * dpr);
+      const sw = Math.max(0, Math.min(canvas.width, (source.x + source.width) * dpr) - sx);
+      const sh = Math.max(0, Math.min(canvas.height, (source.y + source.height) * dpr) - sy);
+      const projection = getTweezerExtractionTransform(geometry);
+      const pixelX = sampleW / view.width, pixelY = sampleH / view.height;
+      // Background, plug and jaws use the same undistorted optical projection.
+      sampleCtx.setTransform(projection.a * pixelX, projection.b * pixelY,
+        projection.c * pixelX, projection.d * pixelY,
+        (projection.e - view.x) * pixelX, (projection.f - view.y) * pixelY);
+      if (sw > 0 && sh > 0) sampleCtx.drawImage(canvas, sx, sy, sw, sh, sx / dpr, sy / dpr, sw / dpr, sh / dpr);
+
+      if (release) {
+        const elapsed = 1 - release.remaining / release.duration;
+        const ease = motionPreference?.matches ? 1 : 1 - Math.pow(1 - elapsed, 3);
+        const distance = 5 + ease * 9;
+        const dx = release.direction.x * distance, dy = release.direction.y * distance;
+        const curves = release.curves.map(curve => curve.map(point => ({ ...point, x: point.x + dx, y: point.y + dy })));
+        sampleCtx.save();
+        for (const strand of curves) renderRealisticSebumFilament(sampleCtx, strand, release.thickness, state.styleMode === 'creamy', 1.6);
+        drawTweezerBlades(sampleCtx, { x: release.tip.x + dx, y: release.tip.y + dy }, release.handleAngle, true);
+        sampleCtx.restore();
+      }
+
+      const progress = release ? 1 : Math.max(0, Math.min(1, tw.pullRatio));
+      const atRisk = !release && tw.dangerRatio > .78;
+      const ink = atRisk ? '#965b49' : '#526b48';
+      ctx.save();
+      ctx.shadowColor = 'rgba(61, 57, 40, .22)'; ctx.shadowBlur = 11; ctx.shadowOffsetY = 4;
+      extractionPanelPath(ctx, panel.x, panel.y, panel.width, panel.height, 12);
+      ctx.fillStyle = 'rgba(247, 244, 231, .98)'; ctx.fill();
+      ctx.shadowColor = 'transparent'; ctx.strokeStyle = '#9aa58a'; ctx.lineWidth = 1.2; ctx.stroke();
+      ctx.save(); extractionPanelPath(ctx, view.x, view.y, view.width, view.height, 7); ctx.clip();
+      ctx.drawImage(sample, view.x, view.y, view.width, view.height);
+      const glass = ctx.createLinearGradient(view.x, view.y, view.x + view.width, view.y + view.height);
+      glass.addColorStop(0, 'rgba(255, 249, 234, .07)'); glass.addColorStop(.5, 'rgba(255, 249, 234, 0)');
+      glass.addColorStop(1, 'rgba(215, 224, 202, .025)');
+      ctx.fillStyle = glass; ctx.fillRect(view.x, view.y, view.width, view.height); ctx.restore();
+      ctx.strokeStyle = 'rgba(105, 120, 86, .30)'; ctx.lineWidth = .8;
+      extractionPanelPath(ctx, view.x, view.y, view.width, view.height, 7); ctx.stroke();
+      ctx.font = '600 11px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif';
+      ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.fillStyle = '#4c5544';
+      ctx.fillText(release ? '完整取出' : '夹取特写', panel.x + 11, panel.y + (view.y - panel.y) * .5);
+      ctx.textAlign = 'right'; ctx.font = '500 10px -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif';
+      ctx.fillStyle = '#77816a'; ctx.fillText('根部 → 顶端', panel.x + panel.width - 11, panel.y + (view.y - panel.y) * .5);
+      const footerY = view.y + view.height;
+      const footerH = panel.y + panel.height - footerY;
+      const footerTextY = footerY + Math.min(12, footerH * .42);
+      const barY = footerY + footerH * .72, barH = Math.min(3, footerH * .12);
+      ctx.font = `500 ${Math.min(10, footerH * .55)}px -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif`;
+      ctx.textAlign = 'left'; ctx.fillStyle = ink;
+      ctx.fillText(release ? '已完整取出' : atRisk ? '放慢一点，保持夹稳' : '缓慢拉出，看清全过程', panel.x + 11, footerTextY);
+      ctx.textAlign = 'right'; ctx.fillText(`${Math.round(progress * 100)}%`, panel.x + panel.width - 11, footerTextY);
+      ctx.fillStyle = '#d7dbc9'; ctx.fillRect(view.x + 3, barY, view.width - 6, barH);
+      ctx.fillStyle = ink; ctx.fillRect(view.x + 3, barY, (view.width - 6) * progress, barH);
+      ctx.restore();
+    }
+
+    /** Compact 2.2× needle aiming; tweezers use the full extraction window. */
     function renderPrecisionMagnifierLoupe(focusX, focusY) {
+      if (state.currentTool === 'tweezers' && (state.tweezers.clampedPimple || state.tweezers.loupeRelease)) {
+        renderTweezerExtractionLoupe(focusX, focusY); return;
+      }
       const margin = 12;
       const R = Math.max(1, Math.min(
         CONFIG.INTERACTION.LOUPE_RADIUS_PX,
@@ -8162,65 +8481,7 @@ function foodIllustration(itemId) {
       ctx.stroke();
       ctx.restore();
 
-      if (state.currentTool === 'tweezers' && state.tweezers.clampedPimple) {
-        const tw = state.tweezers;
-        const panelW = Math.min(98, state.width - 16);
-        const panelH = 32;
-        const gap = 8;
-        const candidates = [
-          [lx - panelW * 0.5, ly - R - gap - panelH],
-          [lx - panelW * 0.5, ly + R + gap],
-          [lx + R + gap, ly - panelH * 0.5],
-          [lx - R - gap - panelW, ly - panelH * 0.5],
-          [8, 8],
-          [state.width - panelW - 8, 8],
-          [8, state.height - panelH - 8],
-          [state.width - panelW - 8, state.height - panelH - 8]
-        ].map(([x, y], preference) => {
-          const px = clamp(x, 8, state.width - panelW - 8);
-          const py = clamp(y, 8, state.height - panelH - 8);
-          const distanceTo = (cx, cy) => Math.hypot(clamp(cx, px, px + panelW) - cx, clamp(cy, py, py + panelH) - cy);
-          const lensOverlap = Math.max(0, R + 4 - distanceTo(lx, ly));
-          const fingerOverlap = Math.max(0, 30 - distanceTo(focusX, focusY));
-          const clipping = Math.hypot(px - x, py - y);
-          return { px, py, score: lensOverlap * 6 + fingerOverlap * 5 + clipping + preference };
-        });
-        candidates.sort((a, b) => a.score - b.score);
-        const { px, py } = candidates[0];
-        const atRisk = tw.dangerRatio > 0.78;
-        const ink = atRisk ? '#965b49' : '#526b48';
-        const progress = Math.max(0, Math.min(1, tw.pullRatio));
-        ctx.save();
-        ctx.fillStyle = 'rgba(247, 244, 231, 0.96)';
-        ctx.strokeStyle = 'rgba(92, 108, 77, 0.26)';
-        ctx.lineWidth = 0.8;
-        ctx.beginPath();
-        ctx.moveTo(px + 5, py);
-        ctx.lineTo(px + panelW - 5, py);
-        ctx.quadraticCurveTo(px + panelW, py, px + panelW, py + 5);
-        ctx.lineTo(px + panelW, py + panelH - 5);
-        ctx.quadraticCurveTo(px + panelW, py + panelH, px + panelW - 5, py + panelH);
-        ctx.lineTo(px + 5, py + panelH);
-        ctx.quadraticCurveTo(px, py + panelH, px, py + panelH - 5);
-        ctx.lineTo(px, py + 5);
-        ctx.quadraticCurveTo(px, py, px + 5, py);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-        ctx.font = '500 11px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif';
-        ctx.textBaseline = 'alphabetic';
-        ctx.textAlign = 'left';
-        ctx.fillStyle = '#4c5544';
-        ctx.fillText(`夹取 ${Math.round(progress * 100)}%`, px + 8, py + 13);
-        ctx.textAlign = 'right';
-        ctx.fillStyle = ink;
-        ctx.fillText(atRisk ? '放慢' : '匀速', px + panelW - 8, py + 13);
-        ctx.fillStyle = '#d7dbc9';
-        ctx.fillRect(px + 8, py + 22, panelW - 16, 3);
-        ctx.fillStyle = ink;
-        ctx.fillRect(px + 8, py + 22, (panelW - 16) * progress, 3);
-        ctx.restore();
-      }
+
     }
 
     /**
@@ -9141,12 +9402,17 @@ function foodIllustration(itemId) {
 
       if (state.currentTool === 'squeeze' || ptr.mode === 'two-finger' || ptr.mode === 'mirror-pinch') return;
 
-      const hx = ptr.active && ptr.mode !== 'two-finger' && ptr.mode !== 'mirror-pinch'
+      let hx = ptr.active && ptr.mode !== 'two-finger' && ptr.mode !== 'mirror-pinch'
         ? ptr.x
         : ptr.hoverX;
-      const hy = ptr.active && ptr.mode !== 'two-finger' && ptr.mode !== 'mirror-pinch'
+      let hy = ptr.active && ptr.mode !== 'two-finger' && ptr.mode !== 'mirror-pinch'
         ? ptr.y
         : ptr.hoverY;
+      if (state.currentTool === 'tweezers') {
+        if (state.tweezers.clampedPimple) {
+          const tip = getTweezerVisualTip(); hx = tip.x; hy = tip.y;
+        } else if (state.tweezers.loupeRelease) return;
+      }
       if (hx < 0 || hy < 0 || hx > state.width || hy > state.height) return;
 
       // Move only the handle; the working tip stays exactly on the contact point.
@@ -9267,33 +9533,10 @@ function foodIllustration(itemId) {
       } else if (state.currentTool === 'tweezers') {
         const tw = state.tweezers;
         const isClamped = Boolean(tw.clampedPimple);
-        const gap = isClamped ? 0.5 : 4.2;
-
-        ctx.save();
-        ctx.translate(hx, hy);
-        ctx.rotate(handleAngle(-Math.PI * 0.28));
-
-        const isUpgraded = state.upgrades.tweezers;
-        const bladeColorTop = isUpgraded ? '#e4e8d2' : '#ebe9dc';
-        const bladeColorBot = isUpgraded ? '#85946f' : '#929e83';
-
-        ctx.strokeStyle = bladeColorTop;
-        ctx.lineWidth = 2.6;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(0, -gap);
-        ctx.quadraticCurveTo(22, -gap - 3.5, 72, -7);
-        ctx.stroke();
-
-        ctx.strokeStyle = bladeColorBot;
-        ctx.lineWidth = 2.6;
-        ctx.beginPath();
-        ctx.moveTo(0, gap);
-        ctx.quadraticCurveTo(22, gap + 3.5, 72, 7);
-        ctx.stroke();
-        ctx.restore();
-
-        // Progress and speed guidance are placed beside the loupe, clear of the finger.
+        const tip = { x: hx, y: hy };
+        const angle = isClamped ? getTweezerHandleAngle(tip, getPimpleMouths(tw.clampedPimple)[0])
+          : handleAngle(-Math.PI * .28);
+        drawTweezerBlades(ctx, tip, angle, isClamped);
       } else if (state.currentTool === 'swab') {
         ctx.save();
         ctx.translate(hx, hy);
@@ -10040,6 +10283,7 @@ function foodIllustration(itemId) {
       const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
 
       releasePointer();
+      state.tweezers.loupeRelease = null;
       state.pointer.squeezeForce = 0;
       state.pointer.hoverX = -999;
       state.pointer.hoverY = -999;
@@ -10084,6 +10328,7 @@ function foodIllustration(itemId) {
     }
 
     function stopSceneFrames() {
+      if (!canRenderCare()) state.tweezers.loupeRelease = null;
       if (rafId !== null) cancelAnimationFrame(rafId);
       rafId = null;
       lastTime = null;
@@ -10097,7 +10342,8 @@ function foodIllustration(itemId) {
 
     function sceneHasMotion() {
       if (state.pointer.active || state.keyboardCare.active || state.iceFinishing
-        || state.cameraShake > 0 || state.trayPulse > 0 || state.pointer.squeezeForce > 0) return true;
+        || state.cameraShake > 0 || state.trayPulse > 0 || state.pointer.squeezeForce > 0
+        || state.tweezers.loupeRelease) return true;
       if ([state.flyingTrophies, state.flyingParticles, state.steamPuffs, state.dewDrops,
         state.lensSplatters, state.floatingTexts].some(items => items.length)) return true;
       return state.pimples.some(p => p.state === P_STATE.RUPTURED || p.state === P_STATE.HEALING
