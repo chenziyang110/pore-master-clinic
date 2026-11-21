@@ -29,14 +29,16 @@ function snapshot(g) {
     region:currentTreatmentRegion().id,rhythm:wardrobeProgress.careRhythm,discovered:state.discoveredGifts,
     pimples:state.pimples.map(p=>({id:p.id,type:p.type,state:p.state,x:p.x,y:p.y,nx:p.nx,ny:p.ny,radius:p.radius,
       steamed:p.steamed,shape:p.shape,wormTotalLen:p.wormTotalLen,wormSeed:p.wormSeed,wormCurlDir:p.wormCurlDir,
-      linkedPore:p.linkedPore,sharedPore:p.sharedPore,blackheadCount:p.blackheadCount,blackheadLengths:p.blackheadLengths,
+      linkedPore:p.linkedPore,sharedPore:p.sharedPore,poreSequence:p.poreSequence,blackheadCount:p.blackheadCount,blackheadLengths:p.blackheadLengths,
       blackheadSize:p.blackheadSize,whiteheadSize:p.whiteheadSize,giftId:p.giftId}))})`));
 }
 
 function assertGeneratedBoard(g) {
   const board=plain(g.state(`({plan:state.roundPlan,region:currentTreatmentRegion().id,
     recipe:Object.fromEntries(['blackhead','whitehead','cyst'].map(type=>[type,state.pimples.filter(p=>p.type===type).length])),
-    count:state.pimples.length,valid:state.pimples.every(p=>validPoreVariant(p)&&validBlackheadCount(p)&&validSharedPore(p)),
+    count:state.pimples.length,valid:state.pimples.every(p=>validPoreVariant(p)&&validBlackheadCount(p)&&validSharedPore(p)&&validPoreSequence(p)),
+    boundedContents:state.pimples.every(p=>p.blackheadCount<=2&&(!p.poreSequence
+      || (p.type==='blackhead'?p.poreSequence.count===2:p.poreSequence.count>=2&&p.poreSequence.count<=3))),
     gifts:state.pimples.filter(p=>p.giftId).map(p=>({id:p.id,gift:p.giftId})),
     shared:state.pimples.some(p=>p.sharedPore)})`));
   assert.ok(board.plan&&REGIONS.includes(board.plan.region));
@@ -44,6 +46,7 @@ function assertGeneratedBoard(g) {
   assert.deepEqual(board.recipe,board.plan.recipe,'the actual generated contents match the saved random plan');
   assert.equal(board.count,total(board.plan.recipe));
   assert.equal(board.valid,true,'every generated pore satisfies all real variant validators');
+  assert.equal(board.boundedContents,true,'actual rounds keep same-pore blackheads at two and whiteheads at three or fewer');
   assert.ok(board.gifts.length<=3&&board.gifts.length<=board.count);
   assert.equal(new Set(board.gifts.map(item=>item.id)).size,board.gifts.length,'each reward belongs to a separate real pore');
   assert.equal(new Set(board.gifts.map(item=>item.gift)).size,board.gifts.length);

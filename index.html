@@ -2538,7 +2538,7 @@ function foodIllustration(itemId) {
           ...shuffled(black).slice(0, Math.min(sequenceLimit, blackSequenceLimit, Math.ceil(black.length * .5)))];
       for (const index of sequenceIndices) {
         const roll = rewardRandom(random);
-        variants[index].poreSequence = { count: light || level === 3 || roll < .65 ? 2 : roll < .93 ? 3 : 4, index: 0 };
+        variants[index].poreSequence = { count: typePool[index] === 'blackhead' || light || level === 3 || roll < .65 ? 2 : 3, index: 0 };
       }
       const bundleCandidates = black.filter(index => !variants[index].poreSequence);
       const bundleCount = Math.min(bundleCandidates.length, Math.max(2, Math.ceil(bundleCandidates.length * .75)));
@@ -2546,7 +2546,7 @@ function foodIllustration(itemId) {
       const giants = new Set(level >= 4 ? shuffled(black).slice(0, Math.min(3, Math.max(1, Math.round(black.length * .45)))) : []);
       for (const index of black) {
         const item = variants[index];
-        item.blackheadCount = bundles.has(index) ? 2 + Math.floor(rewardRandom(random) * 3) : 1;
+        item.blackheadCount = bundles.has(index) ? 2 : 1;
         item.blackheadSize = giants.has(index) ? 'giant' : 'normal';
         const equal = rewardRandom(random) < .45;
         const length = 1.1 + rewardRandom(random) * .5;
@@ -4086,6 +4086,7 @@ function foodIllustration(itemId) {
         if (data.practiceGuide != null && (typeof data.practiceGuide.active !== 'boolean' || !Array.isArray(data.practiceGuide.ids)
           || !data.practiceGuide.ids.every(id => Number.isInteger(id) && data.pimples.some(p => p.id === id))
           || !Number.isInteger(data.practiceGuide.step) || data.practiceGuide.step < 0 || data.practiceGuide.step > data.practiceGuide.ids.length)) return false;
+        trimUnrevealedPoreContents(data);
         state.clientIndex = data.clientIndex;
         state.targetDensity = data.targetDensity || 0;
         generateLevel(state.targetDensity, { restoring: true });
@@ -5542,9 +5543,11 @@ function foodIllustration(itemId) {
     function toolGuidanceFor(tool, selected = currentPointerCareTarget()) {
       if (selected?.kind === 'pimple') {
         const p = selected.item;
-        if (poreNeedsFreshAction(p)) return '咦，里面还有一颗！松手后，再轻挤一次。';
+        if (poreNeedsFreshAction(p) && p.state < P_STATE.OOZING) return '咦，里面还有一颗！松手后，再轻挤一次。';
         if (p.poreSequence?.index > 0 && p.state < P_STATE.OOZING && (tool === 'squeeze' || tool === 'tweezers')) {
-          return tool === 'squeeze' ? '同一个洞口又露出一颗，轻轻挤出这一颗。' : '又露出一颗，夹住后缓缓取出。';
+          return tool === 'squeeze' ? p.type === 'whitehead'
+            ? '下面还有一颗，继续按住轻挤，会接着出来。'
+            : '同一个洞口又露出一颗，轻轻挤出这一颗。' : '又露出一颗，夹住后缓缓取出。';
         }
         const count = getRevealedBlackheadCount(p);
         if (count > 1 && tool === 'steam') return `${count} 根黑头挤一窝，先暖一暖。`;
@@ -6343,6 +6346,8 @@ function foodIllustration(itemId) {
     function validPoreSequence(p) {
       const sequence = p.poreSequence;
       if (sequence == null) return true;
+      // Keep accepting the previous four-core format, then trim only unseen
+      // contents after the complete save and its collection ledger validate.
       return typeof sequence === 'object' && !Array.isArray(sequence)
         && Number.isInteger(sequence.count) && sequence.count >= 2 && sequence.count <= 4
         && Number.isInteger(sequence.index) && sequence.index >= 0 && sequence.index < sequence.count
@@ -6386,6 +6391,30 @@ function foodIllustration(itemId) {
       return true;
     }
 
+    function trimUnrevealedPoreContents(data) {
+      for (const p of data.pimples) {
+        const initial = data.initialPimples?.find(item => item.id === p.id);
+        if (p.poreSequence) {
+          const sequence = p.poreSequence;
+          // Never add a third core to an existing two-core whitehead, erase an
+          // earned collectible, or remove the core already being worked on.
+          const limit = p.type === 'whitehead' ? 3 : 2;
+          sequence.count = Math.min(sequence.count, Math.max(limit, sequence.index + 1));
+          initial.poreSequence.count = sequence.count;
+        } else if (getBlackheadCount(p) > 2 && p.state === P_STATE.INTACT
+          && !data.collectionLedger[trophyIdFor(p, 'blackhead')]) {
+          // An old unopened bundle adopts the new pair size. Exposed bundles
+          // and collected shapes retain their original, matching ledger data.
+          p.blackheadCount = 2;
+          p.blackheadLengths = p.blackheadLengths ? p.blackheadLengths.slice(0, 2) : [1, 1];
+          if (initial) {
+            initial.blackheadCount = 2;
+            initial.blackheadLengths = [...p.blackheadLengths];
+          }
+        }
+      }
+    }
+
     function collectCurrentSequenceCore(p) {
       const id = trophyIdFor(p), item = state.collectionLedger[id];
       if (!item?.rewards.extract) return false;
@@ -6401,17 +6430,21 @@ function foodIllustration(itemId) {
     function advancePoreSequence(p) {
       const sequence = p.poreSequence;
       if (!sequence || sequence.index >= sequence.count - 1) return false;
+      const continuous = p.type === 'whitehead';
       sequence.index += 1;
-      Object.assign(p, { state: P_STATE.EXTRUDING, pressure: 0, swellVisual: 0,
+      Object.assign(p, { state: P_STATE.EXTRUDING,
+        pressure: continuous ? p.pressure : 0, swellVisual: continuous ? p.swellVisual : 0,
         extrudeProgress: p.type === 'blackhead' ? .12 : 0, pusRemaining: p.type === 'whitehead' ? .36 : 0,
         surfacePusMound: 0, pierced: true, snappedCap: false, hardSqueezeWarned: false,
         ruptureTimer: 0, oozeEmitAccum: 0, wipeProgress: 0, healProgress: 0,
         bloodDropSize: 0, serousDropSize: 0, tentOffsetX: 0, tentOffsetY: 0 });
-      blockedPoreActions.set(p, state.actionSerial);
+      if (continuous) blockedPoreActions.delete(p);
+      else blockedPoreActions.set(p, state.actionSerial);
       triggerHaptic([9, 45, 15]);
       spawnFloatingText(p.x, p.y - 22, '还有一颗！', '#a36f52');
       updateHUD();
-      setHint('咦，里面还有一颗！松手后，再轻挤一次，也可以夹住取出。', 'good');
+      setHint(continuous ? '下面还有一颗！继续按住轻挤，会接着出来。'
+        : '咦，里面还有一颗！松手后，再轻挤一次，也可以夹住取出。', 'good');
       saveCurrentSession(true);
       return true;
     }
@@ -7969,6 +8002,13 @@ function foodIllustration(itemId) {
               applySqueezeToExtruding(p, force, ptr.axisAngle, dt);
               activeTensionAudio = Math.max(activeTensionAudio, force * 0.68);
             }
+          }
+          // Whitehead sequences flow under one hold, then stop at the last
+          // core. Extra held touch contacts cannot restart an empty pore.
+          if (target.type === 'whitehead' && target.poreSequence && target.state >= P_STATE.OOZING) {
+            blockedPoreActions.set(target, state.actionSerial);
+            releasePointer();
+            activeTensionAudio = 0;
           }
           // A continuous group gesture ends when the whole patch is empty. It
           // cannot immediately damage the first pore or award the group twice.
