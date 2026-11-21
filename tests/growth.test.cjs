@@ -41,14 +41,33 @@ function finish(g, {goal = true, score = 1000, damage = 0, mistakes = 0, snaps =
   // settlement, canonical profile write and result UI perform the accounting.
   g.evaluate(`state.score=${score};state.damage=0;
     state.runStats.totalDamage=${damage};state.runStats.mistakes=${mistakes};state.runStats.snaps=${snaps};
-    state.runStats.cleanExtractions=state.pimples.length;
-    state.collectionLedger={};state.trophiesPlucked=0;state.coreSeedsCollected=0;
+    state.runStats.cleanExtractions=state.pimples.reduce((sum,p)=>sum+(p.poreSequence?.count||(p.sharedPore?.mode==='sequential'?2:1)),0);
+    state.collectionLedger={};state.trophyTrayItems=[];state.flyingTrophies=[];state.surfaceResidues=[];
+    state.trophiesPlucked=0;state.coreSeedsCollected=0;
     for(const p of state.pimples){
       p.state=P_STATE.HEALED;p.healProgress=1;
       if(${goal}){
-        state.collectionLedger['fixture-'+p.id]={location:'tray',kind:p.type==='blackhead'?'blackhead':'seed',
-          sourceType:p.type,softened:true,pierced:true,gentle:true,rewards:{extract:true,collect:true}};
-        if(p.type==='blackhead')state.trophiesPlucked++;else state.coreSeedsCollected++;
+        const contents=p.sharedPore?.mode==='sequential'?['blackhead','whitehead']
+          :Array(p.poreSequence?.count||1).fill(p.type);
+        contents.forEach((sourceType,index)=>{
+          const kind=sourceType==='blackhead'?'blackhead':'seed';
+          const id=kind+':'+p.id+(p.poreSequence&&index?':core:'+(index+1):'');
+          state.collectionLedger[id]={location:'tray',kind,sourceType,softened:true,pierced:true,gentle:true,
+            rewards:{extract:true,collect:true},
+            blackheadCount:kind==='blackhead'?getBlackheadCount(p):1,
+            blackheadLengths:kind==='blackhead'?getBlackheadLengths(p):[1],
+            blackheadSize:kind==='blackhead'?(p.blackheadSize||'normal'):'normal',
+            whiteheadSize:kind==='seed'?(p.whiteheadSize||'normal'):'normal',
+            pairedWhitehead:kind==='blackhead'&&p.sharedPore?.mode==='together',
+            ...(p.poreSequence?{sourcePimpleId:p.id,sequenceIndex:index}:{})};
+          if(state.trophyTrayItems.length<20)state.trophyTrayItems.push({collectionId:id,kind,wormLen:28,ox:0,oy:0,rot:0});
+          if(kind==='blackhead')state.trophiesPlucked++;else state.coreSeedsCollected++;
+        });
+        if(p.poreSequence)p.poreSequence.index=p.poreSequence.count-1;
+      }
+      if(p.sharedPore){
+        if(p.sharedPore.mode==='sequential'){p.type='whitehead';p.cfg=CONFIG.TYPES.WHITEHEAD;}
+        p.sharedPore.phase='done';
       }
     }
     updateHUD();`);

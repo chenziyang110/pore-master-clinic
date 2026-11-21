@@ -35,12 +35,12 @@ test('the first five adventure levels award only their bound random finds throug
       state.pimples.forEach((p,index)=>{p.giftId=${JSON.stringify(giftsByRound[round])}[index]||null;});
       state.initialPimples.forEach(p=>{p.giftId=state.pimples.find(item=>item.id===p.id).giftId;});`);
     g.d.getElementById('skin-canvas').focus();
-    const targets=g.state('state.pimples.map(p=>({id:p.id,type:p.type,contents:p.sharedPore?.mode==="sequential"?2:1}))');
+    const targets=g.state('state.pimples.map(p=>({id:p.id,type:p.type,contents:p.poreSequence?.count||(p.sharedPore?.mode==="sequential"?2:1)}))');
     for(const p of targets) {
       select(g,p.id);key(g,'1');hold(g,3);
-      // A random sequential opening may expose a white core after its first
-      // black plug. Re-read the real target state between bounded care passes.
-      for(let pass=0;pass<3;pass++) {
+      // One opening may reveal several cores, including an old black-to-white
+      // pair. Each needs a fresh action, with one extra pass for final cleanup.
+      for(let pass=0;pass<p.contents+1;pass++) {
         const current=g.state(`state.pimples.find(item=>item.id===${JSON.stringify(p.id)})`);
         if(current.state>=g.state('P_STATE.HEALING'))break;
         select(g,p.id);

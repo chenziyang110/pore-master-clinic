@@ -33,7 +33,8 @@ test('the pierced whitehead route explains exposure before grabbing and accepts 
   g.mouse(g.w, 'mouseup', p.x, p.y);
 
   g.click('btn-care-next');
-  g.mouse('skin-canvas', 'mousedown', p.x + 38, p.y);
+  // Select this pore directly: dense patches can contain another pore 38 px away.
+  g.mouse('skin-canvas', 'mousedown', p.x, p.y);
   g.mouse(g.w, 'mousemove', p.x + 28, p.y);
   let frames = 0;
   while (p.state < 2 && frames++ < 300) g.frame();

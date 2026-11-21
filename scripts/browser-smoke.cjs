@@ -375,9 +375,12 @@ async function runViewport(cdp, origin, viewport, report) {
       await send('Input.dispatchMouseEvent',{type:'mousePressed',...point,pointerType:'mouse',button:'left',buttons:1,clickCount:1});
       await send('Input.dispatchMouseEvent',{type:'mouseReleased',...point,pointerType:'mouse',button:'left',buttons:0,clickCount:1});
     };
-    const checkpoint = async (name, expectedModal) => {
+    const settleVisuals = async () => {
       await evaluate('Promise.all(document.getAnimations().filter(animation => animation.effect?.getComputedTiming().iterations !== Infinity).map(animation => animation.finished.catch(() => {})))');
       await evaluate('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
+    };
+    const checkpoint = async (name, expectedModal) => {
+      await settleVisuals();
       // Check before click() scrolls anything into view: the main entry and
       // everyday care controls must be immediately usable at each screen size.
       const requiredControls = expectedModal === 'home-modal' ? ['#btn-start-adventure']
@@ -609,33 +612,45 @@ async function runViewport(cdp, origin, viewport, report) {
         assert.ok(after.shownHunger.includes(String(after.hunger)),`${label}: the hunger display follows the meal`);
         assert.deepEqual(after.outfits,[],`${label}: food never becomes a permanent outfit`);
         await evaluate('document.querySelector("#wardrobe-modal .modal-card").scrollTop=0;document.getElementById("btn-close-wardrobe").focus({preventScroll:true});');
+        // Match the screenshot's settled state before inspecting visibility:
+        // the newly opened wardrobe can still be at fadeIn's zero-opacity frame.
+        await settleVisuals();
         const caption=await evaluate(`(() => {
-          const node=document.getElementById('wardrobe-girl-caption');
+          // The fixed status below the mirror is the meal response on every
+          // viewport; the secondary portrait caption is hidden on short screens.
+          const node=document.getElementById('wardrobe-status');
           if(!node)throw new Error('The girl needs a visible meal response');
-          const visible=()=>{
+          const inspect=()=>{
             const box=node.getBoundingClientRect();let left=0,top=0,right=innerWidth,bottom=innerHeight;
+            const ancestors=[];let hidden=false;
             for(let parent=node;parent;parent=parent.parentElement){
               const style=getComputedStyle(parent),bounds=parent.getBoundingClientRect();
-              if(style.visibility!=='visible'||Number(style.opacity)===0||parent.hidden)return false;
+              if(style.visibility!=='visible'||Number(style.opacity)===0||parent.hidden)hidden=true;
+              ancestors.push({node:parent.id||parent.className||parent.tagName,visibility:style.visibility,
+                opacity:style.opacity,hidden:parent.hidden,overflowX:style.overflowX,overflowY:style.overflowY,
+                left:bounds.left,top:bounds.top,right:bounds.right,bottom:bounds.bottom});
               if(/hidden|clip|scroll|auto/.test(style.overflowX)){left=Math.max(left,bounds.left);right=Math.min(right,bounds.right);}
               if(/hidden|clip|scroll|auto/.test(style.overflowY)){top=Math.max(top,bounds.top);bottom=Math.min(bottom,bounds.bottom);}
             }
-            return box.width>0&&box.height>0&&box.left>=left&&box.right<=right&&box.top>=top&&box.bottom<=bottom
-              &&node.contains(document.elementFromPoint((box.left+box.right)/2,(box.top+box.bottom)/2));
+            const hit=document.elementFromPoint((box.left+box.right)/2,(box.top+box.bottom)/2);
+            return {visible:!hidden&&box.width>0&&box.height>0&&box.left>=left&&box.right<=right&&box.top>=top&&box.bottom<=bottom
+              &&node.contains(hit),rect:{left:box.left,top:box.top,right:box.right,bottom:box.bottom},
+              clip:{left,top,right,bottom},hit:hit?(hit.id||hit.className||hit.tagName):null,ancestors};
           };
-          const scrolledIntoView=!visible();
+          const initial=inspect(),scrolledIntoView=!initial.visible;
           if(scrolledIntoView)node.scrollIntoView({block:'center',inline:'nearest'});
-          return {text:node.textContent,visible:visible(),scrolledIntoView};
+          return {text:node.textContent,...inspect(),scrolledIntoView,...(scrolledIntoView?{beforeScroll:initial}:{})};
         })()`);
-        assert.match(caption.text,/谢谢你的款待/);
-        assert.equal(caption.visible,true,`${label}: the portrait-side thanks is visible and unobscured in the meal screenshot`);
-        if(viewport.name!=='phone-landscape')assert.equal(caption.scrolledIntoView,false,
-          `${label}: ordinary portrait and desktop layouts show the thanks immediately`);
         report.feeding.push({viewport:label,itemId:gift,before,after,caption});
         await checkpoint('05-food-thank-you','wardrobe-modal');
+        assert.match(caption.text,/谢谢你的款待/);
+        assert.equal(caption.visible,true,`${label}: the fixed meal feedback is visible and unobscured in the meal screenshot`);
+        if(viewport.name!=='phone-landscape')assert.equal(caption.scrolledIntoView,false,
+          `${label}: ordinary portrait and desktop layouts show the thanks immediately`);
       } else {
         await click('#wardrobe-tab-outfits');
         await click(`[data-equip="${gift}"]`);
+        await evaluate('wardrobeVisualReady.then(()=>true)');
         assert.equal(await evaluate(`wardrobeProgress.equipped.${slot}`), gift, 'outfit button equips the earned gift');
         assert.equal(await evaluate(`!!document.querySelector('#wardrobe-preview [data-preview="${gift}"]')`),false,
           `${label}: an earned treasure leaves the unowned preview`);
@@ -656,10 +671,14 @@ async function runViewport(cdp, origin, viewport, report) {
     // A separate ownership fixture shows all ten visible outfit layers. The
     // two reward scenarios above already verified that care grants ownership.
     await evaluate('wardrobeProgress.unlocked=WARDROBE_ITEMS.map(item=>item.id);wardrobeProgress.dreams=DREAM_ITEMS.map(item=>item.id);renderWardrobe();saveCurrentSession(true);');
+    // Clicking an equipped item now removes it. Start this independent full
+    // outfit fixture from the real reset action, then await the loaded artwork.
+    await evaluate('equipWardrobeItem("reset:all");wardrobeVisualReady.then(()=>true)');
     const fullOutfit={hair:'crown_snow',dress:'dress_sky',skin:'mask_pearl',lashes:'mascara_cocoa',eyes:'contacts_ocean',
       lips:'lipstick_rose',hairstyle:'hairstyle_twintails',shoes:'shoes_crystal',bracelet:'bracelet_pearl',necklace:'necklace_star'};
     for(const [slot,id] of Object.entries(fullOutfit)) {
       await click(`#wardrobe-collection [data-equip="${id}"]`);
+      await evaluate('wardrobeVisualReady.then(()=>true)');
       assert.equal(await evaluate(`wardrobeProgress.equipped.${slot}`),id,`${label}: ${slot} is independently equipped`);
     }
     const outfitLayers=await evaluate(`(() => {

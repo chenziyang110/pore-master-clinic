@@ -88,7 +88,7 @@ test('brief real heat softens a pore, and giant bodies are visibly longer and th
     return {length:large.curves[0].at(-1).distFromRoot/normal.curves[0].at(-1).distFromRoot,
       thickness:large.thickness/normal.thickness};
   })()`));
-  assert.ok(scale.length>2.7 && scale.thickness>2.5,'the giant is substantially larger than the same ordinary body');
+  assert.ok(scale.length>2.1 && scale.thickness>2,'the giant stays over twice as long and thick after raising the ordinary minimum size');
   for (const [width,height] of [[320,160],[390,210],[740,180]]) {
     g.resize(width,height);g.frame();
     const bounds=plain(g.evaluate(`(() => {

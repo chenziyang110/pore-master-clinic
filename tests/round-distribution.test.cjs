@@ -44,7 +44,7 @@ test('seeded regional rounds keep legal varied pores and light rounds improve fo
         assert.equal(p.blackheadLengths.length,p.blackheadCount);
         if (p.blackheadCount===1) assert.deepEqual(plain(p.blackheadLengths),[1],
           'single strands retain the length profile accepted by old save validation');
-        if (p.type==='blackhead' && !p.linkedPore && !p.sharedPore) eligible++;
+        if (p.type==='blackhead' && !p.linkedPore && !p.sharedPore && !p.poreSequence) eligible++;
         if (p.blackheadCount>1) {
           assert.equal(p.type,'blackhead');assert.equal(p.linkedPore,false);assert.equal(p.sharedPore,null);
           bundles++;
