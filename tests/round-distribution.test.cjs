@@ -18,9 +18,10 @@ test('seeded regional rounds keep legal varied pores and light rounds improve fo
   const validVariant=g.evaluate('validPoreVariant');
   const validCount=g.evaluate('validBlackheadCount');
   const validShared=g.evaluate('validSharedPore');
+  const validSequence=g.evaluate('validPoreSequence');
   const regions=plain(g.evaluate('TREATMENT_REGIONS.map(region=>region.id)'));
   assert.deepEqual([...regions].sort(),['nose_cheek','nose_tip','chin_jaw','forehead','mouth_ring'].sort());
-  const totals={two:0,three:0,four:0,giantSingle:0,giantBundle:0,largeWhite:0,equalBundle:0,unequalBundle:0};
+  const totals={two:0,blackPair:0,whitePair:0,whiteTriple:0,giantSingle:0,giantBundle:0,largeWhite:0,equalBundle:0,unequalBundle:0};
   const shares={};
   for (const region of regions) {
     const draw=rng(7351);
@@ -40,15 +41,27 @@ test('seeded regional rounds keep legal varied pores and light rounds improve fo
       let eligible=0,bundles=0;
       for (let index=0;index<types.length;index++) {
         const p={type:types[index],state:0,...variants[index]};
-        assert.ok(validVariant(p) && validCount(p) && validShared(p),`${region} sample ${sample}: generated data must restore legally`);
+        assert.ok(validVariant(p) && validCount(p) && validShared(p) && validSequence(p),`${region} sample ${sample}: generated data must restore legally`);
         assert.equal(p.blackheadLengths.length,p.blackheadCount);
+        assert.ok(p.blackheadCount<=2,'new same-pore bundles never contain three or four blackheads');
+        if (p.poreSequence) {
+          assert.equal(p.poreSequence.index,0,'each generated sequence starts with its first core');
+          if (p.type==='blackhead') {
+            assert.equal(p.poreSequence.count,2,'blackhead surprises finish after their second core');
+            totals.blackPair++;
+          } else {
+            assert.equal(p.type,'whitehead');
+            assert.ok([2,3].includes(p.poreSequence.count),'whitehead runs contain at most three cores');
+            totals[p.poreSequence.count===2?'whitePair':'whiteTriple']++;
+          }
+        }
         if (p.blackheadCount===1) assert.deepEqual(plain(p.blackheadLengths),[1],
           'single strands retain the length profile accepted by old save validation');
         if (p.type==='blackhead' && !p.linkedPore && !p.sharedPore && !p.poreSequence) eligible++;
         if (p.blackheadCount>1) {
           assert.equal(p.type,'blackhead');assert.equal(p.linkedPore,false);assert.equal(p.sharedPore,null);
           bundles++;
-          totals[{2:'two',3:'three',4:'four'}[p.blackheadCount]]++;
+          totals.two++;
           if (p.blackheadLengths.every(value=>value===p.blackheadLengths[0])) totals.equalBundle++;
           else {
             assert.ok(Math.max(...p.blackheadLengths)/Math.min(...p.blackheadLengths)>1.5,

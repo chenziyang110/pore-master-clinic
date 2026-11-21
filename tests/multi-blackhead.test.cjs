@@ -104,7 +104,7 @@ function assertBundle(strands, count, lengths = Array(count).fill(1)) {
   }
 }
 
-test('introductory boards stay simple and two, three or four strands each use one unmixed opening', async t => {
+test('introductory boards stay simple and legacy two, three or four strands each use one unmixed opening', async t => {
   const g = await game(t);
   for (const level of [1, 2]) {
     g.evaluate(`wardrobeProgress.level=${level};generateLevel(0);`);
@@ -122,7 +122,7 @@ test('introductory boards stay simple and two, three or four strands each use on
   }
 });
 
-test('real heat and squeeze expose every strand with one root and distinct dark tips for two, three and four blackheads', async t => {
+test('real heat and squeeze preserve legacy two, three and four blackheads with one root and distinct dark tips', async t => {
   const g = await game(t);
   for (const count of [2,3,4]) {
     const p = startBundle(g,{count});
@@ -135,7 +135,44 @@ test('real heat and squeeze expose every strand with one root and distinct dark 
   }
 });
 
-test('grabbing an outer tip removes the bundle once and preserves four strands through flight, reload and the tray', async t => {
+test('reload trims an unopened legacy four-strand bundle to a pair but preserves exposed legacy bundles', async t => {
+  for (const {count, exposed} of [{count:4,exposed:false},{count:3,exposed:true},{count:4,exposed:true}]) {
+    const g = await game(t), lengths = [.6,1,1.5,.8].slice(0,count);
+    const p = startBundle(g,{count,lengths,giant:true});
+    const id = p.id, run = g.state('state.runId');
+    warm(g,p);
+    if (exposed) squeeze(g,p,() => p.state === 2 && p.extrudeProgress > .42);
+    else assert.equal(p.state,0,'warming alone does not reveal the old hidden bundle');
+    assert.equal(g.state(`state.collectionLedger['blackhead:${id}']`),undefined,
+      'these migration cases have no extracted collectible to rewrite');
+    const before = {state:p.state,progress:p.extrudeProgress,steamed:p.steamed,score:g.state('state.score')};
+    g.evaluate('saveCurrentSession(true);');
+    const stored = g.storage();g.close();
+
+    const r = await game(t,{storage:stored,seed:19});
+    const restored = r.state(`state.pimples.find(p=>p.id===${id})`);
+    const expectedCount = exposed ? count : 2;
+    const expectedLengths = exposed ? lengths : lengths.slice(0,2);
+    assert.equal(r.state('state.runId'),run,'migration resumes this run instead of replacing it');
+    assert.equal(restored.blackheadCount,expectedCount);
+    assert.deepEqual(plain(restored.blackheadLengths),expectedLengths);
+    assert.equal(restored.blackheadSize,'giant');
+    assert.deepEqual({state:restored.state,progress:restored.extrudeProgress,steamed:restored.steamed,score:r.state('state.score')},before,
+      'the treatment state, current extrusion and earned score survive unchanged');
+    assert.equal(r.state(`state.initialPimples.find(p=>p.id===${id}).blackheadCount`),expectedCount,
+      'the saved initial contents use the same migrated or preserved bundle');
+    assert.deepEqual(plain(r.state(`state.initialPimples.find(p=>p.id===${id}).blackheadLengths`)),expectedLengths);
+    if (exposed) assertBundle(drawnStrands(r,`renderPimple(state.pimples.find(p=>p.id===${id}),false);`),count,lengths);
+    r.evaluate('saveCurrentSession(true);');
+    const saved = JSON.parse(r.storage()[PROFILE]).session;
+    assert.equal(r.evaluate(`restoreCurrentSession(${JSON.stringify(JSON.stringify(saved))})`),true,
+      'the migrated or preserved snapshot remains valid on its next restore');
+    assert.equal(r.state('state.runId'),run);
+    assert.equal(r.state(`state.pimples.find(p=>p.id===${id}).blackheadCount`),expectedCount);
+  }
+});
+
+test('grabbing an outer tip removes the legacy four-strand bundle once and preserves it through flight, reload and the tray', async t => {
   const g = await game(t), p = startBundle(g,{count:4,lengths:[.6,1,1.5,.8]});
   const id = p.id, origin = {x:p.x,y:p.y}, run = g.state('state.runId');
   warm(g, p);
@@ -178,7 +215,7 @@ test('grabbing an outer tip removes the bundle once and preserves four strands t
   assert.equal(r.state('state.trophiesPlucked'), 1);
 });
 
-test('a squeezed bundle keeps its three strands on the skin across reload and a real swab collects the group once', async t => {
+test('a squeezed legacy three-strand bundle stays on the skin across reload and a real swab collects the group once', async t => {
   const g = await game(t), p = startBundle(g,{count:3,giant:true});
   warm(g, p); squeeze(g, p, () => p.state === 3);
   const id = p.id;
