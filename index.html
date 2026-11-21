@@ -742,6 +742,20 @@
     .dream-prop-bag { right: 1%; top: 9%; width: 70px; }
     @media (max-width: 700px) { .dream-prop { width: 66px; } .dream-prop-room { width: 80px; } .dream-prop-ride { width: 90px; } .dream-prop-bag { width: 56px; } .dream-prop-toy { width: 60px; } .appetite-box { padding: 8px 10px; margin-top: 6px; } }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+
+    /* Keep the approved raster colors and proportions untouched. */
+    .girl-stage { background: #fff; }
+    .girl-portrait svg.kawaii-character { height: 420px; max-width: 360px; filter: none; }
+    @media (max-width: 700px) {
+      .home-grid .girl-portrait svg.kawaii-character { height: clamp(250px, 38dvh, 340px); }
+      .wardrobe-layout .girl-portrait svg.kawaii-character { height: 300px; }
+    }
+    @media (max-width: 700px) and (max-height: 700px) {
+      #home-modal .girl-portrait svg.kawaii-character { height: clamp(180px, 30dvh, 225px); }
+    }
+    @media (max-height: 500px) and (orientation: landscape) {
+      #home-modal .girl-portrait svg.kawaii-character { height: min(250px, 65dvh); }
+    }
   </style>
 </head>
 <body>
@@ -1745,23 +1759,30 @@
     const skinCtx = skinLayer.getContext('2d');
     const motionPreference = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
 
-/* Original manga artwork. All wearable images share one registered canvas. */
-const MANGA_CHARACTER_ASSETS = Object.freeze({
-  dress: Object.freeze({ patched: 'assets/character/manga-base.webp', dress_sky: 'assets/character/manga-dress-sky.webp',
-    dress_peach: 'assets/character/manga-dress-peach.webp', dress_lilac: 'assets/character/manga-dress-lilac.webp' }),
-  hairstyle: Object.freeze({ original: 'assets/character/manga-base.webp', hairstyle_bob: 'assets/character/manga-hair-bob.webp',
-    hairstyle_twintails: 'assets/character/manga-hair-twintails.webp' })
+/* The approved concept is the visual master: an unedited 1536 × 1024 sheet.
+ * Each complete outfit/hairstyle combination was edited from that same sheet.
+ * The default draws the approved pixels exactly once, with only viewport cropping.
+ */
+const KAWAII_CHARACTER_ASSETS = Object.freeze({
+  patched: Object.freeze({original:'assets/character/kawaii-approved.webp',hairstyle_bob:'assets/character/kawaii-hair-bob.webp',hairstyle_twintails:'assets/character/kawaii-hair-twintails.webp'}),
+  dress_sky: Object.freeze({original:'assets/character/kawaii-dress-sky.webp',hairstyle_bob:'assets/character/kawaii-dress-sky-bob.webp',hairstyle_twintails:'assets/character/kawaii-dress-sky-twintails.webp'}),
+  dress_peach: Object.freeze({original:'assets/character/kawaii-dress-peach.webp',hairstyle_bob:'assets/character/kawaii-dress-peach-bob.webp',hairstyle_twintails:'assets/character/kawaii-dress-peach-twintails.webp'}),
+  dress_lilac: Object.freeze({original:'assets/character/kawaii-dress-lilac.webp',hairstyle_bob:'assets/character/kawaii-dress-lilac-bob.webp',hairstyle_twintails:'assets/character/kawaii-dress-lilac-twintails.webp'})
 });
 
-function mangaAssetPath(kind, id) {
-  const type = kind === 'hairstyle' ? 'hairstyle' : 'dress';
-  const assets = MANGA_CHARACTER_ASSETS[type];
-  const fallback = type === 'hairstyle' ? 'original' : 'patched';
-  return assets[Object.prototype.hasOwnProperty.call(assets, id) ? id : fallback];
+const KAWAII_SHOE_ASSETS = Object.freeze({
+  shoes_rose:'assets/character/kawaii-shoes-rose.webp',
+  shoes_maryjane:'assets/character/kawaii-shoes-maryjane.webp',
+  shoes_crystal:'assets/character/kawaii-shoes-crystal.webp'
+});
+
+function kawaiiAssetPath(dress = 'patched', hairstyle = 'original') {
+  const set=KAWAII_CHARACTER_ASSETS[Object.prototype.hasOwnProperty.call(KAWAII_CHARACTER_ASSETS,dress)?dress:'patched'];
+  return set[Object.prototype.hasOwnProperty.call(set,hairstyle)?hairstyle:'original'];
 }
 
-function mangaCharacterImage(kind, id, attributes = '') {
-  return `<image href="${mangaAssetPath(kind,id)}" x="0" y="0" width="1086" height="1448" preserveAspectRatio="xMidYMid meet" ${attributes}/>`;
+function kawaiiCharacterImage(dress = 'patched', hairstyle = 'original') {
+  return `<image href="${kawaiiAssetPath(dress,hairstyle)}" x="0" y="0" width="1536" height="1024" preserveAspectRatio="xMidYMid meet"/>`;
 }
 
 /* Shared paints are only for the unchanged cosmetics, food and object icons. */
@@ -1776,12 +1797,9 @@ function dressupSvgPaints(skin = 'natural', eyes = 'natural') {
   return {defs,id,...Object.fromEntries(Object.keys(gradients).map(name=>[name,`url(#${id}-${name})`]))};
 }
 
-/* Fresh manga accessories, drawn in the 1086 × 1448 portrait coordinate space.
- * No old face, body, hairstyle, or character geometry is reused here.
- * Keep these after the raster body/head and cosmetic layers in the SVG.
- */
-function mangaHeadAccessoryMarkup(id) {
-  if (id === 'bow_rose') return `<g data-manga-accessory="bow" transform="translate(650 113) rotate(19)" stroke="#71485c" stroke-width="2.8" stroke-linejoin="round" stroke-linecap="round">
+/* Accessories are positioned in the approved concept sheet coordinate space. */
+function kawaiiHeadAccessoryMarkup(id) {
+  if (id === 'bow_rose') return `<g transform="translate(90 1) scale(.62)"><g data-kawaii-accessory="bow" transform="translate(650 113) rotate(19)" stroke="#71485c" stroke-width="2.8" stroke-linejoin="round" stroke-linecap="round">
     <path d="M-8 8Q-13 28-27 52L-7 46 2 57Q9 33 9 11M9 8Q22 30 35 46L39 29 54 32Q32 14 20 3" fill="#e59bb1"/>
     <path d="M-8 10Q-21 29-24 44L-10 39M16 10Q28 27 37 34" fill="none" stroke="#f7c8d3" stroke-width="5"/>
     <path d="M-5-8C-23-31-56-38-55-17C-57 2-49 19-35 18L-5 7Z" fill="#eca2b7"/>
@@ -1790,16 +1808,16 @@ function mangaHeadAccessoryMarkup(id) {
     <path d="M-49-23Q-31-25-15-10M17-10Q34-22 48-18" fill="none" stroke="#ffdce4" stroke-width="4"/>
     <path d="M-11-11Q1-16 12-10L15 13Q2 18-12 12Z" fill="#f5bbca"/>
     <path d="M-6-7Q-2 0-6 10" fill="none" stroke="#fff0ef" stroke-width="3"/>
-  </g>`;
-  if (id === 'clip_star') return `<g data-manga-accessory="star" transform="translate(430 139) rotate(-24)" stroke="#725f6e" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round">
+  </g></g>`;
+  if (id === 'clip_star') return `<g transform="translate(90 1) scale(.62)"><g data-kawaii-accessory="star" transform="translate(430 139) rotate(-24)" stroke="#725f6e" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round">
     <path d="M-35-7H29Q39-7 39 0T29 7H-35Q-43 7-43 0T-35-7Z" fill="#e8adc4"/>
     <path d="M-33-2H27" fill="none" stroke="#ffdfeb" stroke-width="2.6"/>
     <path d="M8-27 16-11 34-8 21 5 24 24 8 15-9 24-6 5-19-8-1-11Z" fill="#ffe19a" stroke="#947448"/>
     <path d="M8-27 10-7 24 24 8 15-9 24-1 4Z" fill="#edbc6e" stroke="none"/>
     <path d="M4-15 0-5-9-3M8-21 10-14" fill="none" stroke="#fff5d4" stroke-width="3.2"/>
     <circle cx="-30" cy="0" r="2.2" fill="#fff3f8" stroke="none"/>
-  </g>`;
-  if (id === 'band_lilac') return `<g data-manga-accessory="flower-band" stroke="#75618e" stroke-linejoin="round" stroke-linecap="round">
+  </g></g>`;
+  if (id === 'band_lilac') return `<g transform="translate(90 1) scale(.62)"><g data-kawaii-accessory="flower-band" stroke="#75618e" stroke-linejoin="round" stroke-linecap="round">
     <path d="M406 166C403 82 459 22 544 22S685 81 683 166" fill="none" stroke="#75618e" stroke-width="15"/>
     <path d="M406 166C403 82 459 22 544 22S685 81 683 166" fill="none" stroke="#c9b3e9" stroke-width="10"/>
     <path d="M409 144C416 66 470 28 543 28C601 28 639 48 665 90" fill="none" stroke="#f0e5ff" stroke-width="3"/>
@@ -1810,8 +1828,8 @@ function mangaHeadAccessoryMarkup(id) {
       <circle cx="5" cy="3" r="10" fill="#ffe4a3" stroke="#9f8056"/>
       <circle cx="2" cy="0" r="3.8" fill="#fff7d7" stroke="none"/>
     </g>
-  </g>`;
-  if (id === 'crown_snow') return `<g data-manga-accessory="snow-crown" transform="rotate(-5 548 12)" stroke="#8d765e" stroke-width="2.8" stroke-linejoin="round" stroke-linecap="round">
+  </g></g>`;
+  if (id === 'crown_snow') return `<g transform="translate(90 1) scale(.62)"><g data-kawaii-accessory="snow-crown" transform="rotate(-5 548 12)" stroke="#8d765e" stroke-width="2.8" stroke-linejoin="round" stroke-linecap="round">
     <path d="M478 10 463-34 503-19 522-51 547-13 575-51 593-19 633-34 617 10Z" fill="#fff2ce"/>
     <path d="M481 5 475-19 506-8 522-33 547 1 575-33 590-8 621-19 615 5Z" fill="#e6c47b" stroke="none"/>
     <path d="M478 8Q547-2 617 8L614 28Q548 18 481 28Z" fill="#fff7e7"/>
@@ -1821,51 +1839,27 @@ function mangaHeadAccessoryMarkup(id) {
     <path d="M502 6 508 12 502 18 496 12ZM593 6 599 12 593 18 587 12Z" fill="#e7bedc" stroke="#9c7f98" stroke-width="1.7"/>
     <g fill="#fffdf5" stroke="#a98b5d" stroke-width="2"><circle cx="463" cy="-35" r="5.4"/><circle cx="522" cy="-52" r="5.6"/><circle cx="575" cy="-52" r="5.6"/><circle cx="633" cy="-35" r="5.4"/></g>
     <path d="M516-34 522-43M579-41 587-24M484-17 490-14" fill="none" stroke="#fffdf3" stroke-width="2.5"/>
-  </g>`;
+  </g></g>`;
   return '';
 }
 
-function mangaShoesMarkup(id) {
-  const shoe = ['shoes_rose', 'shoes_maryjane', 'shoes_crystal'].includes(id) ? id : 'worn';
-  if (shoe === 'worn') return '<g data-dressup-slot="shoes" data-equipped="worn"></g>';
-  const rose = shoe === 'shoes_rose', crystal = shoe === 'shoes_crystal';
-  const upper = rose ? '#dc91a6' : crystal ? '#cee9f8' : '#494556';
-  const shadow = rose ? '#b86b88' : crystal ? '#96bedb' : '#302d3c';
-  const light = rose ? '#f5c0ce' : crystal ? '#f1fcff' : '#777083';
-  const line = rose ? '#785063' : crystal ? '#5f7b96' : '#302c3c';
-  const one = (x, tilt) => `<g transform="translate(${x} 1350) rotate(${tilt} 46 46)" stroke="${line}" stroke-width="2.7" stroke-linejoin="round" stroke-linecap="round">
-    <path d="M25 0H70L74 23 78 35H18L22 20Z" fill="#f5f2ed" stroke="#77717b" stroke-width="2.1"/>
-    <path d="M26 3Q44 8 69 3" fill="none" stroke="#fffdfa" stroke-width="3"/>
-    <path d="M8 68Q6 88 15 93Q46 102 80 93Q89 89 87 68Z" fill="${shadow}"/>
-    <path d="M14 43C17 22 27 9 45 9C64 8 75 23 81 43L87 72Q88 88 47 90Q6 88 7 72Z" fill="${upper}"/>
-    <path d="M14 43C17 23 28 11 45 11C65 10 75 27 80 43Q70 34 63 41Q47 48 28 40Q20 35 14 43Z" fill="${shadow}" stroke="none"/>
-    <path d="M23 28Q26 13 46 13Q64 13 70 28L66 42Q48 49 27 42Z" fill="#f9f5ef" stroke-width="2.1"/>
-    <path d="M15 61Q45 46 79 62L84 76Q62 88 43 86Q22 85 10 76Z" fill="${light}" stroke="none"/>
-    <path d="M12 78Q44 91 82 79" fill="none" stroke="${upper}" stroke-width="3"/>
-    <path d="M15 87Q45 96 79 87" fill="none" stroke="${crystal ? '#e6f9ff' : rose ? '#e5a6ba' : '#625c6d'}" stroke-width="2"/>
-    ${crystal ? `<path d="M19 44 34 60 15 70M34 60 48 43 68 61 82 49M34 60 50 82 68 61 80 74" fill="none" stroke="#fff" stroke-width="2.3" opacity=".9"/>
-      <path d="M47 30 56 40 47 51 37 40Z" fill="#effcff" stroke="#7599b8" stroke-width="2"/><path d="M47 30V50L55 40Z" fill="#a9d8f0" stroke="none"/>
-      <path d="M25 56 27 62 33 64 27 66 25 72 23 66 17 64 23 62Z" fill="#fff" stroke="none"/><path d="M68 73 69 77 73 78 69 79 68 83 67 79 63 78 67 77Z" fill="#fff" stroke="none"/>`
-    : rose ? `<path d="M23 28Q45 35 69 28L70 39Q47 47 24 39Z" fill="#e4a1b5" stroke-width="2"/>
-      <g transform="translate(47 48)" stroke-width="2"><path d="M-3-4Q-25-18-25-3Q-25 11-4 5ZM4-4Q26-18 26-3Q25 11 4 5Z" fill="#f4bdca"/><path d="M-7 0-20-4M8 0 21-4" fill="none" stroke="#c77e99"/><rect x="-5" y="-6" width="10" height="14" rx="3" fill="#df96b0"/></g>
-      <path d="M21 65Q31 60 41 63" fill="none" stroke="#ffe3e8" stroke-width="3"/>`
-    : `<path d="M22 28Q45 34 70 28L71 39Q45 45 23 39Z" fill="#454152" stroke-width="2.2"/>
-      <rect x="62" y="28" width="10" height="11" rx="2" fill="#c9b487" stroke="#302c3c" stroke-width="1.6"/><path d="M65 30V37H69" fill="none" stroke="#fff0cb" stroke-width="1.3"/>
-      <path d="M23 63Q34 57 51 61" fill="none" stroke="#a9a0b2" stroke-width="3"/>
-      <path d="M17 72Q47 61 77 72" fill="none" stroke="#5b5568" stroke-width="2"/>`}
-  </g>`;
-  return `<g data-dressup-slot="shoes" data-equipped="${shoe}">${one(411, 0)}${one(563, 0)}</g>`;
+function kawaiiShoesMarkup(id) {
+  const shoe=Object.prototype.hasOwnProperty.call(KAWAII_SHOE_ASSETS,id)?id:'worn';
+  if(shoe==='worn')return '<g data-dressup-slot="shoes" data-equipped="worn"></g>';
+  kawaiiShoesMarkup.serial=(kawaiiShoesMarkup.serial||0)+1;
+  const clip='kawaii-shoes-'+kawaiiShoesMarkup.serial;
+  return `<defs><clipPath id="${clip}" clipPathUnits="userSpaceOnUse"><rect x="170" y="880" width="530" height="144"/></clipPath></defs><g data-dressup-slot="shoes" data-equipped="${shoe}" clip-path="url(#${clip})"><image href="${KAWAII_SHOE_ASSETS[shoe]}" x="0" y="0" width="1536" height="1024" preserveAspectRatio="xMidYMid meet"/></g>`;
 }
 
-function mangaJewelryMarkup(bracelet, necklace) {
+function kawaiiJewelryMarkup(bracelet, necklace) {
   const b = bracelet === 'bracelet_pearl' ? bracelet : 'none';
   const n = necklace === 'necklace_star' ? necklace : 'none';
-  const pearls = b === 'none' ? '' : `<g transform="translate(758 717) rotate(-25)" stroke="#9b7d68" stroke-linecap="round" stroke-linejoin="round">
+  const pearls = b === 'none' ? '' : `<g transform="translate(581 501) rotate(12) scale(.7)" stroke="#9b7d68" stroke-linecap="round" stroke-linejoin="round">
     <path d="M-19 0Q0 9 19 0" fill="none" stroke="#bc955b" stroke-width="2.6"/>
     ${[-16,-8,0,8,16].map((x, i) => `<circle cx="${x}" cy="${[0,3,4,3,0][i]}" r="4.9" fill="#fffae9" stroke-width="1.6"/><circle cx="${x-1.5}" cy="${[-1.4,1.6,2.6,1.6,-1.4][i]}" r="1.5" fill="#fff" stroke="none"/>`).join('')}
     <path d="M17 4 20 11" fill="none" stroke="#b89664" stroke-width="1.8"/><circle cx="21" cy="13" r="3.3" fill="#e8c687" stroke-width="1.3"/>
   </g>`;
-  const star = n === 'none' ? '' : `<g stroke="#9b794e" stroke-linecap="round" stroke-linejoin="round">
+  const star = n === 'none' ? '' : `<g transform="translate(63 -26) scale(.7)" stroke="#9b794e" stroke-linecap="round" stroke-linejoin="round">
     <path d="M517 357C521 376 529 393 546 405C562 393 570 377 575 357" fill="none" stroke-width="2.6"/>
     <path d="M520 359Q528 388 546 402Q562 388 572 359" fill="none" stroke="#ffe5aa" stroke-width="1.7"/>
     <circle cx="546" cy="405" r="3.1" fill="#edc77c" stroke-width="1.6"/>
@@ -1886,72 +1880,61 @@ function girlIllustration(equipped = {}) {
   const hairstyle=select('hairstyle',['hairstyle_bob','hairstyle_twintails'],'original');
   const shoes=select('shoes',['shoes_rose','shoes_maryjane','shoes_crystal'],'worn');
   const bracelet=select('bracelet',['bracelet_pearl'],'none'),necklace=select('necklace',['necklace_star'],'none');
-  const names={patched:'粉色补丁背带裙',dress_sky:'蓝色公主裙',dress_peach:'蜜桃花边裙',dress_lilac:'紫藤花裙子',bow_rose:'莓果蝴蝶结',clip_star:'小星星发夹',band_lilac:'丁香花发箍',crown_snow:'白雪公主的王冠',mask_pearl:'珍珠面膜护理后的肤色',mascara_cocoa:'可可色睫毛',contacts_hazel:'榛棕色眼眸',contacts_ocean:'海蓝色眼眸',lipstick_rose:'玫瑰唇色',lipstick_peach:'蜜桃唇色',hairstyle_bob:'短波波发型',hairstyle_twintails:'短双马尾发型',shoes_rose:'粉色蝴蝶结鞋',shoes_maryjane:'黑色玛丽珍鞋',shoes_crystal:'水晶鞋',bracelet_pearl:'珍珠手链',necklace_star:'星星项链'};
-  const description=[dress,hair,skin,lashes,eyes,lips,hairstyle,shoes,bracelet,necklace].filter(id=>Object.prototype.hasOwnProperty.call(names,id)).map(id=>names[id]).join('、');
+  const names={patched:'旧布补丁裙',dress_sky:'蓝色公主裙',dress_peach:'蜜桃花边裙',dress_lilac:'紫藤花裙子',bow_rose:'莓果蝴蝶结',clip_star:'小星星发夹',band_lilac:'丁香花发箍',crown_snow:'白雪公主的王冠',mask_pearl:'珍珠面膜护理后的肤色',mascara_cocoa:'可可色睫毛',contacts_hazel:'榛棕色眼眸',contacts_ocean:'海蓝色眼眸',lipstick_rose:'玫瑰唇色',lipstick_peach:'蜜桃唇色',original:'栗色双辫',hairstyle_bob:'栗色波波头',hairstyle_twintails:'栗色双马尾',shoes_rose:'粉色蝴蝶结鞋',shoes_maryjane:'黑色玛丽珍鞋',shoes_crystal:'水晶鞋',bracelet_pearl:'珍珠手链',necklace_star:'星星项链'};
+  const description=[dress,hair,skin,lashes,eyes,lips,hairstyle,shoes,bracelet,necklace].filter(value=>Object.prototype.hasOwnProperty.call(names,value)).map(value=>names[value]).join('、');
   girlIllustration.serial=(girlIllustration.serial||0)+1;
-  const id='manga-girl-'+girlIllustration.serial;
-  const head=mangaCharacterImage('hairstyle',hairstyle);
-  const body=mangaCharacterImage('dress',dress);
-  const eyeRotation=eyes==='contacts_hazel'?160:-32;
-  const lipRotation=lips==='lipstick_rose'?-22:18;
-  const lowerLimit=shoes==='worn'?1448:1357;
+  const id='kawaii-girl-'+girlIllustration.serial;
+  const outfit=kawaiiCharacterImage(dress,hairstyle);
+  const approved=kawaiiCharacterImage();
+  const changedLook=dress!=='patched'||hairstyle!=='original';
+  const eyeRotation=eyes==='contacts_ocean'?154:8;
+  const lipRotation=lips==='lipstick_rose'?-20:12;
+  const lowerLimit=shoes==='worn'?1024:880;
   const defs=`<defs>
-    <clipPath id="${id}-head" clipPathUnits="userSpaceOnUse"><rect x="0" y="0" width="1086" height="330"/></clipPath>
-    <clipPath id="${id}-body" clipPathUnits="userSpaceOnUse"><rect x="0" y="330" width="1086" height="${lowerLimit-330}"/></clipPath>
-    <clipPath id="${id}-irises" clipPathUnits="userSpaceOnUse"><ellipse cx="501" cy="200" rx="16" ry="20"/><ellipse cx="587" cy="200" rx="16" ry="20"/></clipPath>
-    <clipPath id="${id}-mouth" clipPathUnits="userSpaceOnUse"><ellipse cx="545" cy="253" rx="18" ry="14"/></clipPath>
-    <clipPath id="${id}-face-skin" clipPathUnits="userSpaceOnUse"><path d="M450 177Q545 126 640 177L640 222Q607 273 570 287L576 313L609 330H481L513 313L519 287Q480 273 450 225Z"/></clipPath>
-    <clipPath id="${id}-body-skin" clipPathUnits="userSpaceOnUse">
-      <path d="M392 495L436 511L394 606L338 710L326 782L300 826L218 825L206 756L300 695L350 593Z"/>
-      <path d="M649 510L690 490L742 638L779 708L860 766L842 818L802 827L752 789L735 710L687 631Z"/>
-      <path d="M433 1006H508L488 1275H433ZM550 1006H634L646 1131L628 1275H586L558 1130Z"/>
-    </clipPath>
-    <filter id="${id}-skin-select" color-interpolation-filters="sRGB"><feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  6 0 -6 0 -.08" result="warm"/><feComposite in="warm" in2="SourceAlpha" operator="in"/></filter>
-    <filter id="${id}-skin-light" color-interpolation-filters="sRGB"><feComponentTransfer><feFuncR type="linear" slope=".88" intercept=".12"/><feFuncG type="linear" slope=".87" intercept=".13"/><feFuncB type="linear" slope=".85" intercept=".15"/><feFuncA type="identity"/></feComponentTransfer></filter>
-    <filter id="${id}-eye-color" color-interpolation-filters="sRGB"><feColorMatrix type="hueRotate" values="${eyeRotation}"/><feColorMatrix type="saturate" values="1.3"/></filter>
-    <filter id="${id}-lip-color" color-interpolation-filters="sRGB"><feColorMatrix type="hueRotate" values="${lipRotation}"/><feColorMatrix type="saturate" values="1.4"/></filter>
-    <mask id="${id}-head-skin-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="1086" height="1448" style="mask-type:alpha"><g clip-path="url(#${id}-face-skin)" filter="url(#${id}-skin-select)">${head}</g></mask>
-    <mask id="${id}-body-skin-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="1086" height="1448" style="mask-type:alpha"><g clip-path="url(#${id}-body-skin)" filter="url(#${id}-skin-select)">${body}</g></mask>
+    <clipPath id="${id}-figure" clipPathUnits="userSpaceOnUse"><rect x="170" y="0" width="530" height="${lowerLimit}"/></clipPath>
+    <clipPath id="${id}-face-lock" clipPathUnits="userSpaceOnUse"><path d="M377 126L389 104L430 78L475 90L497 108L501 137L490 162L462 181L432 186L405 176L386 165L374 154L372 140Z"/></clipPath>
+    <clipPath id="${id}-irises" clipPathUnits="userSpaceOnUse"><ellipse cx="404.5" cy="135" rx="10.2" ry="12.9" transform="rotate(-17 404.5 135)"/><ellipse cx="465" cy="116.5" rx="10.2" ry="12.9" transform="rotate(-17 465 116.5)"/></clipPath>
+    <clipPath id="${id}-mouth" clipPathUnits="userSpaceOnUse"><path d="M433 157C440 161 449 157 456 151L456 155C450 160 442 163 434 161Z"/></clipPath>
+    <clipPath id="${id}-skin" clipPathUnits="userSpaceOnUse"><path d="M386 150Q405 153 421 145L428 151L427 161L453 160L458 146L477 139L488 140Q481 170 450 180Q419 184 397 167Z"/><path d="M432 185L466 180L470 198Q452 211 428 198Z"/><path d="M278 494L304 499L300 532L287 568L262 563L257 544L266 517ZM558 500L585 495L592 519L610 544L602 575L575 567L566 536Z"/><path d="M348 805L381 807L372 839L342 836ZM450 809L480 809L477 842L445 840Z"/></clipPath>
+    <filter id="${id}-skin-light" color-interpolation-filters="sRGB"><feComponentTransfer><feFuncR type="linear" slope=".94" intercept=".06"/><feFuncG type="linear" slope=".94" intercept=".06"/><feFuncB type="linear" slope=".93" intercept=".07"/><feFuncA type="identity"/></feComponentTransfer></filter>
+    <filter id="${id}-eye-color" color-interpolation-filters="sRGB"><feColorMatrix type="hueRotate" values="${eyeRotation}"/><feColorMatrix type="saturate" values="1.16"/></filter>
+    <filter id="${id}-lip-color" color-interpolation-filters="sRGB"><feColorMatrix type="hueRotate" values="${lipRotation}"/><feColorMatrix type="saturate" values="1.35"/></filter>
   </defs>`;
-  const skinArt=skin==='mask_pearl'?`<g filter="url(#${id}-skin-light)" mask="url(#${id}-body-skin-mask)">${body}</g><g filter="url(#${id}-skin-light)" mask="url(#${id}-head-skin-mask)">${head}</g>`:'';
-  const eyeArt=eyes==='natural'?'':`<g clip-path="url(#${id}-irises)" filter="url(#${id}-eye-color)">${head}</g>`;
-  const lipArt=lips==='natural'?'':`<g clip-path="url(#${id}-mouth)" filter="url(#${id}-lip-color)">${head}</g>`;
-  const lashArt=lashes==='natural'?'':`<g fill="none" stroke="#603c4d" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M475 188Q494 171 517 183M569 183Q592 171 613 189M477 185L472 178M482 181L478 174M610 186L616 180M606 181L610 174"/></g>`;
-  return `<svg class="dressup-girl manga-character" data-character-art="manga-v1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 380" role="img" aria-label="漫画女孩的装扮：${description}" focusable="false">${defs}
-    <ellipse cx="150" cy="359" rx="42" ry="5" fill="#6b567b" opacity=".11"/>
-    <g transform="translate(22.395 16) scale(.235)">
-      <g data-dressup-slot="dress" data-equipped="${dress}" clip-path="url(#${id}-body)">${body}</g>
-      <g data-dressup-slot="hairstyle" data-equipped="${hairstyle}" data-part="head" clip-path="url(#${id}-head)">${head}</g>
-      <g data-dressup-slot="skin" data-equipped="${skin}">${skinArt}</g>
-      <g data-dressup-slot="eyes" data-equipped="${eyes}">${eyeArt}</g>
-      <g data-dressup-slot="lips" data-equipped="${lips}">${lipArt}</g>
-      <g data-dressup-slot="lashes" data-equipped="${lashes}">${lashArt}</g>
-      ${mangaShoesMarkup(shoes)}
-      ${mangaJewelryMarkup(bracelet,necklace)}
-      <g data-dressup-slot="hair" data-equipped="${hair}">${mangaHeadAccessoryMarkup(hair)}</g>
-    </g>
+  const faceLock=changedLook?`<g clip-path="url(#${id}-face-lock)">${approved}</g>`:'';
+  const skinArt=skin==='mask_pearl'?`<g clip-path="url(#${id}-skin)" filter="url(#${id}-skin-light)">${approved}</g>`:'';
+  const eyeArt=eyes==='natural'?'':`<g clip-path="url(#${id}-irises)" filter="url(#${id}-eye-color)">${approved}</g>`;
+  const lipArt=lips==='natural'?'':`<g clip-path="url(#${id}-mouth)" filter="url(#${id}-lip-color)">${approved}</g>`;
+  const lashArt=lashes==='natural'?'':`<g fill="none" stroke="#745242" stroke-width="1.45" stroke-linecap="round"><path d="M391 126Q400 119 412 124M451 110Q460 101 473 107M391 126L387 122M394 123L391 119M471 105L474 100M475 110L479 106"/></g>`;
+  return `<svg class="dressup-girl kawaii-character" data-character-art="kawaii-approved-v1" xmlns="http://www.w3.org/2000/svg" viewBox="170 -52 530 1084" role="img" aria-label="日系卡哇伊女孩的装扮：${description}" focusable="false">${defs}
+    <g data-dressup-slot="dress" data-equipped="${dress}" clip-path="url(#${id}-figure)">${outfit}</g>
+    <g data-dressup-slot="hairstyle" data-equipped="${hairstyle}">${faceLock}</g>
+    <g data-dressup-slot="skin" data-equipped="${skin}">${skinArt}</g>
+    <g data-dressup-slot="eyes" data-equipped="${eyes}">${eyeArt}</g>
+    <g data-dressup-slot="lips" data-equipped="${lips}">${lipArt}</g>
+    <g data-dressup-slot="lashes" data-equipped="${lashes}">${lashArt}</g>
+    ${kawaiiShoesMarkup(shoes)}${kawaiiJewelryMarkup(bracelet,necklace)}
+    <g data-dressup-slot="hair" data-equipped="${hair}">${kawaiiHeadAccessoryMarkup(hair)}</g>
   </svg>`;
 }
 
-function mangaIconCrop(art, bounds) {
+function kawaiiIconCrop(art, bounds) {
   const [x,y,width,height]=bounds;
   const scale=Math.min(106/width,108/height);
   const drawWidth=width*scale,drawHeight=height*scale;
   const left=7+(106-drawWidth)/2,top=4+(108-drawHeight)/2;
-  mangaIconCrop.serial=(mangaIconCrop.serial||0)+1;
-  const id='manga-icon-crop-'+mangaIconCrop.serial;
+  kawaiiIconCrop.serial=(kawaiiIconCrop.serial||0)+1;
+  const id='kawaii-icon-crop-'+kawaiiIconCrop.serial;
   return `<defs><clipPath id="${id}" clipPathUnits="userSpaceOnUse"><rect x="${left}" y="${top}" width="${drawWidth}" height="${drawHeight}"/></clipPath></defs><g clip-path="url(#${id})"><g transform="translate(${left-x*scale} ${top-y*scale}) scale(${scale})">${art}</g></g>`;
 }
 
-function mangaWardrobeCrop(kind, itemId) {
-  const bounds=kind==='hairstyle'?[337,0,412,337]:[268,325,550,690];
-  return mangaIconCrop(mangaCharacterImage(kind,itemId),bounds);
+function kawaiiWardrobeCrop(kind, itemId) {
+  const hair=kind==='hairstyle';
+  return kawaiiIconCrop(kawaiiCharacterImage(hair?'patched':itemId,hair?itemId:'original'),hair?[255,0,355,300]:[175,195,520,635]);
 }
 
-function mangaAccessoryIconMarkup(itemId) {
-  const views={bow_rose:[572,56,163,150],clip_star:[371,88,122,122],band_lilac:[387,3,315,234],crown_snow:[446,-74,205,123]};
-  if(!Object.prototype.hasOwnProperty.call(views,itemId))return '';
-  return mangaIconCrop(mangaHeadAccessoryMarkup(itemId),views[itemId]);
+function kawaiiAccessoryIconMarkup(itemId) {
+  const views={bow_rose:[444,35,102,94],clip_star:[319,55,77,77],band_lilac:[329,2,197,147],crown_snow:[366,-45,128,77]};
+  return Object.prototype.hasOwnProperty.call(views,itemId)?kawaiiIconCrop(kawaiiHeadAccessoryMarkup(itemId),views[itemId]):'';
 }
 
 function dressupExtraItemMarkup(itemId, paint = {}) {
@@ -1975,14 +1958,14 @@ function dressupExtraItemMarkup(itemId, paint = {}) {
 
 
 function wardrobeItemIllustration(itemId) {
-  const names={patched:'粉色补丁背带裙',dress_sky:'蓝色公主裙',dress_peach:'蜜桃花边裙',dress_lilac:'紫藤花裙子',none:'取下装扮',bow_rose:'莓果蝴蝶结',clip_star:'小星星发夹',band_lilac:'丁香花发箍',crown_snow:'白雪公主的王冠',mask_pearl:'美白面膜',mascara_cocoa:'可可睫毛膏',contacts_hazel:'榛棕美瞳',contacts_ocean:'晴海美瞳',lipstick_rose:'玫瑰口红',lipstick_peach:'蜜桃口红',hairstyle_bob:'软软波波头',hairstyle_twintails:'俏皮双马尾',shoes_rose:'莓粉小皮鞋',shoes_maryjane:'黑色玛丽珍鞋',shoes_crystal:'水晶鞋',bracelet_pearl:'珍珠手链',necklace_star:'星星项链'};
+  const names={patched:'旧布补丁裙',dress_sky:'蓝色公主裙',dress_peach:'蜜桃花边裙',dress_lilac:'紫藤花裙子',none:'取下装扮',bow_rose:'莓果蝴蝶结',clip_star:'小星星发夹',band_lilac:'丁香花发箍',crown_snow:'白雪公主的王冠',mask_pearl:'美白面膜',mascara_cocoa:'可可睫毛膏',contacts_hazel:'榛棕美瞳',contacts_ocean:'晴海美瞳',lipstick_rose:'玫瑰口红',lipstick_peach:'蜜桃口红',hairstyle_bob:'软软波波头',hairstyle_twintails:'俏皮双马尾',shoes_rose:'莓粉小皮鞋',shoes_maryjane:'黑色玛丽珍鞋',shoes_crystal:'水晶鞋',bracelet_pearl:'珍珠手链',necklace_star:'星星项链'};
   const safe=Object.prototype.hasOwnProperty.call(names,itemId)?itemId:'none';
   const p=dressupSvgPaints(safe==='mask_pearl'?'mask_pearl':'natural',safe==='contacts_ocean'||safe==='contacts_hazel'?safe:'natural');
   let art;
-  if (['patched','dress_sky','dress_peach','dress_lilac'].includes(safe)) art=mangaWardrobeCrop('dress',safe);
-  else if (['hairstyle_bob','hairstyle_twintails'].includes(safe)) art=mangaWardrobeCrop('hairstyle',safe);
-  else if (['bow_rose','clip_star','band_lilac','crown_snow'].includes(safe)) art=mangaAccessoryIconMarkup(safe);
-  else if (['shoes_rose','shoes_maryjane','shoes_crystal'].includes(safe)) art=mangaIconCrop(mangaShoesMarkup(safe),[392,1333,285,123]);
+  if (['patched','dress_sky','dress_peach','dress_lilac'].includes(safe)) art=kawaiiWardrobeCrop('dress',safe);
+  else if (['hairstyle_bob','hairstyle_twintails'].includes(safe)) art=kawaiiWardrobeCrop('hairstyle',safe);
+  else if (['bow_rose','clip_star','band_lilac','crown_snow'].includes(safe)) art=kawaiiAccessoryIconMarkup(safe);
+  else if (['shoes_rose','shoes_maryjane','shoes_crystal'].includes(safe)) art=kawaiiIconCrop(kawaiiShoesMarkup(safe),[290,885,230,139]);
   else if (safe==='none') art='<circle cx="60" cy="60" r="25" fill="none" stroke="#c7adb9" stroke-width="1.8"/><path d="M43 77L77 43" stroke="#c7adb9" stroke-width="1.8" stroke-linecap="round"/>';
   else art=dressupExtraItemMarkup(safe,p);
   return `<svg class="wardrobe-item-art" data-wardrobe-item="${safe}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="${names[safe]}" focusable="false">${p.defs}<ellipse cx="60" cy="108" rx="33" ry="4.5" fill="#c7a8b6" opacity=".15"/>${art}</svg>`;

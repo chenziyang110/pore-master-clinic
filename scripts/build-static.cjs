@@ -3,7 +3,14 @@ const path = require('node:path');
 
 const root = fs.realpathSync(path.resolve(__dirname, '..'));
 const output = path.join(root, 'dist');
-const art = ['manga-base', 'manga-dress-sky', 'manga-dress-peach', 'manga-dress-lilac', 'manga-hair-bob', 'manga-hair-twintails'];
+const art = [
+  'kawaii-approved', 'kawaii-dress-sky', 'kawaii-dress-peach', 'kawaii-dress-lilac',
+  'kawaii-hair-bob', 'kawaii-hair-twintails',
+  'kawaii-dress-sky-bob', 'kawaii-dress-sky-twintails',
+  'kawaii-dress-peach-bob', 'kawaii-dress-peach-twintails',
+  'kawaii-dress-lilac-bob', 'kawaii-dress-lilac-twintails',
+  'kawaii-shoes-rose', 'kawaii-shoes-maryjane', 'kawaii-shoes-crystal',
+];
 const files = ['index.html', 'favicon.svg', ...art.map(name => 'assets/character/' + name + '.webp')];
 
 const old = fs.lstatSync(output, { throwIfNoEntry: false });
@@ -25,4 +32,4 @@ for (const file of files) {
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.copyFileSync(path.join(root, file), target);
 }
-console.log('Built index.html, favicon.svg and ' + art.length + ' manga character assets.');
+console.log('Built index.html, favicon.svg and ' + art.length + ' approved kawaii character assets.');
