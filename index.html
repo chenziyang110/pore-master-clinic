@@ -857,6 +857,54 @@
     @media (max-height: 500px) and (orientation: landscape) {
       #home-modal .girl-portrait svg.kawaii-character { height: min(250px, 65dvh); }
     }
+
+    /* A gentle food request; the approved character artwork stays untouched. */
+    #hunger-modal { position: fixed; inset: 0; z-index: 55; padding: max(12px, var(--safe-top)) max(12px, var(--safe-right)) max(12px, var(--safe-bottom)) max(12px, var(--safe-left)); background: rgba(111, 62, 87, .27); }
+    #hunger-modal .hunger-card { width: 100%; max-width: 380px; min-height: 0; max-height: calc(100dvh - 24px - var(--safe-top) - var(--safe-bottom)); overflow-y: auto; overscroll-behavior: contain; padding: 20px; border: 1px solid #f3cfdf; border-radius: 26px; background: #fff9fc; box-shadow: 0 18px 58px rgba(135, 67, 103, .20); text-align: center; scrollbar-gutter: stable; }
+    #hunger-modal .hunger-close { position: sticky; top: -8px; z-index: 5; display: flex; align-items: center; justify-content: center; width: 44px; min-height: 44px; margin: -8px -8px -40px auto; padding: 0; border: 1px solid #f0d8e4; border-radius: 50%; background: #fff8fcf5; color: #a46685; font-size: 25px; line-height: 1; }
+    #hunger-modal .hunger-close:hover { background: #ffe7f2; }
+    #hunger-modal button:focus-visible { outline: 3px solid #bc5c8c; outline-offset: 3px; }
+    #hunger-modal .hunger-art { position: relative; isolation: isolate; height: 182px; overflow: hidden; margin: 4px 0 14px; border: 1px solid #f5dce8; border-radius: 23px; background: #fff; }
+    #hunger-girl { position: absolute; z-index: 1; inset: 0; height: 100%; width: 100%; overflow: hidden; pointer-events: none; }
+    #hunger-girl > svg.kawaii-character { position: absolute; top: -28px; left: 50%; width: 340px; height: 696px; max-width: none; margin: 0; transform: translateX(-50%); filter: none; }
+    #hunger-modal .hunger-request { position: absolute; z-index: 3; top: 14px; left: 12px; margin: 0; padding: 7px 11px; border: 1px solid #efc9dc; border-radius: 15px 15px 15px 4px; color: #9d587b; background: #fff5fa; font-size: 14px; line-height: 1.4; box-shadow: 0 3px 10px #c98ba714; }
+    #hunger-modal .hunger-bowl { position: absolute; z-index: 3; bottom: 5px; left: 50%; display: block; width: 82px; height: 55px; transform: translateX(-50%); filter: drop-shadow(0 3px 3px #b27c8e24); }
+    #hunger-modal .hunger-tear { position: absolute; z-index: 3; top: 96px; left: calc(50% + 36px); display: block; width: 13px; height: 19px; opacity: .72; }
+    #hunger-title { margin: 0; color: #a74f79; font-size: 24px; font-weight: 650; line-height: 1.4; }
+    #hunger-copy { margin: 8px auto 16px; max-width: 28ch; color: #986a82; font-size: 16px; line-height: 1.65; overflow-wrap: anywhere; }
+    #hunger-modal .hunger-meter-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 7px; color: #9d617d; font-size: 14px; line-height: 1.5; }
+    #hunger-percent { color: #b4517f; font-weight: 650; font-variant-numeric: tabular-nums; }
+    #hunger-meter { height: 9px; overflow: hidden; border-radius: 20px; background: #f5e2eb; }
+    #hunger-meter-fill { height: 100%; width: 100%; border-radius: inherit; background: linear-gradient(90deg, #efacc6, #df7da6); transition: width .25s ease; }
+    #hunger-modal .hunger-actions { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; margin-top: 18px; }
+    #hunger-modal .hunger-actions button { min-height: 46px; margin: 0; padding: 11px 14px; border-radius: 15px; font-size: 16px; line-height: 1.4; }
+    #hunger-modal #btn-hunger-later { min-height: 44px; border-color: #edd4e1; background: #fff9fc; color: #a87590; font-size: 14px; box-shadow: none; }
+    #hunger-modal.is-very-hungry .hunger-card { border-color: #e9a7c5; }
+    #hunger-modal.is-very-hungry #hunger-meter-fill { background: linear-gradient(90deg, #ed9cbd, #d66697); }
+    #hunger-modal.open.is-very-hungry .hunger-request { animation: hunger-request-sigh 3.5s ease-in-out infinite; }
+    #hunger-modal.open.is-very-hungry .hunger-tear { animation: hunger-tear-wobble 3.5s ease-in-out infinite; }
+    @keyframes hunger-request-sigh { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+    @keyframes hunger-tear-wobble { 0%,100% { opacity: .60; transform: translateY(0); } 50% { opacity: .88; transform: translateY(2px); } }
+    @media (max-width: 355px), (max-height: 650px) {
+      #hunger-modal .hunger-card { padding: 16px; border-radius: 22px; }
+      #hunger-modal .hunger-art { height: 153px; margin-bottom: 10px; }
+      #hunger-girl > svg.kawaii-character { top: -31px; }
+      #hunger-modal .hunger-request { top: 11px; left: 9px; padding: 6px 9px; }
+      #hunger-title { font-size: 22px; }
+      #hunger-copy { margin: 6px auto 12px; }
+      #hunger-modal .hunger-actions { margin-top: 14px; gap: 6px; }
+    }
+    @media (max-height: 500px) and (orientation: landscape) {
+      #hunger-modal .hunger-art { height: 124px; }
+      #hunger-girl > svg.kawaii-character { top: -46px; }
+      #hunger-modal .hunger-tear { top: 77px; }
+      #hunger-modal .hunger-bowl { left: calc(50% + 65px); width: 70px; height: 47px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #hunger-modal.open { animation: none; }
+      #hunger-modal .hunger-request, #hunger-modal .hunger-tear { animation: none !important; }
+      #hunger-meter-fill { transition: none; }
+    }
   </style>
 </head>
 <body>
@@ -968,6 +1016,26 @@
             <section id="wardrobe-outfits-panel" role="tabpanel" aria-labelledby="wardrobe-tab-outfits"><h3 id="wardrobe-owned-title" class="wardrobe-section-title" hidden>已经拥有</h3><div id="wardrobe-collection" class="wardrobe-items"></div><div id="wardrobe-reset" class="wardrobe-reset" hidden><button type="button" data-equip="reset:all">恢复最初装扮</button></div><h3 id="wardrobe-wish-title" class="wardrobe-section-title">想变漂亮</h3><div id="wardrobe-preview" class="wardrobe-wishes"></div><div id="dream-preview"></div><div id="wardrobe-coming-soon" class="wardrobe-coming-soon" hidden><strong>敬请期待</strong></div></section>
             <section id="wardrobe-food-panel" role="tabpanel" aria-labelledby="wardrobe-tab-food" hidden><p class="food-intro">一份美味，吃掉一点小饥饿。</p><div id="wardrobe-food-collection" class="food-items"></div><p id="wardrobe-food-empty" class="food-empty">等一份小美味掉进篮子里。</p></section>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="hunger-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="hunger-title" aria-describedby="hunger-copy" tabindex="-1">
+      <div class="modal-card hunger-card">
+        <button id="btn-close-hunger" class="hunger-close" type="button" aria-label="关闭饥饿提醒">×</button>
+        <div class="hunger-art" aria-hidden="true">
+          <div id="hunger-girl" class="girl-portrait"></div>
+          <p class="hunger-request">咕噜…咕噜…</p>
+          <svg class="hunger-tear" viewBox="0 0 16 24" focusable="false"><path d="M8 2C7 7 2 11 2 16a6 6 0 0 0 12 0C14 11 9 7 8 2Z" fill="#b8dce9" stroke="#93c3d5" stroke-width="1.2"/><path d="M5 13c-1 2-1 4 0 5" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/></svg>
+          <svg class="hunger-bowl" viewBox="0 0 96 64" focusable="false"><ellipse cx="48" cy="57" rx="31" ry="4" fill="#eac8d8" opacity=".42"/><path d="M12 24c2 18 13 30 36 30s34-12 36-30Z" fill="#f9dce8" stroke="#cf93b0" stroke-width="1.8"/><ellipse cx="48" cy="24" rx="36" ry="10" fill="#fff8fb" stroke="#cf93b0" stroke-width="1.8"/><ellipse cx="48" cy="25" rx="27" ry="5" fill="#f4e2ea"/><path d="M43 39c-4-5-10 2 5 10 15-8 9-15 5-10-3-3-7-3-10 0Z" fill="#e8a2bf"/><path d="M19 34c2 7 6 12 12 15" fill="none" stroke="#fff6fa" stroke-width="3" stroke-linecap="round"/></svg>
+        </div>
+        <h2 id="hunger-title">肚子好饿呀…</h2>
+        <p id="hunger-copy">可以给我一点吃的吗？一小口也好。</p>
+        <div class="hunger-meter-heading"><span id="hunger-meter-label">饥饿程度</span><strong id="hunger-percent" aria-hidden="true">100%</strong></div>
+        <div id="hunger-meter" role="progressbar" aria-labelledby="hunger-meter-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><div id="hunger-meter-fill"></div></div>
+        <div class="hunger-actions">
+          <button id="btn-hunger-feed" class="primary-btn" type="button" data-open-tab="food">喂她吃一点</button>
+          <button id="btn-hunger-later" class="secondary-btn" type="button">等一下</button>
         </div>
       </div>
     </div>
@@ -2169,6 +2237,13 @@ function foodIllustration(itemId) {
     let giftNoticeGesture = null;
     let giftNoticeItems = [];
     const giftFlightTimers = new Set();
+    let hungerReminderTimer = null;
+    let hungerReminderRevision = 0;
+    let hungerWindowActive = true;
+    let hungerSafeAfter = 0;
+    const hungerHeldMouseButtons = new Set();
+    const hungerHeldTouches = new Set();
+    const hungerHeldKeys = new Set();
     let wardrobeTab = 'outfits';
     let wardrobePreviewFocus = 'full';
     let wardrobeVisualRevision = 0;
@@ -2332,7 +2407,14 @@ function foodIllustration(itemId) {
       return { version: 3, level: Number.isSafeInteger(raw?.level) && raw.level >= 1 && raw.level <= 1000000 ? raw.level : 1,
         unlocked, equipped: Object.fromEntries(Object.entries(WARDROBE_DEFAULTS).map(([slot, fallback]) => [slot, selected(slot, fallback)])),
         dreams, dreamEquipped, pantry, hunger: Number.isInteger(raw?.hunger) && raw.hunger >= 0 && raw.hunger <= 100 ? raw.hunger : 38,
-        careRhythm: normalizeCareRhythm(raw?.careRhythm) };
+        careRhythm: normalizeCareRhythm(raw?.careRhythm), hungerReminder: normalizeHungerReminder(raw?.hungerReminder) };
+    }
+
+    function normalizeHungerReminder(raw) {
+      return {
+        lastRunId: typeof raw?.lastRunId === 'string' && raw.lastRunId.length <= 128 ? raw.lastRunId : '',
+        nextAt: Number.isSafeInteger(raw?.nextAt) && raw.nextAt >= 0 && raw.nextAt <= Date.now() + 86400000 ? raw.nextAt : 0
+      };
     }
 
     function normalizeCareRhythm(raw) {
@@ -2390,19 +2472,24 @@ function foodIllustration(itemId) {
         return items;
       };
       const black = shuffled(typePool.map((type, index) => type === 'blackhead' ? index : -1).filter(index => index >= 0));
+      const blackheadTotal = black.length;
       const white = typePool.map((type, index) => type === 'whitehead' ? index : -1).filter(index => index >= 0);
       if (black.length >= 5 && rewardRandom(random) < .24) variants[black.shift()].linkedPore = true;
       // A pure blackhead round must not hide a whitehead in a shared pore.
       if (level >= 4 && white.length && black.length >= 4 && rewardRandom(random) < .30) {
         variants[black.shift()].sharedPore = { mode: level >= 6 && rewardRandom(random) < .5 ? 'sequential' : 'together', phase: 'blackhead' };
       }
-      // Hidden contents are selected once per round. A small board has only one
-      // two-core surprise; fuller boards favour whiteheads and keep both kinds.
+      // Hidden contents are selected once per round. Fuller boards offer more
+      // separate reveals, favouring whiteheads while keeping a squeezeable
+      // patch on fuller boards. Linked blackheads can also join that patch.
       const light = typePool.length <= 4;
+      const sequenceLimit = level === 3 ? 2 : 3;
+      const linkedCount = variants.filter(item => item.linkedPore).length;
+      const blackSequenceLimit = Math.max(0, black.length + linkedCount - (blackheadTotal >= 5 ? 3 : 1));
       const sequenceIndices = light
         ? shuffled(white.length ? white : black).slice(0, 1)
-        : [...shuffled(white).slice(0, Math.min(2, Math.ceil(white.length * .6))),
-          ...shuffled(black).slice(0, Math.min(2, Math.max(0, Math.floor(black.length * .35))))];
+        : [...shuffled(white).slice(0, Math.min(sequenceLimit, Math.ceil(white.length * .75))),
+          ...shuffled(black).slice(0, Math.min(sequenceLimit, blackSequenceLimit, Math.ceil(black.length * .5)))];
       for (const index of sequenceIndices) {
         const roll = rewardRandom(random);
         variants[index].poreSequence = { count: light || level === 3 || roll < .65 ? 2 : roll < .93 ? 3 : 4, index: 0 };
@@ -2422,6 +2509,40 @@ function foodIllustration(itemId) {
       }
       if (level >= 4 && white.length && rewardRandom(random) < .65) variants[white[Math.floor(rewardRandom(random) * white.length)]].whiteheadSize = 'large';
       return variants;
+    }
+
+    function clusterInitialPoreContents(pimples) {
+      const black = pimples.filter(p => p.type === 'blackhead' && !p.sharedPore);
+      const movable = black.filter(p => !p.linkedPore);
+      const current = new Set(black.filter(p => !p.poreSequence));
+      if (current.size < 2 || !movable.some(p => p.poreSequence)) return;
+      const groupSize = members => Math.max(...[...members].map(p => {
+        const reach = Math.min(92, Math.max(72, p.radius * 4.2));
+        return Math.min(4, [...members].filter(q => Math.hypot(p.x - q.x, p.y - q.y) <= reach).length);
+      }));
+      let best = current, bestSize = groupSize(current), bestChanges = 0;
+      if (bestSize >= Math.min(3, current.size)) return;
+      // Choose contents once, after the immutable geometry has been packed.
+      // Nearby openings keep the ordinary/bundle contents; hidden sequences
+      // move as complete packages, without changing any rolled quantity.
+      for (const anchor of black) {
+        const candidate = new Set(black.filter(p => p.linkedPore));
+        candidate.add(anchor);
+        const nearest = [...movable].sort((a, b) => Math.hypot(a.x - anchor.x, a.y - anchor.y)
+          - Math.hypot(b.x - anchor.x, b.y - anchor.y) || a.id - b.id);
+        for (const p of nearest) { if (candidate.size >= current.size) break; candidate.add(p); }
+        const size = groupSize(candidate);
+        const changes = movable.filter(p => candidate.has(p) !== current.has(p)).length;
+        if (size > bestSize || (size === bestSize && changes < bestChanges)) {
+          best = candidate; bestSize = size; bestChanges = changes;
+        }
+      }
+      const incoming = movable.filter(p => best.has(p) && p.poreSequence);
+      const outgoing = movable.filter(p => !best.has(p) && !p.poreSequence);
+      incoming.forEach((p, index) => {
+        const q = outgoing[index];
+        for (const key of ['poreSequence', 'blackheadCount', 'blackheadLengths']) [p[key], q[key]] = [q[key], p[key]];
+      });
     }
 
     function wardrobeRewardPool(level) {
@@ -2485,6 +2606,7 @@ function foodIllustration(itemId) {
       if (immediate || motionPreference?.matches || notice.hidden) {
         notice.hidden = true;
         notice.classList.remove('is-dismissing');
+        if (!immediate) queueHungerReminder(1400);
         return;
       }
       notice.classList.add('is-dismissing');
@@ -2493,6 +2615,7 @@ function foodIllustration(itemId) {
         notice.hidden = true;
         notice.classList.remove('is-dismissing');
         giftNoticeTimer = null;
+        queueHungerReminder(1400);
       }, 180);
     }
 
@@ -2507,6 +2630,7 @@ function foodIllustration(itemId) {
     }
 
     function showGiftNotice(item) {
+      cancelHungerReminder();
       const notice = document.getElementById('gift-discovery'), focused = notice.contains(document.activeElement);
       const previous = notice.hidden || notice.classList.contains('is-dismissing') ? [] : giftNoticeItems;
       giftNoticeItems = [...new Set([...previous, item.id])];
@@ -2813,6 +2937,185 @@ function foodIllustration(itemId) {
       return true;
     }
 
+    function cancelHungerReminder() {
+      hungerReminderRevision += 1;
+      if (hungerReminderTimer !== null) clearTimeout(hungerReminderTimer);
+      hungerReminderTimer = null;
+    }
+
+    function hungerInputIsHeld() {
+      return hungerHeldMouseButtons.size > 0 || hungerHeldTouches.size > 0 || hungerHeldKeys.size > 0;
+    }
+
+    function hungerReminderDue() {
+      const reminder = wardrobeProgress.hungerReminder;
+      return wardrobeProgress.hunger >= 80 && FOOD_ITEMS.some(item => wardrobeProgress.pantry[item.id] > 0)
+        && Boolean(state.runId) && reminder.lastRunId !== state.runId && Date.now() >= reminder.nextAt;
+    }
+
+    function hungerGameplayReady(allowQueued = false) {
+      return careControl.owned && !careControl.hydrating && adventureEntered && state.pimples.length > 0
+        && hungerWindowActive && !document.hidden && !state.paused && !state.settled
+        && !state.iceBrushingMode && !state.iceFinishing && state.currentTool !== 'ice_brush'
+        && !state.pointer.active && !state.keyboardCare.active && !state.tweezers.clampedPimple
+        && !hungerInputIsHeld() && (allowQueued || Date.now() >= hungerSafeAfter)
+        && !document.querySelector('.modal-backdrop.open');
+    }
+
+    function queueHungerReminder(delayMs = 12000) {
+      cancelHungerReminder();
+      if (!hungerReminderDue() || !hungerGameplayReady(true)) return false;
+      const revision = hungerReminderRevision;
+      const delay = Math.max(hungerSafeAfter - Date.now(),
+        Number.isFinite(delayMs) ? Math.max(0, Math.min(600000, delayMs)) : 12000);
+      hungerReminderTimer = setTimeout(() => {
+        if (revision !== hungerReminderRevision) return;
+        hungerReminderTimer = null;
+        maybeShowHungerReminder();
+      }, delay);
+      return true;
+    }
+
+    function maybeShowHungerReminder() {
+      cancelHungerReminder();
+      const modal = document.getElementById('hunger-modal');
+      if (!modal || !hungerReminderDue() || !hungerGameplayReady()
+        || !document.getElementById('gift-discovery').hidden
+        || document.getElementById('gift-flight-layer').childElementCount > 0
+        || state.flyingTrophies.length > 0 || !ensureCareControl()) return false;
+      const hunger = wardrobeProgress.hunger;
+      document.getElementById('hunger-girl').innerHTML = girlIllustration(wardrobeProgress.equipped);
+      document.getElementById('hunger-title').textContent = hunger >= 100 ? '肚子真的好饿呀…' : '肚子咕咕叫了…';
+      document.getElementById('hunger-copy').textContent = hunger >= 100
+        ? '主人……我真的好饿，能分我一口吗？' : '主人……肚子咕咕叫了，可以给我一点好吃的吗？';
+      document.getElementById('hunger-percent').textContent = hunger + '%';
+      const meter = document.getElementById('hunger-meter');
+      meter.setAttribute('aria-valuenow', String(hunger));
+      meter.setAttribute('aria-valuetext', '饥饿 ' + hunger + '%');
+      document.getElementById('hunger-meter-fill').style.width = hunger + '%';
+      modal.classList.toggle('is-very-hungry', hunger >= 100);
+      modal.classList.add('open');
+      state.paused = true;
+      wardrobeProgress.hungerReminder = { lastRunId: state.runId, nextAt: Date.now() + 180000 };
+      sound.pause();
+      saveCurrentSession(true);
+      requestSceneFrame();
+      return true;
+    }
+
+    function clearHungerReminderPresentation(resume = false) {
+      cancelHungerReminder();
+      const modal = document.getElementById('hunger-modal');
+      if (!modal?.classList.contains('open')) return false;
+      modal.classList.remove('open');
+      if (resume) {
+        state.paused = !careControl.owned || state.settled || Boolean(document.querySelector('.modal-backdrop.open'));
+        requestSceneFrame();
+      }
+      return true;
+    }
+
+    function snoozeHungerReminder() {
+      wardrobeProgress.hungerReminder = { lastRunId: state.runId || wardrobeProgress.hungerReminder.lastRunId,
+        nextAt: Math.max(wardrobeProgress.hungerReminder.nextAt, Date.now() + 300000) };
+    }
+
+    function dismissHungerReminder() {
+      if (!document.getElementById('hunger-modal')?.classList.contains('open')) return false;
+      if (!ensureCareControl()) { clearHungerReminderPresentation(); return false; }
+      snoozeHungerReminder();
+      clearHungerReminderPresentation(true);
+      saveCurrentSession(true);
+      return true;
+    }
+
+    function openHungerFood(event) {
+      if (!document.getElementById('hunger-modal')?.classList.contains('open') || !ensureCareControl()) return false;
+      if (!dismissHungerReminder()) return false;
+      // Remove the request before opening the food page, so closing the wardrobe
+      // returns to the care canvas instead of reopening the hunger dialog.
+      wardrobeTab = 'food';
+      openWardrobe(event);
+      return true;
+    }
+
+    function bindHungerReminders() {
+      const modal = document.getElementById('hunger-modal');
+      document.getElementById('btn-close-hunger').addEventListener('click', dismissHungerReminder);
+      document.getElementById('btn-hunger-later').addEventListener('click', dismissHungerReminder);
+      document.getElementById('btn-hunger-feed').addEventListener('click', openHungerFood);
+      modal.addEventListener('click', event => { if (event.target === modal) dismissHungerReminder(); });
+      modal.addEventListener('keydown', event => {
+        if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); dismissHungerReminder(); }
+      });
+
+      // Observe physical contacts separately from the simulation: releasePointer
+      // can be called by a completed group while a finger is still on the glass.
+      const afterRelease = () => {
+        if (hungerInputIsHeld()) return;
+        hungerSafeAfter = Date.now() + 1400;
+        cancelHungerReminder();
+        const revision = hungerReminderRevision;
+        // Capture the end even when a card stops propagation, then let the
+        // gameplay handler finish before checking whether this page is idle.
+        hungerReminderTimer = setTimeout(() => {
+          if (revision !== hungerReminderRevision) return;
+          hungerReminderTimer = null;
+          queueHungerReminder(1400);
+        }, 0);
+      };
+      window.addEventListener('mousedown', event => {
+        hungerHeldMouseButtons.add(event.button);
+        cancelHungerReminder();
+      }, {capture: true, passive: true});
+      window.addEventListener('mouseup', event => {
+        hungerHeldMouseButtons.delete(event.button);
+        afterRelease();
+      }, {capture: true, passive: true});
+      const syncTouches = event => {
+        hungerHeldTouches.clear();
+        Array.from(event.touches || []).forEach((touch, index) => hungerHeldTouches.add(touch.identifier ?? index));
+      };
+      window.addEventListener('touchstart', event => {
+        syncTouches(event); cancelHungerReminder();
+      }, {capture: true, passive: true});
+      for (const type of ['touchend', 'touchcancel']) window.addEventListener(type, event => {
+        syncTouches(event);
+        afterRelease();
+      }, {capture: true, passive: true});
+      window.addEventListener('keydown', event => {
+        if (event.key === ' ' || event.key === 'Enter') hungerHeldKeys.add(event.key);
+        cancelHungerReminder();
+      }, {capture: true, passive: true});
+      window.addEventListener('keyup', event => {
+        hungerHeldKeys.delete(event.key);
+        afterRelease();
+      }, {capture: true, passive: true});
+
+      const suspend = () => {
+        hungerWindowActive = false;
+        hungerHeldMouseButtons.clear(); hungerHeldTouches.clear(); hungerHeldKeys.clear();
+        clearHungerReminderPresentation(true);
+      };
+      const resume = () => { hungerWindowActive = true; queueHungerReminder(); };
+      window.addEventListener('blur', suspend);
+      window.addEventListener('pagehide', suspend);
+      window.addEventListener('focus', resume);
+      window.addEventListener('pageshow', resume);
+      document.addEventListener('visibilitychange', () => { if (document.hidden) suspend(); else resume(); });
+
+      let overlayWasOpen = Boolean(document.querySelector('.modal-backdrop.open:not(#hunger-modal)'));
+      const syncOverlays = () => {
+        const overlayOpen = Boolean(document.querySelector('.modal-backdrop.open:not(#hunger-modal)'));
+        if (overlayOpen) clearHungerReminderPresentation();
+        else if (overlayWasOpen) queueHungerReminder();
+        overlayWasOpen = overlayOpen;
+      };
+      for (const overlay of document.querySelectorAll('.modal-backdrop')) {
+        new MutationObserver(syncOverlays).observe(overlay, {attributes: true, attributeFilter: ['class']});
+      }
+    }
+
     function feedGirl(id, event) {
       const item = FOOD_ITEMS.find(item => item.id === id);
       if (!item || !ensureCareControl() || !(wardrobeProgress.pantry[id] > 0)) return false;
@@ -2823,6 +3126,8 @@ function foodIllustration(itemId) {
       wardrobeProgress.pantry[id]--;
       if (wardrobeProgress.pantry[id] === 0) delete wardrobeProgress.pantry[id];
       wardrobeProgress.hunger = Math.max(0, wardrobeProgress.hunger - item.satiety);
+      clearHungerReminderPresentation(true);
+      snoozeHungerReminder();
       wardrobePreviewFocus = 'full';
       persistSaveData(); renderWardrobe();
       document.getElementById('wardrobe-status').textContent = '谢谢你的款待！';
@@ -2837,6 +3142,7 @@ function foodIllustration(itemId) {
 
     function showAdventureHome(event) {
       if (!careControl.owned) return;
+      clearHungerReminderPresentation();
       clearGiftPresentation();
       releasePointer();
       document.querySelectorAll('.modal-backdrop.open').forEach(modal => modal.classList.remove('open'));
@@ -2864,10 +3170,12 @@ function foodIllustration(itemId) {
       sound.playUI('enter', event);
       saveCurrentSession(true);
       requestSceneFrame();
+      queueHungerReminder();
     }
 
     function openWardrobe(event) {
       if (!ensureCareControl()) return;
+      clearHungerReminderPresentation();
       clearGiftPresentation();
       if (event?.currentTarget?.dataset.openTab) wardrobeTab = event.currentTarget.dataset.openTab;
       wardrobeReturnModal = document.querySelector('.modal-backdrop.open');
@@ -2888,6 +3196,7 @@ function foodIllustration(itemId) {
       state.paused = Boolean(document.querySelector('.modal-backdrop.open'));
       sound.playUI('close', event);
       requestSceneFrame();
+      queueHungerReminder();
     }
 
     const state = {
@@ -3225,6 +3534,7 @@ function foodIllustration(itemId) {
     }
 
     function hydrateCareProfile(snapshot) {
+      clearHungerReminderPresentation();
       careControl.hydrating = true;
       careControl.saveIssue = false;
       sessionSaveEnabled = false;
@@ -3295,6 +3605,7 @@ function foodIllustration(itemId) {
       // Disable every writer before releasePointer or modal cleanup can save.
       careControl.owned = false;
       sessionSaveEnabled = false;
+      clearHungerReminderPresentation();
       if (sessionSaveTimer) { clearTimeout(sessionSaveTimer); sessionSaveTimer = null; }
       if (careControl.heartbeat) { clearInterval(careControl.heartbeat); careControl.heartbeat = null; }
       releasePointer();
@@ -3331,6 +3642,7 @@ function foodIllustration(itemId) {
         state.paused = preserveMemory ? Boolean(document.querySelector('.modal-backdrop.open')) : false;
         saveCurrentSession(true);
         requestSceneFrame();
+        queueHungerReminder();
         if (!navigator.locks?.request) {
           careControl.heartbeat = setInterval(() => {
             if (ensureCareControl()) {
@@ -4520,6 +4832,7 @@ function foodIllustration(itemId) {
 
     function generateLevel(overrideDensity = 0, options = {}) {
       if (!ensureCareControl()) return;
+      clearHungerReminderPresentation();
       pointerCareTarget = null;
       pendingTreatmentChange = null;
       state.targetDensity = overrideDensity;
@@ -4688,12 +5001,13 @@ function foodIllustration(itemId) {
       // Restoring a round must use the saved bindings, never draw again.
       const gifts = options.restoring ? [] : rollAdventureGifts(state.runLevel, Math.random,
         [...wardrobeProgress.unlocked, ...wardrobeProgress.dreams], state.roundPlan);
+      layoutTreatmentScene();
+      if (!options.restoring) clusterInitialPoreContents(state.pimples);
       const giftPores = [...state.pimples];
       for (const id of gifts) {
         const [p] = giftPores.splice(Math.floor(Math.random() * giftPores.length), 1);
         if (p) p.giftId = id;
       }
-      layoutTreatmentScene();
       state.initialPimples = state.pimples.map(({ cfg, ...p }) => JSON.parse(JSON.stringify(p)));
       state.snapshotBasis = null;
       startPracticeGuide(false);
@@ -4701,6 +5015,7 @@ function foodIllustration(itemId) {
       setHint(state.runLevel <= 2 ? '先按住热喷软化黑头，再用细胞夹缓缓取出。慢慢来就好。' : '从热敷开始，按住操作区缓缓移动。', 'normal');
       resultModalEl.classList.remove('open');
       requestSceneFrame();
+      if (!options.restoring) queueHungerReminder();
     }
 
     /**
@@ -9293,6 +9608,7 @@ function foodIllustration(itemId) {
     function openSettlementModal() {
       const record = recordCompletedCare();
       if (!record) return;
+      clearHungerReminderPresentation();
       state.paused = true;
       const level = record.wardrobeLevel || state.runLevel;
       const gifts = [...(record.wardrobeGifts || []), ...(record.dreamGifts || []), ...(record.foodGifts || [])].map(rewardItem).filter(Boolean);
@@ -9419,6 +9735,7 @@ function foodIllustration(itemId) {
       if (modal.id === 'storage-gate-modal' || !careControl.owned) return;
       if (modal.id === 'home-modal') return;
       if (modal.id === 'wardrobe-modal') { closeWardrobe(); return; }
+      if (modal.id === 'hunger-modal') { dismissHungerReminder(); return; }
       modal.classList.remove('open');
       if (modal.id === 'reset-modal') {
         const returnToClinic = pendingTreatmentChange?.returnToClinic;
@@ -9431,6 +9748,7 @@ function foodIllustration(itemId) {
       if (modal === clinicModalEl && state.settled) resultModalEl.classList.add('open');
       state.paused = Boolean(document.querySelector('.modal-backdrop.open'));
       releasePointer();
+      queueHungerReminder();
     }
 
     function bindUIControls() {
@@ -9671,16 +9989,18 @@ function foodIllustration(itemId) {
         if (open === activeModal) return;
         if (open) {
           if (!activeModal) previousFocus = document.activeElement;
+          if (activeModal?.id === 'hunger-modal' && open.id === 'wardrobe-modal') previousFocus = canvas;
           activeModal = open;
           panels.forEach(panel => { panel.inert = true; });
           const first = modalFocusTargets(open)[0];
           if (first) first.focus({ preventScroll: true });
         } else {
           const leavingHome = activeModal?.id === 'home-modal';
+          const leavingHunger = activeModal?.id === 'hunger-modal';
           activeModal = null;
           panels.forEach(panel => { panel.inert = false; });
           const restore = leavingHome ? document.getElementById('current-level')
-            : previousFocus?.isConnected && previousFocus !== document.body
+            : leavingHunger ? canvas : previousFocus?.isConnected && previousFocus !== document.body
             && !previousFocus.disabled && !previousFocus.closest('[hidden], [inert], .modal-backdrop:not(.open)')
             && previousFocus.getClientRects().length ? previousFocus : canvas;
           restore.focus({ preventScroll: true });
@@ -9822,6 +10142,7 @@ function foodIllustration(itemId) {
       bindCanvasInteractions();
       bindKeyboardCare();
       bindCareStorage();
+      bindHungerReminders();
       bindSceneScheduling();
       resizeCanvas();
       careControlReady = startCareStorage().then(ready => {

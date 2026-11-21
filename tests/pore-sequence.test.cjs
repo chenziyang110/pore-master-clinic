@@ -354,6 +354,10 @@ test('generated sequences are common in both pore types, varied in length and re
   for (let sample=0;sample<240;sample++) {
     const variants = variantsFor(types,7,random);
     assert.equal(variants.length,types.length,'internal cores do not add external care targets');
+    assert.ok(variants.filter(p=>p.poreSequence).length>=5,
+      'a full mixed board offers at least five separate hidden-reveal opportunities');
+    assert.ok(variants.some((p,index)=>types[index]==='blackhead'&&!p.poreSequence),
+      'full boards retain another blackhead opening alongside sequential surprises');
     for (let index=0;index<variants.length;index++) {
       const p = variants[index], sequence = p.poreSequence;
       if (!sequence) {counts.ordinary++;continue;}
@@ -377,6 +381,18 @@ test('generated sequences are common in both pore types, varied in length and re
   assert.ok(counts.whitehead/4>counts.blackhead/6,'whitehead opportunities carry the variant more often');
   assert.ok(counts.two>counts.three&&counts.two>counts.four,'two-core discoveries remain the usual length');
   assert.ok(counts.three>0&&counts.four>0&&counts.light>0&&counts.ordinary>0,'longer surprises and ordinary pores remain reachable');
+  for (const blackCount of [2,3]) for (let sample=0;sample<12;sample++) {
+    const mixed=[...Array(blackCount).fill('blackhead'),...Array(4).fill('whitehead')];
+    const variants=variantsFor(mixed,7,random);
+    const black=variants.slice(0,blackCount),white=variants.slice(blackCount);
+    assert.ok(black.some(p=>p.poreSequence),'even a whitehead-heavy board has a hidden blackhead follow-up');
+    assert.ok(black.some(p=>!p.poreSequence),'a small blackhead group keeps an alternative extraction');
+    assert.ok(white.filter(p=>p.poreSequence).length>=3,'whitehead-heavy boards regularly offer multiple separate reveals');
+  }
+  const early=variantsFor(types,3,random);
+  assert.ok(early.slice(0,6).filter(p=>p.poreSequence).length<=2
+    &&early.slice(6,10).filter(p=>p.poreSequence).length<=2,
+    'the first surprise level introduces at most two sequences of each kind');
 });
 
 test('all hidden cores count toward care goals while one pore grants its bound food only once at settlement', async t => {
