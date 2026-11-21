@@ -4978,7 +4978,7 @@ function foodIllustration(itemId) {
     function toolGuidanceFor(tool, selected = currentPointerCareTarget()) {
       if (selected?.kind === 'pimple') {
         const p = selected.item;
-        const count = getBlackheadCount(p);
+        const count = getRevealedBlackheadCount(p);
         if (count > 1 && tool === 'steam') return `${count} 根黑头挤一窝，先暖一暖。`;
         if (count > 1 && tool === 'squeeze') return `${count} 根黑头，轻轻向中间推。`;
         if (count > 1 && tool === 'tweezers' && canTweezePimple(p)) return `${count} 根黑头一起，夹住慢慢往外拉。`;
@@ -5589,6 +5589,12 @@ function foodIllustration(itemId) {
 
     function getBlackheadCount(p) {
       return p?.type === 'blackhead' && !p.linkedPore && !p.sharedPore ? normalizedBlackheadCount(p.blackheadCount) : 1;
+    }
+
+    function getRevealedBlackheadCount(p) {
+      const revealed = p?.state >= P_STATE.OOZING
+        || (p?.state === P_STATE.EXTRUDING && p.extrudeProgress > .04);
+      return revealed ? getBlackheadCount(p) : 1;
     }
 
     function validBlackheadCount(p) {
@@ -6265,7 +6271,8 @@ function foodIllustration(itemId) {
       if (target.kind === 'residue') return '皮肤残留';
       if (target.kind === 'splatter') return '镜片飞溅';
       const p = target.item;
-      const name = getBlackheadCount(p) > 1 ? `同洞 ${getBlackheadCount(p)} 根黑头` : p.sharedPore && p.sharedPore.phase !== 'done'
+      const count = getRevealedBlackheadCount(p);
+      const name = count > 1 ? `同洞 ${count} 根黑头` : p.sharedPore && p.sharedPore.phase !== 'done'
         ? p.sharedPore.phase === 'whitehead' ? '同洞剩余白头' : '同洞黑头和白头'
         : {blackhead: '黑头', whitehead: '白头', cyst: '深层目标'}[p.type];
       const status = p.iced ? '已敷膜' : p.state >= P_STATE.HEALING ? '已清理'
@@ -8151,8 +8158,9 @@ function foodIllustration(itemId) {
         ctx.fillStyle = skin; ctx.beginPath(); ctx.arc(0, 0, r * 1.12, 0, Math.PI * 2); ctx.fill();
       }
       if (p.state === P_STATE.OOZING || p.state === P_STATE.HEALING) return;
-      const bundle = getBlackheadCount(p) > 1;
-      const poreR = Math.max(5.5, r * ((bundle ? .46 : .38) + swell * .07))
+      // Hidden strands share one ordinary cap; their number is only revealed
+      // by the filaments once squeezing actually exposes the contents.
+      const poreR = Math.max(5.5, r * (.38 + swell * .07))
         * (p.steamed >= .75 ? 1.12 : 1) * (p.linkedPore ? .82 : 1) * (p.blackheadSize === 'giant' ? 1.25 : 1);
       const aspect = .78 + Math.sin(p.shape.p2) * .07;
       const mouths = getPimpleMouthOffsets(p);
@@ -8171,21 +8179,6 @@ function foodIllustration(itemId) {
           if (p.pierced || p.steamed >= .75) {
             ctx.fillStyle = 'rgba(241,224,181,.75)';
             beginOrganicPath(ctx, mouth.x, lift + .45, cap * 1.08, cap * aspect * 1.14, p.shape, 1.5); ctx.fill();
-          }
-          const count = getBlackheadCount(p);
-          if (count > 1) {
-            const tipR = Math.max(3, poreR * (count === 2 ? .40 : .34));
-            for (let strand = 0; strand < count; strand++) {
-              const angle = strand / count * Math.PI * 2 - Math.PI * .5;
-              const tx = mouth.x + Math.cos(angle) * poreR * .48;
-              const ty = lift + Math.sin(angle) * poreR * .42;
-              const tip = ctx.createLinearGradient(tx - tipR, ty - tipR, tx + tipR, ty + tipR);
-              tip.addColorStop(0, isCreamy ? '#6a5540' : '#514031');
-              tip.addColorStop(1, '#2e251d');
-              ctx.fillStyle = tip;
-              ctx.beginPath(); ctx.ellipse(tx, ty, tipR, tipR * .82, angle, 0, Math.PI * 2); ctx.fill();
-            }
-            continue;
           }
           const plug = ctx.createLinearGradient(mouth.x - cap, lift - cap, mouth.x + cap, lift + cap);
           plug.addColorStop(0, isCreamy ? '#76634e' : '#594939');
