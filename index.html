@@ -697,7 +697,8 @@
     .home-promise span { color: #a56687; background: #ffe7f1; }
     .girl-stage { background: radial-gradient(ellipse at 50% 32%,#fffafe 8%,#ffecf4 55%,#f8dae9); border-color: #f4d1e3; overflow: hidden; }
     .girl-portrait { position: relative; z-index: 2; }
-    .girl-portrait svg { filter: drop-shadow(0 8px 12px rgba(174,91,127,.13)); overflow: visible; }
+    .girl-portrait svg { filter: drop-shadow(0 5px 8px rgba(83,59,97,.12)); overflow: visible; }
+    .dressup-girl image { pointer-events: none; image-rendering: auto; }
     .girl-stage { background: radial-gradient(ellipse at 50% 27%,#fffafd 5%,#ffe8f1 56%,#f5d2e3); border-color: #f0c9dc; }
     .girl-caption { position: relative; z-index: 3; font-family: inherit; color: #a77891; }
     .story-close { color: #aa6588; background: #ffe5f0; }
@@ -1744,195 +1745,213 @@
     const skinCtx = skinLayer.getContext('2d');
     const motionPreference = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
 
-/* Original layered fairytale artwork. Every SVG owns its gradient namespace. */
+/* Original manga artwork. All wearable images share one registered canvas. */
+const MANGA_CHARACTER_ASSETS = Object.freeze({
+  dress: Object.freeze({ patched: 'assets/character/manga-base.webp', dress_sky: 'assets/character/manga-dress-sky.webp',
+    dress_peach: 'assets/character/manga-dress-peach.webp', dress_lilac: 'assets/character/manga-dress-lilac.webp' }),
+  hairstyle: Object.freeze({ original: 'assets/character/manga-base.webp', hairstyle_bob: 'assets/character/manga-hair-bob.webp',
+    hairstyle_twintails: 'assets/character/manga-hair-twintails.webp' })
+});
+
+function mangaAssetPath(kind, id) {
+  const type = kind === 'hairstyle' ? 'hairstyle' : 'dress';
+  const assets = MANGA_CHARACTER_ASSETS[type];
+  const fallback = type === 'hairstyle' ? 'original' : 'patched';
+  return assets[Object.prototype.hasOwnProperty.call(assets, id) ? id : fallback];
+}
+
+function mangaCharacterImage(kind, id, attributes = '') {
+  return `<image href="${mangaAssetPath(kind,id)}" x="0" y="0" width="1086" height="1448" preserveAspectRatio="xMidYMid meet" ${attributes}/>`;
+}
+
+/* Shared paints are only for the unchanged cosmetics, food and object icons. */
 function dressupSvgPaints(skin = 'natural', eyes = 'natural') {
   dressupSvgPaints.serial = (dressupSvgPaints.serial || 0) + 1;
   const id = 'dressup-art-' + dressupSvgPaints.serial;
-  const pearl = skin === 'mask_pearl';
   const iris = eyes === 'contacts_ocean' ? ['#214d7a','#559ec5','#a3e6ef']
     : eyes === 'contacts_hazel' ? ['#5c3d20','#ae7a32','#e4c876'] : ['#3d2927','#855039','#d69a61'];
-  const gradients = {
-    skin: pearl ? ['#fff8ef','#fbe9dc','#f0d0be'] : ['#ffe8d4','#f5ceb4','#e8b297'],
-    hair:['#563541','#965d70','#d29aa4'], hairLight:['#f2c8ca','#d99da9','#a96d7c'],
-    old:['#f8d7d8','#e6aebc','#c98298'], blue:['#9de3ff','#65b5ee','#4086cf'],
-    blueDeep:['#68b5ef','#3f8ed5','#3b69b2'], blueLight:['#f6fcff','#d8efff','#9dd7f5'],
-    peach:['#ffe2ca','#f7b4a4','#d88d9a'], lilac:['#f0e4ff','#c5a8eb','#9b7bcf'],
-    gold:['#fff5c5','#e4bd67','#b78c44'], crystal:['#ffffff','#d7f7ff','#8ecde7'],
-    iris
-  };
+  const gradients = {gold:['#fff5c5','#e4bd67','#b78c44'],crystal:['#ffffff','#d7f7ff','#8ecde7'],iris};
   const defs = '<defs>' + Object.entries(gradients).map(([name,colors]) =>
-    `<linearGradient id="${id}-${name}" x1="0" y1="0" x2=".7" y2="1"><stop stop-color="${colors[0]}"/><stop offset=".48" stop-color="${colors[1]}"/><stop offset="1" stop-color="${colors[2]}"/></linearGradient>`).join('')
-    + `<radialGradient id="${id}-blush"><stop stop-color="#eb9ca3" stop-opacity=".6"/><stop offset="1" stop-color="#efacaa" stop-opacity="0"/></radialGradient><radialGradient id="${id}-glow"><stop stop-color="#fffaf0"/><stop offset="1" stop-color="#e9eef7" stop-opacity="0"/></radialGradient><clipPath id="${id}-eye"><path d="M-8 .3C-4.8-5.6 3.4-6 8.4-.9C5.3 5.8-4.8 6.2-8 .3Z"/></clipPath></defs>`;
-  return {defs,id,...Object.fromEntries(Object.keys(gradients).map(name=>[name,`url(#${id}-${name})`])),blush:`url(#${id}-blush)`,glow:`url(#${id}-glow)`,eyeClip:`url(#${id}-eye)`};
+    `<linearGradient id="${id}-${name}" x1="0" y1="0" x2=".7" y2="1"><stop stop-color="${colors[0]}"/><stop offset=".48" stop-color="${colors[1]}"/><stop offset="1" stop-color="${colors[2]}"/></linearGradient>`).join('') + '</defs>';
+  return {defs,id,...Object.fromEntries(Object.keys(gradients).map(name=>[name,`url(#${id}-${name})`]))};
 }
 
-function dressupSkinPalette(skin) {
-  return skin === 'mask_pearl'
-    ? {face:'#fff0e2',body:'#fbe5d5',ear:'#f4d3c2',neck:'#f9ddca',shade:'#e8bba6',line:'#c89886',nose:'#d6a48d',blush:'#e9a6aa'}
-    : {face:'#f7d1b5',body:'#efbd9e',ear:'#edb598',neck:'#f0c2a3',shade:'#dca087',line:'#bd8776',nose:'#cb967e',blush:'#e6a0a3'};
-}
-
-function dressupGarmentMarkup(dress, paint = {}) {
-  const patched = !['dress_sky','dress_peach','dress_lilac'].includes(dress);
-  const blue = dress === 'dress_sky', peach = dress === 'dress_peach';
-  const cloth = patched ? paint.old || '#e4b7ac' : blue ? paint.blue || '#8bcaf2' : peach ? paint.peach || '#f3beb8' : paint.lilac || '#d5bfeb';
-  const line = patched ? '#bc918a' : blue ? '#739dbd' : peach ? '#cb98a2' : '#aa90c6';
-  const trim = patched ? '#f4e7d3' : '#fff8ed';
-  let skirt = `<path d="M130 173Q120 200 111 225Q105 245 98 262L108 267L119 264L130 270L143 267L156 271L170 266L184 270L197 265L208 266L215 260Q199 225 190 205Q181 188 171 172Z" fill="${cloth}" stroke="${line}" stroke-width="1" stroke-linejoin="round"/>
-    <path d="M136 181Q124 216 119 257M150 183Q146 224 146 263M165 182Q180 220 192 258" fill="none" stroke="#fff6e7" stroke-width="4.3" opacity=".32"/>
-    <path d="M132 189Q123 220 124 246M157 185Q158 231 164 258M176 190Q183 218 201 253" fill="none" stroke="${line}" stroke-width="1.1" opacity=".4"/>`;
-  if (patched) skirt += `<path d="M107 230L122 226L128 247L112 251Z" fill="#f3dcc4" stroke="#bc9d87" stroke-width=".9"/><path d="M107 230L122 226L128 247L112 251Z" fill="none" stroke="#fff2dd" stroke-width="1.8" stroke-dasharray="2 2.5"/>
-    <path d="M180 211L194 216L188 233L175 228Z" fill="#c7d8c6" stroke="#96ad94" stroke-width=".85"/><path d="M180 211L194 216L188 233L175 228Z" fill="none" stroke="#f5edda" stroke-width="1.6" stroke-dasharray="1.8 2.4"/>
-    <path d="M114 235L120 242M118 234L115 244M181 218L186 225M185 218L181 225M143 256L146 252L150 256M200 261L201 256" fill="none" stroke="#b99085" stroke-width=".8" stroke-linecap="round"/>`;
-  else {
-    skirt = `<path d="M99 260Q102 270 111 269Q117 276 127 272Q137 279 147 274Q159 281 171 274Q181 280 191 273Q203 277 211 267L211 257Z" fill="${trim}" stroke="#ddcfd6" stroke-width=".8"/>
-      <path d="M130 173C119 196 108 220 94 257Q119 276 156 274Q193 278 221 258C209 229 192 193 171 172Z" fill="${cloth}" stroke="${line}" stroke-width="1"/>
-      <path d="M137 181Q119 220 112 259M150 182Q143 226 144 269M163 181Q175 226 183 268M173 185Q199 226 209 258" fill="none" stroke="${line}" stroke-width="1.45" opacity=".3"/>
-      <path d="M143 180Q130 222 127 263M158 181Q157 224 161 270M168 183Q187 224 196 264" fill="none" stroke="#fff" stroke-width="5" opacity=".21"/>
-      <path d="M98 257Q153 285 217 258" fill="none" stroke="${trim}" stroke-width="2.4" stroke-linecap="round"/>`;
-    if (blue) skirt += `<path d="M131 176Q124 206 108 231Q116 246 142 245L151 178ZM170 176Q183 202 207 232Q188 250 159 246L153 178Z" fill="${paint.blueLight || '#e2f4ff'}" opacity=".92"/>
-      <path d="M108 231Q121 249 142 245M159 246Q187 252 207 232" fill="none" stroke="#fff9e9" stroke-width="1.6"/>
-      <path d="M150 179Q141 215 141 263Q153 269 165 264Q166 217 155 178Z" fill="${paint.blue || '#8bcaf2'}" opacity=".76"/>
-      <g fill="#fff8dc"><path d="M126 207l1.4 4.1 4.2 1.3-4.2 1.4-1.4 4.1-1.3-4.1-4.2-1.4 4.2-1.3Z M184 221l1.5 4.3 4.3 1.3-4.3 1.4-1.5 4.3-1.3-4.3-4.3-1.4 4.3-1.3Z M153 244l1.3 3.5 3.5 1.1-3.5 1.2-1.3 3.5-1.1-3.5-3.5-1.2 3.5-1.1Z"/><circle cx="119" cy="247" r="1.1"/><circle cx="185" cy="251" r="1.2"/><circle cx="153" cy="211" r="1.2"/></g>`;
-    else if (peach) skirt += `<path d="M120 209Q152 221 187 208L194 222Q183 230 176 225Q164 234 155 227Q144 234 134 227Q123 233 114 224Z" fill="#ffe9da" opacity=".93"/>
-      <path d="M105 242Q151 261 207 243L213 255Q203 263 193 258Q181 268 170 261Q159 270 149 263Q138 270 126 262Q115 268 101 254Z" fill="#fff1e4" opacity=".88"/>
-      <g fill="#dca7ad"><circle cx="132" cy="217" r="1.7"/><circle cx="153" cy="220" r="1.7"/><circle cx="177" cy="216" r="1.7"/></g>`;
-    else skirt += `<path d="M119 207Q152 220 188 207M107 243Q155 264 208 242" fill="none" stroke="#fbf0ff" stroke-width="2" stroke-dasharray="1 4.4" stroke-linecap="round"/>
-      <g fill="#fff0c8"><path d="M126 224l2 4.2 4.6.6-3.3 3.2.8 4.6-4.1-2.2-4.1 2.2.8-4.6-3.3-3.2 4.6-.6Z M183 239l1.7 3.5 4 .6-2.9 2.8.7 4-3.5-1.9-3.6 1.9.7-4-2.8-2.8 3.9-.6Z"/><circle cx="153" cy="232" r="1.4"/><circle cx="141" cy="252" r="1.2"/><circle cx="187" cy="215" r="1.2"/></g>`;
-  }
-  return `<g class="girl-garment">
-    <path d="M130 117Q117 116 112 127Q108 136 114 143L126 146L135 130ZM168 116Q181 115 187 126Q191 135 186 141L175 145L163 129Z" fill="${patched ? '#ead2c2' : blue ? paint.blueLight || '#e2f4ff' : cloth}" stroke="${line}" stroke-width=".95"/>
-    <path d="M118 124Q114 131 119 138M181 123Q186 130 182 137" fill="none" stroke="#fff6ea" stroke-width="2.4" opacity=".7" stroke-linecap="round"/>
-    <path d="M114 141L124 144M176 143L186 139" fill="none" stroke="${trim}" stroke-width="2.4" stroke-linecap="round"/>
-    ${skirt}
-    <path d="M131 116Q149 123 168 115L178 136Q176 153 171 173Q151 180 130 173L126 147Z" fill="${blue ? paint.blueDeep || '#5b9fd6' : cloth}" stroke="${line}" stroke-width="1"/>
-    <path d="M138 129Q137 149 138 168M165 128Q165 148 162 168" fill="none" stroke="#fff" stroke-width="2.1" opacity=".23"/>
-    <path d="M131 116Q136 110 149 118Q161 110 168 115L162 126Q153 127 149 120Q144 128 136 127Z" fill="${trim}" stroke="${patched ? '#d7b9a3' : '#d9d5db'}" stroke-width=".65"/><path d="M137 119Q141 125 149 123Q157 125 163 119" fill="none" stroke="#fff8f2" stroke-width="1.8" stroke-linecap="round"/><path d="M146 128Q150 124 154 128Q158 132 154 134L150 132L146 134Q142 132 146 128Z" fill="#d98ea7" stroke="#b9748d" stroke-width=".7"/><circle cx="150" cy="130" r="1.4" fill="#fff1df"/>
-    <path d="M131 169Q150 175 172 169L172 175Q151 182 130 175Z" fill="${patched ? '#e7c6ac' : '#fff3dd'}" stroke="${patched ? '#bc9a87' : '#d5c2a3'}" stroke-width=".7"/>
-    <path d="M150 173Q137 164 137 172Q137 180 150 175M154 173Q166 164 168 171Q168 179 154 175" fill="${patched ? '#edd5bd' : blue ? '#dcefff' : '#fff1df'}" stroke="${line}" stroke-width=".7"/>
-    <path d="M149 176L145 192L152 188L158 192L154 176" fill="${patched ? '#e7c6ac' : '#fff1df'}" stroke="${line}" stroke-width=".6"/>
-    <ellipse cx="152" cy="174" rx="3.4" ry="4.4" fill="${blue ? '#6cafd7' : patched ? '#c39d88' : '#d2a2bc'}" stroke="${blue ? '#d8bf89' : line}" stroke-width="1"/>
-    <path d="M151 171L150.5 173" stroke="#fff9ee" stroke-width="1.1" stroke-linecap="round"/>
-    ${patched ? '<path d="M137 146L141 150M141 145L137 151" stroke="#f4e3d3" stroke-width="1.2" stroke-linecap="round"/>' : '<g fill="#fff6df"><circle cx="150" cy="136" r="1.35"/><circle cx="150" cy="145" r="1.35"/><circle cx="151" cy="154" r="1.35"/><circle cx="151" cy="163" r="1.35"/></g>'}
+/* Fresh manga accessories, drawn in the 1086 × 1448 portrait coordinate space.
+ * No old face, body, hairstyle, or character geometry is reused here.
+ * Keep these after the raster body/head and cosmetic layers in the SVG.
+ */
+function mangaHeadAccessoryMarkup(id) {
+  if (id === 'bow_rose') return `<g data-manga-accessory="bow" transform="translate(650 113) rotate(19)" stroke="#71485c" stroke-width="2.8" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M-8 8Q-13 28-27 52L-7 46 2 57Q9 33 9 11M9 8Q22 30 35 46L39 29 54 32Q32 14 20 3" fill="#e59bb1"/>
+    <path d="M-8 10Q-21 29-24 44L-10 39M16 10Q28 27 37 34" fill="none" stroke="#f7c8d3" stroke-width="5"/>
+    <path d="M-5-8C-23-31-56-38-55-17C-57 2-49 19-35 18L-5 7Z" fill="#eca2b7"/>
+    <path d="M6-8C24-31 57-32 55-10C58 9 48 23 34 19L6 7Z" fill="#eca2b7"/>
+    <path d="M-9 1Q-31-19-48-18Q-52-4-43 11L-10 6M11 0Q32-16 47-13Q53 3 43 14L10 6" fill="#cf7698" stroke="none"/>
+    <path d="M-49-23Q-31-25-15-10M17-10Q34-22 48-18" fill="none" stroke="#ffdce4" stroke-width="4"/>
+    <path d="M-11-11Q1-16 12-10L15 13Q2 18-12 12Z" fill="#f5bbca"/>
+    <path d="M-6-7Q-2 0-6 10" fill="none" stroke="#fff0ef" stroke-width="3"/>
   </g>`;
-}
-
-function dressupCrownMarkup(paint = {}) {
-  return `<path d="M-32 10L-37-11L-22-1L-17-21L-8-8L0-29L9-8L18-21L23-1L37-11L32 10Z" fill="${paint.gold || '#edcb83'}" stroke="#b79555" stroke-width="1.2" stroke-linejoin="round"/>
-    <path d="M-27 8L-29-4L-19 4L-16-12L-6 4L0-19L7 4L17-12L20 4L29-4L27 8Z" fill="#fffaf1" opacity=".96"/>
-    <path d="M-32 9Q0 16 32 9L30 18Q0 24-30 18Z" fill="${paint.gold || '#edcb83'}" stroke="#b79555" stroke-width="1"/>
-    <path d="M-27 14Q0 20 27 14" fill="none" stroke="#fff7d7" stroke-width="1.8"/>
-    <path d="M0-10L6-3L0 6L-6-3Z" fill="#79c8e4" stroke="#c1a469" stroke-width="1"/><path d="M0-8L-3-3L0 3" fill="none" stroke="#f4ffff" stroke-width="1.4"/>
-    <g fill="#fffdf4" stroke="#c7b37b" stroke-width=".8"><circle cx="-37" cy="-11" r="2.7"/><circle cx="-17" cy="-21" r="2.8"/><circle cy="-29" r="3.3"/><circle cx="18" cy="-21" r="2.8"/><circle cx="37" cy="-11" r="2.7"/><circle cx="-21" cy="13" r="2"/><circle cx="-11" cy="15.5" r="2"/><circle cy="16" r="2"/><circle cx="11" cy="15.5" r="2"/><circle cx="21" cy="13" r="2"/></g>`;
-}
-
-function dressupAccessoryMarkup(hair, icon = false, paint = {}) {
-  if (hair === 'crown_snow') return `<g transform="translate(${icon ? '60 65' : '151 30'}) scale(${icon ? '1.12' : '.66'})">${dressupCrownMarkup(paint)}</g>`;
-  if (hair === 'bow_rose') return `<g transform="translate(${icon ? '60 55' : '176 43'}) rotate(${icon ? '-8' : '18'}) scale(${icon ? '1.35' : '.47'})"><path d="M-3 0C-12-17-31-23-31-10C-34 2-28 14-20 12L-3 3M3 0C12-17 31-23 31-10C34 2 28 14 20 12L3 3" fill="#e8a3b7" stroke="#bc748c" stroke-width="1.3"/><path d="M-4 4L-14 29L-5 25L1 30L5 5M6 3L17 26L22 19L29 21L11 1" fill="#f2b9c7" stroke="#bc748c" stroke-width="1" stroke-linejoin="round"/><path d="M-25-8Q-17-9-8-1M25-8Q17-9 8-1" fill="none" stroke="#ffe0e6" stroke-width="3" stroke-linecap="round"/><rect x="-6" y="-6" width="13" height="15" rx="5" fill="#d58da3" stroke="#bc748c" stroke-width="1"/><path d="M-2-3L-2 5" stroke="#f8d5df" stroke-width="1.7" stroke-linecap="round"/></g>`;
-  if (hair === 'clip_star') return `<g transform="translate(${icon ? '60 61' : '177 63'}) rotate(-26) scale(${icon ? '1.35' : '.43'})"><rect x="-27" y="-5" width="52" height="11" rx="5.5" fill="#bddacb" stroke="#80ab9b" stroke-width="1.3"/><path d="M3-22L9-8L24-6L13 4L16 19L3 12L-10 19L-7 4L-18-6L-3-8Z" fill="${paint.gold || '#f1d895'}" stroke="#bf9a52" stroke-width="1.3" stroke-linejoin="round"/><path d="M1-12L-2-3L-10-2" fill="none" stroke="#fff9d9" stroke-width="3" stroke-linecap="round"/></g>`;
-  if (hair === 'band_lilac') return `<g transform="translate(${icon ? '60 62' : '151 49'}) scale(${icon ? '1.02' : '.75'})"><path d="M-40 18C-39-37 39-39 40 18" fill="none" stroke="#947db7" stroke-width="8" stroke-linecap="round"/><path d="M-38 11C-33-35 35-35 38 11" fill="none" stroke="#d9c8ed" stroke-width="4" stroke-linecap="round"/><g transform="translate(29 -18)"><ellipse cy="-8" rx="5.8" ry="9" fill="#f0e5ff"/><ellipse cx="8" cy="-1" rx="9" ry="5.8" transform="rotate(25)" fill="#d5bfeb"/><ellipse cy="8" rx="5.8" ry="9" fill="#f0e5ff"/><ellipse cx="-8" cy="-1" rx="9" ry="5.8" transform="rotate(-25)" fill="#d5bfeb"/><circle r="5" fill="#f1d68f"/><circle cx="-1.5" cy="-1.5" r="1.5" fill="#fff9dd"/></g></g>`;
+  if (id === 'clip_star') return `<g data-manga-accessory="star" transform="translate(430 139) rotate(-24)" stroke="#725f6e" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M-35-7H29Q39-7 39 0T29 7H-35Q-43 7-43 0T-35-7Z" fill="#e8adc4"/>
+    <path d="M-33-2H27" fill="none" stroke="#ffdfeb" stroke-width="2.6"/>
+    <path d="M8-27 16-11 34-8 21 5 24 24 8 15-9 24-6 5-19-8-1-11Z" fill="#ffe19a" stroke="#947448"/>
+    <path d="M8-27 10-7 24 24 8 15-9 24-1 4Z" fill="#edbc6e" stroke="none"/>
+    <path d="M4-15 0-5-9-3M8-21 10-14" fill="none" stroke="#fff5d4" stroke-width="3.2"/>
+    <circle cx="-30" cy="0" r="2.2" fill="#fff3f8" stroke="none"/>
+  </g>`;
+  if (id === 'band_lilac') return `<g data-manga-accessory="flower-band" stroke="#75618e" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M406 166C403 82 459 22 544 22S685 81 683 166" fill="none" stroke="#75618e" stroke-width="15"/>
+    <path d="M406 166C403 82 459 22 544 22S685 81 683 166" fill="none" stroke="#c9b3e9" stroke-width="10"/>
+    <path d="M409 144C416 66 470 28 543 28C601 28 639 48 665 90" fill="none" stroke="#f0e5ff" stroke-width="3"/>
+    <g transform="translate(650 80) rotate(22)" stroke-width="2.2">
+      <path d="M-9 6Q-29 24-18 47L-4 35 11 39Q8 23 3 7" fill="#b49ad7"/>
+      <path d="M-1-5C-24-40-42-15-17 3C-50 8-36 37-10 15C-7 47 23 43 13 14C43 31 54 3 22-1C45-28 17-45 7-13C3-18 1-17-1-5Z" fill="#e6d5f7"/>
+      <path d="M-4-6Q-16-19-23-17M-12 6Q-23 11-25 18M2 15Q2 28 9 30M16 8Q29 14 33 9M13-8Q22-22 17-26" fill="none" stroke="#b699d6" stroke-width="2.5"/>
+      <circle cx="5" cy="3" r="10" fill="#ffe4a3" stroke="#9f8056"/>
+      <circle cx="2" cy="0" r="3.8" fill="#fff7d7" stroke="none"/>
+    </g>
+  </g>`;
+  if (id === 'crown_snow') return `<g data-manga-accessory="snow-crown" transform="rotate(-5 548 12)" stroke="#8d765e" stroke-width="2.8" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M478 10 463-34 503-19 522-51 547-13 575-51 593-19 633-34 617 10Z" fill="#fff2ce"/>
+    <path d="M481 5 475-19 506-8 522-33 547 1 575-33 590-8 621-19 615 5Z" fill="#e6c47b" stroke="none"/>
+    <path d="M478 8Q547-2 617 8L614 28Q548 18 481 28Z" fill="#fff7e7"/>
+    <path d="M481 22Q547 12 615 22" fill="none" stroke="#e1ba6d" stroke-width="4"/>
+    <path d="M547-5 558 7 547 19 536 7Z" fill="#bddbeb" stroke="#6c8196" stroke-width="2.1"/>
+    <path d="M547-5 548 7 536 7Z" fill="#f0fbff" stroke="none"/>
+    <path d="M502 6 508 12 502 18 496 12ZM593 6 599 12 593 18 587 12Z" fill="#e7bedc" stroke="#9c7f98" stroke-width="1.7"/>
+    <g fill="#fffdf5" stroke="#a98b5d" stroke-width="2"><circle cx="463" cy="-35" r="5.4"/><circle cx="522" cy="-52" r="5.6"/><circle cx="575" cy="-52" r="5.6"/><circle cx="633" cy="-35" r="5.4"/></g>
+    <path d="M516-34 522-43M579-41 587-24M484-17 490-14" fill="none" stroke="#fffdf3" stroke-width="2.5"/>
+  </g>`;
   return '';
 }
 
-function dressupHairstyleMarkup(style, part, tousled = false, paint = {}) {
-  const chosen=['hairstyle_bob','hairstyle_twintails'].includes(style)?style:'original';
-  const fill=paint.hair||'#936b54',light=paint.hairLight||'#c89e7c';
-  let art='';
-  if(part==='back') {
-    if(chosen==='hairstyle_bob') art=`<path d="M126 47C113 60 116 77 116 94Q113 112 124 119Q139 129 151 118Q169 128 181 115Q192 103 184 82L178 48Z" fill="${fill}" stroke="#805e50" stroke-width=".85"/><path d="M122 70Q119 91 124 105Q129 115 139 116M180 69Q185 93 178 106Q174 114 167 116" fill="none" stroke="${light}" stroke-width="4.5" opacity=".76"/><path d="M125 80Q121 102 132 112M179 78Q184 99 174 111" fill="none" stroke="#dec0a0" stroke-width=".9" opacity=".57"/>`;
-    else if(chosen==='hairstyle_twintails') art=`<path d="M126 56C114 48 102 57 102 71C104 88 97 104 96 122Q92 151 107 169Q113 182 106 189Q122 185 123 173Q124 161 115 145Q111 133 117 116Q126 93 132 75ZM177 54C190 45 201 57 202 71C200 87 206 105 207 122Q213 149 198 169Q190 184 198 189Q181 185 182 172Q181 158 190 145Q195 130 188 113Q178 91 171 75Z" fill="${fill}" stroke="#805e50" stroke-width=".9"/><path d="M113 66Q107 80 111 98Q105 121 107 139Q116 157 115 175M190 65Q197 81 192 99Q201 122 196 139Q186 159 190 176" fill="none" stroke="${light}" stroke-width="4.6" opacity=".72"/><path d="M109 83Q112 99 105 119M195 83Q193 101 201 121M110 145Q120 167 114 179M193 145Q183 165 190 180" fill="none" stroke="#dfbd97" stroke-width=".9" opacity=".55"/><path d="M118 64L126 68M177 65L185 61" stroke="#ae8870" stroke-width="4.3" stroke-linecap="round"/><path d="M126 76Q119 102 131 121L172 121Q186 102 178 75Z" fill="${fill}"/>`;
-    else art=`<path d="M128 45C112 58 116 83 114 103C110 122 108 144 114 166Q120 184 133 187Q144 184 143 171L162 170Q161 186 176 184Q191 177 190 159C194 140 188 120 185 103Q184 78 182 60L172 42Z" fill="${fill}" stroke="#805e50" stroke-width=".9"/><path d="M124 71Q116 96 124 112Q116 136 122 157Q130 173 127 180M176 65Q188 91 179 112Q189 136 182 154Q174 173 178 178" fill="none" stroke="${light}" stroke-width="4.7" opacity=".78"/><path d="M126 89Q122 107 126 121Q118 144 126 161M174 87Q182 108 177 122Q185 143 177 162M117 127Q110 156 124 174M185 127Q195 154 181 173" fill="none" stroke="#dec09c" stroke-width=".85" opacity=".53"/><path d="M132 110Q126 132 132 151Q138 165 135 176M170 111Q177 134 169 151Q166 161 168 172" fill="none" stroke="#735044" stroke-width="1.1" opacity=".46"/>`;
-  } else {
-    const cap=chosen==='hairstyle_bob'
-      ?'M122 78C113 61 120 41 132 32Q149 22 165 31Q185 38 184 63L179 84L174 85L175 61Q167 65 158 61L154 54L150 63Q135 66 126 61L126 85Z'
-      :chosen==='hairstyle_twintails'
-      ?'M123 79Q114 62 123 44Q135 27 151 28Q170 26 181 45Q189 63 179 81L175 84L175 62Q161 59 151 43Q142 58 127 63L126 84Z'
-      :'M123 80C113 63 119 42 134 32C149 23 166 28 176 39Q189 52 180 79L175 85L174 62Q159 58 151 43Q147 54 132 61L136 53Q129 62 125 65L126 85Z';
-    art=`<path d="${cap}" fill="${fill}" stroke="#805e50" stroke-width=".9" stroke-linejoin="round"/>
-      <path d="M124 49Q132 34 148 33M160 34Q175 38 179 51" fill="none" stroke="${light}" stroke-width="5.3" stroke-linecap="round" opacity=".82"/><path d="M126 57Q119 73 129 91Q134 101 131 113M177 56Q185 74 174 92Q170 103 174 113" fill="none" stroke="${light}" stroke-width="2.1" stroke-linecap="round" opacity=".62"/><path d="M133 37Q141 31 148 33M158 33Q170 32 176 43" fill="none" stroke="#ffe1df" stroke-width="1.25" stroke-linecap="round" opacity=".78"/>
-      <path d="M126 48Q135 37 147 36M129 54Q139 43 147 41M160 37Q174 43 176 52M163 44Q169 54 176 57" fill="none" stroke="#e3c4a3" stroke-width=".8" stroke-linecap="round" opacity=".64"/>
-      <path d="M122 60Q121 69 125 76M180 61Q182 71 176 79" fill="none" stroke="#c79a75" stroke-width="1.3" stroke-linecap="round" opacity=".66"/>
-      <path d="M149 32Q152 29 156 31" fill="none" stroke="#765449" stroke-width=".8" stroke-linecap="round" opacity=".55"/>`;
-    if(chosen==='original'&&tousled)art+='<path d="M124 40Q115 35 119 29M175 43Q183 40 184 35M139 30Q136 25 140 22" fill="none" stroke="#a47c61" stroke-width="1" stroke-linecap="round"/>';
-  }
-  return `<g data-dressup-slot="hairstyle" data-equipped="${chosen}" data-part="${part==='back'?'back':'front'}">${art}</g>`;
+function mangaShoesMarkup(id) {
+  const shoe = ['shoes_rose', 'shoes_maryjane', 'shoes_crystal'].includes(id) ? id : 'worn';
+  if (shoe === 'worn') return '<g data-dressup-slot="shoes" data-equipped="worn"></g>';
+  const rose = shoe === 'shoes_rose', crystal = shoe === 'shoes_crystal';
+  const upper = rose ? '#dc91a6' : crystal ? '#cee9f8' : '#494556';
+  const shadow = rose ? '#b86b88' : crystal ? '#96bedb' : '#302d3c';
+  const light = rose ? '#f5c0ce' : crystal ? '#f1fcff' : '#777083';
+  const line = rose ? '#785063' : crystal ? '#5f7b96' : '#302c3c';
+  const one = (x, tilt) => `<g transform="translate(${x} 1350) rotate(${tilt} 46 46)" stroke="${line}" stroke-width="2.7" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M25 0H70L74 23 78 35H18L22 20Z" fill="#f5f2ed" stroke="#77717b" stroke-width="2.1"/>
+    <path d="M26 3Q44 8 69 3" fill="none" stroke="#fffdfa" stroke-width="3"/>
+    <path d="M8 68Q6 88 15 93Q46 102 80 93Q89 89 87 68Z" fill="${shadow}"/>
+    <path d="M14 43C17 22 27 9 45 9C64 8 75 23 81 43L87 72Q88 88 47 90Q6 88 7 72Z" fill="${upper}"/>
+    <path d="M14 43C17 23 28 11 45 11C65 10 75 27 80 43Q70 34 63 41Q47 48 28 40Q20 35 14 43Z" fill="${shadow}" stroke="none"/>
+    <path d="M23 28Q26 13 46 13Q64 13 70 28L66 42Q48 49 27 42Z" fill="#f9f5ef" stroke-width="2.1"/>
+    <path d="M15 61Q45 46 79 62L84 76Q62 88 43 86Q22 85 10 76Z" fill="${light}" stroke="none"/>
+    <path d="M12 78Q44 91 82 79" fill="none" stroke="${upper}" stroke-width="3"/>
+    <path d="M15 87Q45 96 79 87" fill="none" stroke="${crystal ? '#e6f9ff' : rose ? '#e5a6ba' : '#625c6d'}" stroke-width="2"/>
+    ${crystal ? `<path d="M19 44 34 60 15 70M34 60 48 43 68 61 82 49M34 60 50 82 68 61 80 74" fill="none" stroke="#fff" stroke-width="2.3" opacity=".9"/>
+      <path d="M47 30 56 40 47 51 37 40Z" fill="#effcff" stroke="#7599b8" stroke-width="2"/><path d="M47 30V50L55 40Z" fill="#a9d8f0" stroke="none"/>
+      <path d="M25 56 27 62 33 64 27 66 25 72 23 66 17 64 23 62Z" fill="#fff" stroke="none"/><path d="M68 73 69 77 73 78 69 79 68 83 67 79 63 78 67 77Z" fill="#fff" stroke="none"/>`
+    : rose ? `<path d="M23 28Q45 35 69 28L70 39Q47 47 24 39Z" fill="#e4a1b5" stroke-width="2"/>
+      <g transform="translate(47 48)" stroke-width="2"><path d="M-3-4Q-25-18-25-3Q-25 11-4 5ZM4-4Q26-18 26-3Q25 11 4 5Z" fill="#f4bdca"/><path d="M-7 0-20-4M8 0 21-4" fill="none" stroke="#c77e99"/><rect x="-5" y="-6" width="10" height="14" rx="3" fill="#df96b0"/></g>
+      <path d="M21 65Q31 60 41 63" fill="none" stroke="#ffe3e8" stroke-width="3"/>`
+    : `<path d="M22 28Q45 34 70 28L71 39Q45 45 23 39Z" fill="#454152" stroke-width="2.2"/>
+      <rect x="62" y="28" width="10" height="11" rx="2" fill="#c9b487" stroke="#302c3c" stroke-width="1.6"/><path d="M65 30V37H69" fill="none" stroke="#fff0cb" stroke-width="1.3"/>
+      <path d="M23 63Q34 57 51 61" fill="none" stroke="#a9a0b2" stroke-width="3"/>
+      <path d="M17 72Q47 61 77 72" fill="none" stroke="#5b5568" stroke-width="2"/>`}
+  </g>`;
+  return `<g data-dressup-slot="shoes" data-equipped="${shoe}">${one(411, 0)}${one(563, 0)}</g>`;
 }
 
-function dressupShoeShape(shoes, paint = {}) {
-  const crystal = shoes === 'shoes_crystal', rose = shoes === 'shoes_rose', mary = shoes === 'shoes_maryjane';
-  const fill = crystal ? paint.crystal || '#d8f5ff' : rose ? '#efb1c3' : mary ? '#51465b' : '#c99a8d';
-  const line = crystal ? '#75b4cf' : rose ? '#c27c98' : mary ? '#3e344b' : '#aa7a72';
-  return `<path d="M3-8Q12-3 22-9Q29-4 31 6Q23 14 2 12Q-6 10-5 4Q-3-2 3-8Z" fill="${fill}" stroke="${line}" stroke-width="1.1"/>
-    <path d="M-2 8Q12 14 28 6" fill="none" stroke="${crystal ? '#f7ffff' : mary ? '#a693ac' : '#ffe2df'}" stroke-width="1.8" stroke-linecap="round"/>
-    ${crystal ? '<path d="M-2 3L7-3L13 8L22-5L29 4L13 8Z" fill="#fff" opacity=".55"/><path d="M7-3L13 8L22-5M-2 3L13 8L29 4" fill="none" stroke="#87c4de" stroke-width=".6"/><path d="M12-5L17-1L12 4L7-1Z" fill="#b2eaff" stroke="#75b4cf" stroke-width=".7"/><path d="M12-5V4M7-1H17" stroke="#fff" stroke-width=".9"/><path d="M26-10l1.2 3.4 3.5 1.1-3.5 1.2L26-.8l-1.2-3.5-3.5-1.2 3.5-1.1Z" fill="#fff" stroke="#b9e3ef" stroke-width=".4"/>'
-      : mary ? '<ellipse cx="13" cy="-3" rx="8" ry="3.2" fill="#fff1e4"/><path d="M4-6L22 1" stroke="#51465b" stroke-width="3.5" stroke-linecap="round"/><circle cx="21" cy=".5" r="1.6" fill="#e7cf94"/>'
-      : !rose ? '<path d="M4-5Q13-1 22-6" fill="none" stroke="#e9c6b8" stroke-width="1.2"/><path d="M2 5L7 6M2 7L6 8M22 4L26 3" stroke="#aa7a72" stroke-width=".6" stroke-linecap="round"/>'
-      : '<path d="M4-5Q13-1 22-6" fill="none" stroke="#fbe5dc" stroke-width="2"/><path d="M12 2Q3-5 3 2Q6 7 12 3Q20-4 21 2Q19 7 12 3" fill="#f4c9d0" stroke="'+line+'" stroke-width=".65"/><circle cx="12" cy="2" r="1.7" fill="'+line+'"/>'}`;
+function mangaJewelryMarkup(bracelet, necklace) {
+  const b = bracelet === 'bracelet_pearl' ? bracelet : 'none';
+  const n = necklace === 'necklace_star' ? necklace : 'none';
+  const pearls = b === 'none' ? '' : `<g transform="translate(758 717) rotate(-25)" stroke="#9b7d68" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M-19 0Q0 9 19 0" fill="none" stroke="#bc955b" stroke-width="2.6"/>
+    ${[-16,-8,0,8,16].map((x, i) => `<circle cx="${x}" cy="${[0,3,4,3,0][i]}" r="4.9" fill="#fffae9" stroke-width="1.6"/><circle cx="${x-1.5}" cy="${[-1.4,1.6,2.6,1.6,-1.4][i]}" r="1.5" fill="#fff" stroke="none"/>`).join('')}
+    <path d="M17 4 20 11" fill="none" stroke="#b89664" stroke-width="1.8"/><circle cx="21" cy="13" r="3.3" fill="#e8c687" stroke-width="1.3"/>
+  </g>`;
+  const star = n === 'none' ? '' : `<g stroke="#9b794e" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M517 357C521 376 529 393 546 405C562 393 570 377 575 357" fill="none" stroke-width="2.6"/>
+    <path d="M520 359Q528 388 546 402Q562 388 572 359" fill="none" stroke="#ffe5aa" stroke-width="1.7"/>
+    <circle cx="546" cy="405" r="3.1" fill="#edc77c" stroke-width="1.6"/>
+    <path d="M546 407 550 415 559 416 552.5 422.5 554 431.5 546 427 538 431.5 539.5 422.5 533 416 542 415Z" fill="#f8d588" stroke-width="1.9"/>
+    <path d="M546 410 546 424 538 428 541.5 420 537 417 544 416Z" fill="#fff2bc" stroke="none"/>
+  </g>`;
+  return `<g data-dressup-slot="bracelet" data-equipped="${b}">${pearls}</g><g data-dressup-slot="necklace" data-equipped="${n}">${star}</g>`;
 }
 
-function dressupShoesMarkup(shoes, paint = {}) {
-  const chosen=['shoes_rose','shoes_maryjane','shoes_crystal'].includes(shoes)?shoes:'worn';
-  return `<g data-dressup-slot="shoes" data-equipped="${chosen}"><g transform="translate(119 343) rotate(-5) scale(.88)">${dressupShoeShape(chosen,paint)}</g><g transform="translate(172 342) rotate(13) scale(.88)">${dressupShoeShape(chosen,paint)}</g></g>`;
-}
-
-function dressupEyesMarkup(eyes, paint = {}) {
-  const chosen=['contacts_hazel','contacts_ocean'].includes(eyes)?eyes:'natural';
-  const iris=paint.iris||(chosen==='contacts_ocean'?'#81b8cd':chosen==='contacts_hazel'?'#c7a16a':'#a97956');
-  const art=[[137,71],[163,70]].map(([x,y])=>`<g transform="translate(${x} ${y}) scale(1.12 1.16)"><path d="M-8 .3C-4.8-5.6 3.4-6 8.4-.9C5.3 5.8-4.8 6.2-8 .3Z" fill="#fffaf5" stroke="#b88d84" stroke-width=".55"/><g${paint.eyeClip?' clip-path="'+paint.eyeClip+'"':''}><ellipse cx=".3" cy=".1" rx="4.9" ry="6.4" fill="${iris}"/><ellipse cx=".3" cy="-.1" rx="2.1" ry="3.9" fill="#49313a"/><path d="M-3 3.2Q.3 6.1 3.8 3.1" fill="none" stroke="${chosen==='contacts_ocean'?'#d0f1ee':'#f7d6a2'}" stroke-width=".9" opacity=".85"/><ellipse cx="-1.1" cy="-2.6" rx="1.5" ry="1.9" fill="#fff"/><circle cx="3.2" cy="2.3" r=".9" fill="#fffaf0"/><circle cx="-2.2" cy="1.4" r=".45" fill="#fff"/></g><path d="M-8 .3Q-4.8-5.6 1-5Q6-5.4 8.4-.9" fill="none" stroke="#78515a" stroke-width="1" stroke-linecap="round"/><path d="M-5.8 5Q.2 6.5 5.5 3.5" fill="none" stroke="#d6a69c" stroke-width=".5" opacity=".75"/></g>`).join('');
-  return `<g data-dressup-slot="eyes" data-equipped="${chosen}">${art}</g>`;
-}
-
-function dressupLashesMarkup(lashes) {
-  const chosen=lashes==='mascara_cocoa'?lashes:'natural',full=chosen!=='natural';
-  return `<g data-dressup-slot="lashes" data-equipped="${chosen}" fill="none" stroke="#78515a" stroke-width="${full?1.1:.65}" stroke-linecap="round"><path d="M130 69Q128.8 68.4 128.2 67.4M169.8 66.6Q171 66 171.5 64.8"/>${full?'<path d="M129.2 70.5Q127.8 70 127.2 69M132 67.3Q131.2 66 131.2 64.9M134.8 66.3Q134.2 65.1 134.6 64.1M167 65.3Q167.6 64.1 167.6 63.2M171 68Q172.4 67.5 173.1 66.4M130 69Q135 64.2 140 66.6M159 65.5Q166 62.8 170.5 68.2"/>':''}</g>`;
-}
-
-function dressupLipsMarkup(lips, smiling = false) {
-  const chosen=['lipstick_rose','lipstick_peach'].includes(lips)?lips:'natural';
-  const rose=chosen==='lipstick_rose',peach=chosen==='lipstick_peach';
-  const fill=rose?'#d78eaa':peach?'#e8ac91':'#d58f9b';
-  return `<g data-dressup-slot="lips" data-equipped="${chosen}"><path d="M143.1 89.3Q147.1 88.4 150 90Q153.5 87.7 157.8 88.4Q154.8 95.1 149.2 95.2Q145.5 94.5 143.1 89.3Z" fill="${fill}" opacity="${chosen==='natural'?'.7':'1'}"/><path d="M143.8 89.7Q150 92.6 157 88.9Q153.8 94.2 148.5 93.5Z" fill="#a8757c" opacity=".68"/><path d="M146 90.7Q150.6 91.9 155.3 89.9L154.3 91.4Q149.7 92.6 146.7 91.8Z" fill="#fff8ee"/><path d="M143 89.4Q142.4 89.8 142.7 90.3M157.8 88.5Q158.2 88.9 158 89.3" stroke="#c49289" stroke-width=".55" stroke-linecap="round"/></g>`;
-}
-
-function dressupJewelryMarkup(bracelet, necklace, paint = {}) {
-  const b=bracelet==='bracelet_pearl'?bracelet:'none',n=necklace==='necklace_star'?necklace:'none';
-  return `<g data-dressup-slot="bracelet" data-equipped="${b}">${b==='none'?'':'<path d="M205.5 178Q207 184 212 189" fill="none" stroke="#c2a574" stroke-width="1"/><g fill="#fff9e9" stroke="#c4af8d" stroke-width=".5"><circle cx="205.6" cy="178.8" r="1.9"/><circle cx="206.9" cy="182.1" r="2"/><circle cx="209" cy="185.2" r="2"/><circle cx="211.6" cy="187.8" r="1.9"/></g><circle cx="212.8" cy="191" r="1.2" fill="#ddc286"/>'}</g><g data-dressup-slot="necklace" data-equipped="${n}">${n==='none'?'':'<path d="M138 116Q148 133 162 115" fill="none" stroke="#c6a770" stroke-width="1"/><path d="M138.6 116Q148 130.6 161.3 115.7" fill="none" stroke="#fff0c4" stroke-width=".45"/><path d="M149.8 127.8l1.7 3.6 3.9.6-2.8 2.7.7 3.9-3.5-1.8-3.5 1.8.7-3.9-2.8-2.7 3.9-.6Z" fill="'+(paint.gold||'#e8cd94')+'" stroke="#b69a65" stroke-width=".6"/><path d="M149.3 130.3L148.5 132.4L146.8 132.7" fill="none" stroke="#fff8df" stroke-width=".8" stroke-linecap="round"/>'}</g>`;
-}
 
 function girlIllustration(equipped = {}) {
   const input=equipped&&typeof equipped==='object'?equipped:{};
   const select=(slot,values,fallback)=>values.includes(input[slot])?input[slot]:fallback;
-  const dress=select('dress',['patched','dress_sky','dress_peach','dress_lilac'],'patched'),hair=select('hair',['none','bow_rose','clip_star','band_lilac','crown_snow'],'none');
-  const skin=select('skin',['mask_pearl'],'natural'),lashes=select('lashes',['mascara_cocoa'],'natural'),eyes=select('eyes',['contacts_hazel','contacts_ocean'],'natural'),lips=select('lips',['lipstick_rose','lipstick_peach'],'natural');
-  const hairstyle=select('hairstyle',['hairstyle_bob','hairstyle_twintails'],'original'),shoes=select('shoes',['shoes_rose','shoes_maryjane','shoes_crystal'],'worn'),bracelet=select('bracelet',['bracelet_pearl'],'none'),necklace=select('necklace',['necklace_star'],'none');
-  const p=dressupSvgPaints(skin,eyes),c=dressupSkinPalette(skin),dressed=dress!=='patched';
-  const names={patched:'杏粉补丁旧裙',dress_sky:'蓝色公主裙',dress_peach:'蜜桃花边裙',dress_lilac:'紫藤花裙子',bow_rose:'莓果蝴蝶结',clip_star:'小星星发夹',band_lilac:'丁香花发箍',crown_snow:'白雪公主的王冠',mask_pearl:'珍珠面膜护理后的肤色',mascara_cocoa:'可可色睫毛',contacts_hazel:'榛棕色眼眸',contacts_ocean:'海蓝色眼眸',lipstick_rose:'玫瑰唇色',lipstick_peach:'蜜桃唇色',hairstyle_bob:'短波波发型',hairstyle_twintails:'双马尾发型',shoes_rose:'粉色蝴蝶结鞋',shoes_maryjane:'黑色玛丽珍鞋',shoes_crystal:'水晶鞋',bracelet_pearl:'珍珠手链',necklace_star:'星星项链'};
+  const dress=select('dress',['patched','dress_sky','dress_peach','dress_lilac'],'patched');
+  const hair=select('hair',['none','bow_rose','clip_star','band_lilac','crown_snow'],'none');
+  const skin=select('skin',['mask_pearl'],'natural'),lashes=select('lashes',['mascara_cocoa'],'natural');
+  const eyes=select('eyes',['contacts_hazel','contacts_ocean'],'natural'),lips=select('lips',['lipstick_rose','lipstick_peach'],'natural');
+  const hairstyle=select('hairstyle',['hairstyle_bob','hairstyle_twintails'],'original');
+  const shoes=select('shoes',['shoes_rose','shoes_maryjane','shoes_crystal'],'worn');
+  const bracelet=select('bracelet',['bracelet_pearl'],'none'),necklace=select('necklace',['necklace_star'],'none');
+  const names={patched:'粉色补丁背带裙',dress_sky:'蓝色公主裙',dress_peach:'蜜桃花边裙',dress_lilac:'紫藤花裙子',bow_rose:'莓果蝴蝶结',clip_star:'小星星发夹',band_lilac:'丁香花发箍',crown_snow:'白雪公主的王冠',mask_pearl:'珍珠面膜护理后的肤色',mascara_cocoa:'可可色睫毛',contacts_hazel:'榛棕色眼眸',contacts_ocean:'海蓝色眼眸',lipstick_rose:'玫瑰唇色',lipstick_peach:'蜜桃唇色',hairstyle_bob:'短波波发型',hairstyle_twintails:'短双马尾发型',shoes_rose:'粉色蝴蝶结鞋',shoes_maryjane:'黑色玛丽珍鞋',shoes_crystal:'水晶鞋',bracelet_pearl:'珍珠手链',necklace_star:'星星项链'};
   const description=[dress,hair,skin,lashes,eyes,lips,hairstyle,shoes,bracelet,necklace].filter(id=>Object.prototype.hasOwnProperty.call(names,id)).map(id=>names[id]).join('、');
-  return `<svg class="dressup-girl" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 380" role="img" aria-label="女孩的装扮：${description}" focusable="false">${p.defs}
-    <ellipse cx="155" cy="360" rx="60" ry="6.5" fill="#c9b5bc" opacity=".17"/>
-    <ellipse cx="151" cy="182" rx="101" ry="155" fill="${p.glow}"/>
-    <g fill="#d4dde0" opacity=".42"><ellipse cx="70" cy="321" rx="2" ry="2.5"/><ellipse cx="232" cy="306" rx="1.5" ry="2"/></g>
-    ${dressed?'<g fill="#e8ce9a"><path d="M74 80l1.6 4.3 4.3 1.6-4.3 1.6-1.6 4.3-1.6-4.3-4.3-1.6 4.3-1.6Z M230 126l1.5 4 4 1.5-4 1.5-1.5 4-1.5-4-4-1.5 4-1.5Z"/><circle cx="215" cy="40" r="1.4"/><circle cx="71" cy="228" r="1.2"/></g>':''}
-    <g data-dressup-slot="skin" data-equipped="${skin}" data-part="legs"><path d="M127 252C128 278 130 302 128 321L123 338Q132 344 142 338L146 302L149 254ZM156 254L158 294C160 310 167 326 169 337Q177 343 187 336C178 314 175 294 177 251Z" fill="${p.skin}" stroke="${c.line}" stroke-width=".75"/><path d="M135 273L137 301M166 274Q164 295 174 321" fill="none" stroke="#fff3e4" stroke-width="2.7" opacity=".38" stroke-linecap="round"/><path d="M130 305Q134 307 139 305M166 305L173 308" fill="none" stroke="${c.shade}" stroke-width=".6" opacity=".35" stroke-linecap="round"/></g>
-    <path d="M126 324Q132 327 143 324L141 339Q130 343 122 338ZM166 324Q175 329 182 324L187 337Q178 343 170 338Z" fill="#fff4e9" stroke="#dcc6be" stroke-width=".6"/>
-    <path d="M126 324Q133 327 143 324M166 324Q175 329 182 324" fill="none" stroke="#fffdf4" stroke-width="2" stroke-linecap="round"/>
-    ${dressupShoesMarkup(shoes,p)}
-    <g transform="translate(151 68) scale(1.08 1.06) translate(-151 -68) rotate(-4 150 64)">${dressupHairstyleMarkup(hairstyle,'back',false,p)}</g>
-    <g data-dressup-slot="skin" data-equipped="${skin}" data-part="arms"><path d="M124 125C117 125 113 132 111 143C109 155 108 169 106 181L101 205C98 211 98 215 100 219C101 222 104 225 107 225Q110 224 110 222Q113 221 112 218L112 210Q119 193 121 178L130 145Z" fill="${p.skin}" stroke="${c.line}" stroke-width=".75" stroke-linejoin="round"/><path d="M176 124C184 123 188 130 191 141C192 153 194 164 201 171L210 177L216.8 174.2Q220.5 171.5 222 173Q223 174.6 219.5 177.7L226.2 175.8Q228.6 175.3 228.4 177Q227.9 178.2 223 181L227.3 180Q229.5 179.8 229.1 181.3Q228.4 182.8 224 185.1Q220.2 188.6 215 192C212 194 209 193 206 191L191 180C181 173 179 160 173 145Z" fill="${p.skin}" stroke="${c.line}" stroke-width=".75" stroke-linejoin="round"/><path d="M102 212Q101 217 105 220M107 212L108 220M214 180Q216 179 218 181M219.5 182L223.5 180M219.5 185L224 184" fill="none" stroke="${c.nose}" stroke-width=".55" stroke-linecap="round"/><path d="M115 151L112 178M186 144Q187 161 196 172" fill="none" stroke="#fff1df" stroke-width="1.8" opacity=".44" stroke-linecap="round"/></g>
-    <g data-dressup-slot="skin" data-equipped="${skin}" data-part="neck"><path d="M141 94L139 115Q149 124 162 114L160 94Z" fill="${p.skin}" stroke="${c.line}" stroke-width=".65"/><path d="M141 96Q151 105 160 96L160 104Q149 111 140 104Z" fill="${c.shade}" opacity=".24"/></g>
-    <g data-dressup-slot="dress" data-equipped="${dress}">${dressupGarmentMarkup(dress,p)}</g>
-    ${dressupJewelryMarkup(bracelet,necklace,p)}
-    <g transform="translate(151 68) scale(1.2 1.17) translate(-151 -68) rotate(-4 150 64)">
-      <g data-dressup-slot="skin" data-equipped="${skin}" data-part="ears"><ellipse cx="122" cy="75" rx="5.1" ry="7.6" fill="${p.skin}" stroke="${c.line}" stroke-width=".65"/><ellipse cx="180" cy="74" rx="5.1" ry="7.6" fill="${p.skin}" stroke="${c.line}" stroke-width=".65"/><path d="M121 74Q125 72 125 77M181 73Q177 71 177 77" fill="none" stroke="${c.nose}" stroke-width=".6" stroke-linecap="round"/></g>
-      <g data-dressup-slot="skin" data-equipped="${skin}" data-part="face"><path d="M122 59C123 43 135 34 152 36C170 35 180 47 181 63L179 77C176 90 167 99 153 100C141 99 128 89 124 77Z" fill="${p.skin}" stroke="${c.line}" stroke-width=".65"/><path d="M125 75Q128 90 143 97Q129 93 124 77Z" fill="${c.shade}" opacity=".18"/><ellipse cx="129" cy="82" rx="9" ry="5.5" fill="${p.blush}"/><ellipse cx="172" cy="81" rx="9" ry="5.3" fill="${p.blush}"/></g>
-      <path d="M130 61Q137 58.9 144 60.5M157 60.5Q164 58.4 171 60" fill="none" stroke="#a47a66" stroke-width=".9" stroke-linecap="round"/>
-      ${dressupEyesMarkup(eyes,p)}${dressupLashesMarkup(lashes)}
-      <path d="M150 78Q148 83 151 83.5" fill="none" stroke="${c.nose}" stroke-width=".6" stroke-linecap="round"/><ellipse cx="150.8" cy="81.2" rx="1.45" ry=".8" fill="#fff2df" opacity=".6"/>
-      ${dressupLipsMarkup(lips,true)}
-      ${dressupHairstyleMarkup(hairstyle,'front',dress==='patched'&&hair==='none',p)}
-      <g data-dressup-slot="hair" data-equipped="${hair}">${dressupAccessoryMarkup(hair,false,p)}</g>
+  girlIllustration.serial=(girlIllustration.serial||0)+1;
+  const id='manga-girl-'+girlIllustration.serial;
+  const head=mangaCharacterImage('hairstyle',hairstyle);
+  const body=mangaCharacterImage('dress',dress);
+  const eyeRotation=eyes==='contacts_hazel'?160:-32;
+  const lipRotation=lips==='lipstick_rose'?-22:18;
+  const lowerLimit=shoes==='worn'?1448:1357;
+  const defs=`<defs>
+    <clipPath id="${id}-head" clipPathUnits="userSpaceOnUse"><rect x="0" y="0" width="1086" height="330"/></clipPath>
+    <clipPath id="${id}-body" clipPathUnits="userSpaceOnUse"><rect x="0" y="330" width="1086" height="${lowerLimit-330}"/></clipPath>
+    <clipPath id="${id}-irises" clipPathUnits="userSpaceOnUse"><ellipse cx="501" cy="200" rx="16" ry="20"/><ellipse cx="587" cy="200" rx="16" ry="20"/></clipPath>
+    <clipPath id="${id}-mouth" clipPathUnits="userSpaceOnUse"><ellipse cx="545" cy="253" rx="18" ry="14"/></clipPath>
+    <clipPath id="${id}-face-skin" clipPathUnits="userSpaceOnUse"><path d="M450 177Q545 126 640 177L640 222Q607 273 570 287L576 313L609 330H481L513 313L519 287Q480 273 450 225Z"/></clipPath>
+    <clipPath id="${id}-body-skin" clipPathUnits="userSpaceOnUse">
+      <path d="M392 495L436 511L394 606L338 710L326 782L300 826L218 825L206 756L300 695L350 593Z"/>
+      <path d="M649 510L690 490L742 638L779 708L860 766L842 818L802 827L752 789L735 710L687 631Z"/>
+      <path d="M433 1006H508L488 1275H433ZM550 1006H634L646 1131L628 1275H586L558 1130Z"/>
+    </clipPath>
+    <filter id="${id}-skin-select" color-interpolation-filters="sRGB"><feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  6 0 -6 0 -.08" result="warm"/><feComposite in="warm" in2="SourceAlpha" operator="in"/></filter>
+    <filter id="${id}-skin-light" color-interpolation-filters="sRGB"><feComponentTransfer><feFuncR type="linear" slope=".88" intercept=".12"/><feFuncG type="linear" slope=".87" intercept=".13"/><feFuncB type="linear" slope=".85" intercept=".15"/><feFuncA type="identity"/></feComponentTransfer></filter>
+    <filter id="${id}-eye-color" color-interpolation-filters="sRGB"><feColorMatrix type="hueRotate" values="${eyeRotation}"/><feColorMatrix type="saturate" values="1.3"/></filter>
+    <filter id="${id}-lip-color" color-interpolation-filters="sRGB"><feColorMatrix type="hueRotate" values="${lipRotation}"/><feColorMatrix type="saturate" values="1.4"/></filter>
+    <mask id="${id}-head-skin-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="1086" height="1448" style="mask-type:alpha"><g clip-path="url(#${id}-face-skin)" filter="url(#${id}-skin-select)">${head}</g></mask>
+    <mask id="${id}-body-skin-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="1086" height="1448" style="mask-type:alpha"><g clip-path="url(#${id}-body-skin)" filter="url(#${id}-skin-select)">${body}</g></mask>
+  </defs>`;
+  const skinArt=skin==='mask_pearl'?`<g filter="url(#${id}-skin-light)" mask="url(#${id}-body-skin-mask)">${body}</g><g filter="url(#${id}-skin-light)" mask="url(#${id}-head-skin-mask)">${head}</g>`:'';
+  const eyeArt=eyes==='natural'?'':`<g clip-path="url(#${id}-irises)" filter="url(#${id}-eye-color)">${head}</g>`;
+  const lipArt=lips==='natural'?'':`<g clip-path="url(#${id}-mouth)" filter="url(#${id}-lip-color)">${head}</g>`;
+  const lashArt=lashes==='natural'?'':`<g fill="none" stroke="#603c4d" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M475 188Q494 171 517 183M569 183Q592 171 613 189M477 185L472 178M482 181L478 174M610 186L616 180M606 181L610 174"/></g>`;
+  return `<svg class="dressup-girl manga-character" data-character-art="manga-v1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 380" role="img" aria-label="漫画女孩的装扮：${description}" focusable="false">${defs}
+    <ellipse cx="150" cy="359" rx="42" ry="5" fill="#6b567b" opacity=".11"/>
+    <g transform="translate(22.395 16) scale(.235)">
+      <g data-dressup-slot="dress" data-equipped="${dress}" clip-path="url(#${id}-body)">${body}</g>
+      <g data-dressup-slot="hairstyle" data-equipped="${hairstyle}" data-part="head" clip-path="url(#${id}-head)">${head}</g>
+      <g data-dressup-slot="skin" data-equipped="${skin}">${skinArt}</g>
+      <g data-dressup-slot="eyes" data-equipped="${eyes}">${eyeArt}</g>
+      <g data-dressup-slot="lips" data-equipped="${lips}">${lipArt}</g>
+      <g data-dressup-slot="lashes" data-equipped="${lashes}">${lashArt}</g>
+      ${mangaShoesMarkup(shoes)}
+      ${mangaJewelryMarkup(bracelet,necklace)}
+      <g data-dressup-slot="hair" data-equipped="${hair}">${mangaHeadAccessoryMarkup(hair)}</g>
     </g>
   </svg>`;
+}
+
+function mangaIconCrop(art, bounds) {
+  const [x,y,width,height]=bounds;
+  const scale=Math.min(106/width,108/height);
+  const drawWidth=width*scale,drawHeight=height*scale;
+  const left=7+(106-drawWidth)/2,top=4+(108-drawHeight)/2;
+  mangaIconCrop.serial=(mangaIconCrop.serial||0)+1;
+  const id='manga-icon-crop-'+mangaIconCrop.serial;
+  return `<defs><clipPath id="${id}" clipPathUnits="userSpaceOnUse"><rect x="${left}" y="${top}" width="${drawWidth}" height="${drawHeight}"/></clipPath></defs><g clip-path="url(#${id})"><g transform="translate(${left-x*scale} ${top-y*scale}) scale(${scale})">${art}</g></g>`;
+}
+
+function mangaWardrobeCrop(kind, itemId) {
+  const bounds=kind==='hairstyle'?[337,0,412,337]:[268,325,550,690];
+  return mangaIconCrop(mangaCharacterImage(kind,itemId),bounds);
+}
+
+function mangaAccessoryIconMarkup(itemId) {
+  const views={bow_rose:[572,56,163,150],clip_star:[371,88,122,122],band_lilac:[387,3,315,234],crown_snow:[446,-74,205,123]};
+  if(!Object.prototype.hasOwnProperty.call(views,itemId))return '';
+  return mangaIconCrop(mangaHeadAccessoryMarkup(itemId),views[itemId]);
 }
 
 function dressupExtraItemMarkup(itemId, paint = {}) {
@@ -1946,11 +1965,6 @@ function dressupExtraItemMarkup(itemId, paint = {}) {
     const rose=itemId==='lipstick_rose',fill=rose?'#df89a2':'#eda98d',line=rose?'#b9768f':'#c48d79';
     return `<g transform="rotate(-10 52 60)"><path d="M36 47V29Q38 20 56 16Q64 16 64 24V47Z" fill="${fill}" stroke="${line}" stroke-width="1.2"/><path d="M39 29L58 22" stroke="${rose?'#ffd1dc':'#ffdec2'}" stroke-width="3" stroke-linecap="round"/><path d="M40 33V41" stroke="#ffe1d6" stroke-width="2" stroke-linecap="round"/><rect x="32" y="45" width="36" height="18" rx="3" fill="${paint.gold || '#e6c997'}" stroke="#b99b74" stroke-width="1"/><path d="M37 49V59" stroke="#fff2ce" stroke-width="3"/><rect x="30" y="61" width="40" height="43" rx="7" fill="${rose?'#dab0bd':'#e1beaa'}" stroke="${line}" stroke-width="1.3"/><path d="M34 69H66M36 94H64" stroke="#fff1d3" stroke-width="1.7"/><path d="M36 74V89" stroke="#f7dce2" stroke-width="3" stroke-linecap="round"/><path d="M51 77l2 4 4 .5-3 3 .7 4-3.7-1.9-3.7 1.9.7-4-3-3 4-.5Z" fill="#f9e7bd"/></g><g transform="rotate(12 87 78)"><rect x="77" y="54" width="23" height="47" rx="5" fill="${rose?'#dab0bd':'#e1beaa'}" stroke="${line}" stroke-width="1.2"/><path d="M81 61H96" stroke="#fff1d3" stroke-width="1.8"/><path d="M82 67V91" stroke="#f7dce2" stroke-width="2" stroke-linecap="round"/></g>`;
   }
-  if (['hairstyle_bob','hairstyle_twintails'].includes(itemId)) {
-    const bob=itemId==='hairstyle_bob';
-    return `<g transform="${bob?'translate(-64 -8) scale(.82)':'translate(-21 2) scale(.53)'}">${dressupHairstyleMarkup(itemId,'back',false,paint)}<path d="M141 94L139 115Q149 124 162 114L160 94Z" fill="#f7dec9" stroke="#cfa58f" stroke-width=".65"/><path d="M122 59C123 43 135 34 152 36C170 35 180 47 181 63L179 77C176 90 167 99 153 100C141 99 128 89 124 77Z" fill="${paint.skin || '#f7dec9'}" stroke="#cfa58f" stroke-width=".7"/><path d="M131 73Q137 78 143 72M157 72Q164 77 170 71" fill="none" stroke="#b18a7d" stroke-width="1.2" stroke-linecap="round"/><path d="M146 90Q151 94 156 89" fill="none" stroke="#c7978b" stroke-width=".9" stroke-linecap="round"/>${dressupHairstyleMarkup(itemId,'front',false,paint)}<path d="M131 116Q149 124 168 115L178 130Q153 142 121 132Z" fill="#f5dbe2" stroke="#d2a8b6" stroke-width=".8"/></g>`;
-  }
-  if (['shoes_rose','shoes_maryjane','shoes_crystal'].includes(itemId)) return `<g transform="translate(24 43) rotate(-16) scale(1.65)">${dressupShoeShape(itemId,paint)}</g><g transform="translate(55 80) rotate(8) scale(1.65)">${dressupShoeShape(itemId,paint)}</g>`;
   if (itemId === 'bracelet_pearl') {
     const pearls=Array.from({length:13},(_,i)=>{const a=i*Math.PI*2/13,x=60+Math.cos(a)*29,y=58+Math.sin(a)*26;return `<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="6.2" fill="${paint.crystal || '#fff5e3'}" stroke="#c4b48e" stroke-width=".9"/><circle cx="${(x-1.8).toFixed(2)}" cy="${(y-2).toFixed(2)}" r="1.8" fill="#fff"/>`;}).join('');
     return `<ellipse cx="60" cy="58" rx="29" ry="26" fill="none" stroke="#c8ab6f" stroke-width="1.4"/>${pearls}<path d="M66 84L69 92" stroke="#ba9a64" stroke-width="1.2"/><path d="M70 88l2 4 4.5.6-3.3 3.2.8 4.5-4-2.1-4 2.1.8-4.5-3.3-3.2 4.5-.6Z" fill="${paint.gold || '#e5c98e'}" stroke="#ba9a64" stroke-width=".8"/>`;
@@ -1959,13 +1973,16 @@ function dressupExtraItemMarkup(itemId, paint = {}) {
   return '';
 }
 
+
 function wardrobeItemIllustration(itemId) {
-  const names={patched:'旧布裙',dress_sky:'蓝色公主裙',dress_peach:'蜜桃花边裙',dress_lilac:'紫藤花裙子',none:'取下装扮',bow_rose:'莓果蝴蝶结',clip_star:'小星星发夹',band_lilac:'丁香花发箍',crown_snow:'白雪公主的王冠',mask_pearl:'美白面膜',mascara_cocoa:'可可睫毛膏',contacts_hazel:'榛棕美瞳',contacts_ocean:'晴海美瞳',lipstick_rose:'玫瑰口红',lipstick_peach:'蜜桃口红',hairstyle_bob:'软软波波头',hairstyle_twintails:'俏皮双马尾',shoes_rose:'莓粉小皮鞋',shoes_maryjane:'黑色玛丽珍鞋',shoes_crystal:'水晶鞋',bracelet_pearl:'珍珠手链',necklace_star:'星星项链'};
+  const names={patched:'粉色补丁背带裙',dress_sky:'蓝色公主裙',dress_peach:'蜜桃花边裙',dress_lilac:'紫藤花裙子',none:'取下装扮',bow_rose:'莓果蝴蝶结',clip_star:'小星星发夹',band_lilac:'丁香花发箍',crown_snow:'白雪公主的王冠',mask_pearl:'美白面膜',mascara_cocoa:'可可睫毛膏',contacts_hazel:'榛棕美瞳',contacts_ocean:'晴海美瞳',lipstick_rose:'玫瑰口红',lipstick_peach:'蜜桃口红',hairstyle_bob:'软软波波头',hairstyle_twintails:'俏皮双马尾',shoes_rose:'莓粉小皮鞋',shoes_maryjane:'黑色玛丽珍鞋',shoes_crystal:'水晶鞋',bracelet_pearl:'珍珠手链',necklace_star:'星星项链'};
   const safe=Object.prototype.hasOwnProperty.call(names,itemId)?itemId:'none';
   const p=dressupSvgPaints(safe==='mask_pearl'?'mask_pearl':'natural',safe==='contacts_ocean'||safe==='contacts_hazel'?safe:'natural');
   let art;
-  if (['patched','dress_sky','dress_peach','dress_lilac'].includes(safe)) art=`<g transform="translate(-29 -57) scale(.59)">${dressupGarmentMarkup(safe,p)}</g>`;
-  else if (['bow_rose','clip_star','band_lilac','crown_snow'].includes(safe)) art=dressupAccessoryMarkup(safe,true,p);
+  if (['patched','dress_sky','dress_peach','dress_lilac'].includes(safe)) art=mangaWardrobeCrop('dress',safe);
+  else if (['hairstyle_bob','hairstyle_twintails'].includes(safe)) art=mangaWardrobeCrop('hairstyle',safe);
+  else if (['bow_rose','clip_star','band_lilac','crown_snow'].includes(safe)) art=mangaAccessoryIconMarkup(safe);
+  else if (['shoes_rose','shoes_maryjane','shoes_crystal'].includes(safe)) art=mangaIconCrop(mangaShoesMarkup(safe),[392,1333,285,123]);
   else if (safe==='none') art='<circle cx="60" cy="60" r="25" fill="none" stroke="#c7adb9" stroke-width="1.8"/><path d="M43 77L77 43" stroke="#c7adb9" stroke-width="1.8" stroke-linecap="round"/>';
   else art=dressupExtraItemMarkup(safe,p);
   return `<svg class="wardrobe-item-art" data-wardrobe-item="${safe}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="${names[safe]}" focusable="false">${p.defs}<ellipse cx="60" cy="108" rx="33" ry="4.5" fill="#c7a8b6" opacity=".15"/>${art}</svg>`;

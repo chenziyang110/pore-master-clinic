@@ -1,14 +1,14 @@
-# 粉色小心愿 · Pore Master Clinic
+# 粉色小心愿 · 漫画女孩换装版
 
-轻轻清理，带回一份小美味，慢慢实现女孩的粉色小心愿。全站使用柔粉渐变、圆润按钮，人物按约 16–18 岁的清新少女方向重绘：更自然的头身比例、清亮眼睛、柔和微笑与放松的站姿。主页、心愿册与护理台都减少了说明文字。
+轻轻清理，带回一份小美味，陪全新的漫画女孩实现她的粉色小心愿。
 
-**公开试玩：[https://pore-dressup-n7q4.candid-otter-5800.chatgpt.site/](https://pore-dressup-n7q4.candid-otter-5800.chatgpt.site/)**
+**最新试玩：[https://pore-master-clinic-latest.sunshinywood.chatgpt.site/](https://pore-master-clinic-latest.sunshinywood.chatgpt.site/)**
 
-当前公开站点已发布小女孩换装版本，可直接用手机浏览器打开。
+试玩入口当前仅对项目所有者开放，使用有权限的 ChatGPT 账号登录后可在手机或电脑浏览器中打开。
 
-原生 HTML、CSS、Canvas 2D 与 Web Audio API 实现，游戏和换装插画都在 `index.html` 内。插画使用内联 SVG，没有外部图片、字体、音频或运行时依赖，可直接离线打开。
+角色已从零设计为原创日系漫画形象：蓝黑发、蓝紫眼、活泼笑容、细线稿与赛璐璐上色。默认补丁裙、三套解锁裙装和两种额外发型采用同一位新角色的配准画稿；发饰、妆容、鞋和首饰继续支持十个部位独立搭配。首页、衣橱、奖励与结算使用统一的新人物和新服装预览。
 
-角色设计参考了原作者项目 [Character design young student girl](https://www.behance.net/gallery/142727617/Character-design-young-student-girl) 与 [Sophie in love](https://www.behance.net/gallery/186553383/Sophie-in-love) 的少女设定、自然姿态与换装呈现；游戏人物及全部服饰沿用自绘 SVG 图层，支持十个位置独立搭配。新玩家仍只穿补丁旧裙和旧鞋。
+原生 HTML、CSS、Canvas 2D 与 Web Audio API 实现。角色画稿保存在 `assets/character/` 的六张无损 WebP 中，和游戏代码一起提供；没有第三方图片、字体、音频或运行时服务依赖。离线运行时保留 `index.html`、`favicon.svg` 和 `assets/` 的相对目录结构。
 
 ## 现在怎么玩
 
@@ -93,9 +93,9 @@ python3 -m http.server 8080
 npm run build
 ```
 
-`scripts/build-static.cjs` 只使用 Node.js 标准库，无需先安装开发依赖。它清理仓库自己的 `dist` 目录，再复制 `index.html` 和 `favicon.svg`；测试、文档和 QA 页面不会进入产物。
+`scripts/build-static.cjs` 只使用 Node.js 标准库，无需先安装开发依赖。它先核对静态文件是否完整，再清理仓库自己的 `dist` 目录，复制 `index.html`、`favicon.svg` 和六张漫画角色 WebP；原始画稿、测试、文档和 QA 页面不会进入产物。
 
-当前公开链接通过 Sites 托管，发布静态产物 `dist`。其他静态托管平台也可直接使用同一产物。GitHub 提交、Actions 检查与线上部署是不同步骤；发布后应单独确认公开站点对应的提交，源码更新本身不代表线上已经更新。
+当前试玩链接通过 Sites 托管，发布静态产物 `dist`。其他静态托管平台也可直接使用同一产物。GitHub 提交、Actions 检查与线上部署是不同步骤；发布后应单独确认公开站点对应的提交，源码更新本身不代表线上已经更新。
 
 ## 测试与检查
 
