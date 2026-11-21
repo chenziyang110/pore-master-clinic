@@ -586,6 +586,17 @@
     .gift-discovery .gift-dismiss:focus-visible { outline: 2px solid #ad5d89; outline-offset: -3px; }
     .gift-discovery.is-dragging { transition: none; cursor: grabbing; }
     .gift-discovery.is-dismissing { opacity: 0; transform: translateY(calc(-100% - 20px)); pointer-events: none; }
+    .care-praise { position: absolute; inset: 12px 12px auto; z-index: 23; width: fit-content; max-width: min(304px, calc(100% - 24px)); margin: 0 auto; display: flex; align-items: center; gap: 10px; padding: 11px 18px 11px 12px; border: 1px solid #efc4d8; border-radius: 18px; background: linear-gradient(125deg, #fffdfcf7, #fff0f7f5); box-shadow: 0 7px 24px #a65d8120, inset 0 1px 0 #fff; color: #a4557e; pointer-events: none; user-select: none; animation: care-praise-enter .24s ease-out both; }
+    .care-praise[hidden] { display: none; }
+    .care-praise *, .care-praise::before, .care-praise::after { pointer-events: none; }
+    .care-praise-mark { position: relative; display: grid; place-items: center; flex: 0 0 36px; width: 36px; height: 36px; border-radius: 50%; background: #fce2ee; color: #cf8c51; font-size: 24px; line-height: 1; }
+    .care-praise-mark::after { content: '✧'; position: absolute; top: -5px; right: -5px; color: #d190ab; font-size: 15px; animation: care-praise-sparkle .7s ease-out both; }
+    .care-praise-copy { min-width: 0; }
+    .care-praise strong { display: block; color: #a4557e; font-size: 15px; font-weight: 750; line-height: 1.45; }
+    .care-praise p { margin: 2px 0 0; color: #926f83; font-size: 12px; line-height: 1.4; }
+    .care-praise.reduced-motion, .care-praise.reduced-motion *::after { animation: none; }
+    @keyframes care-praise-enter { from { opacity: 0; transform: translateY(-5px) scale(.98); } to { opacity: 1; transform: none; } }
+    @keyframes care-praise-sparkle { from { opacity: 0; transform: scale(.6) rotate(-12deg); } 55% { opacity: 1; transform: scale(1.1); } to { opacity: 1; transform: none; } }
     #gift-flight-layer { position: absolute; inset: 0; z-index: 25; overflow: hidden; pointer-events: none; }
     .gift-flight { position: absolute; width: 82px; height: 82px; transform: translate(-50%, -50%) scale(.12); transform-origin: center; filter: drop-shadow(0 5px 8px #72532926); animation: gift-emerge 1.8s ease-out forwards; }
     .gift-flight svg { display: block; width: 100%; height: 100%; }
@@ -965,6 +976,7 @@
           <span id="keyboard-care-help" class="visually-hidden">键盘辅助：左或上选择上一处，右或下选择下一处；1–5 切换工具，按住空格或回车使用，松开停手；粉刺针在松键时破口，Esc 取消。清理完后按 6 涂冰膜。</span>
           <div class="canvas-topline" hidden><ol class="care-stages" aria-label="护理流程"><li data-care-stage="0" aria-current="step"><span>01</span>热敷</li><li data-care-stage="1"><span>02</span>清理</li><li data-care-stage="2"><span>03</span>舒缓</li></ol><span id="canvas-status" class="canvas-status">已软化 0 / 8</span></div>
           <div id="gift-discovery" class="gift-discovery" role="region" aria-label="发现礼物" hidden></div>
+          <div id="care-praise" class="care-praise" role="status" aria-live="polite" aria-atomic="true" hidden><span class="care-praise-mark" aria-hidden="true">✦</span><div class="care-praise-copy"><strong id="care-praise-title"></strong><p id="care-praise-count"></p></div></div>
           <div id="gift-flight-layer" aria-hidden="true"></div>
           <div class="ice-cta-group"><button id="btn-ice-finish" class="ice-finish-cta" type="button">涂抹舒缓冰膜</button><button id="btn-ice-quick" class="ice-quick-btn" type="button">一键敷膜 · 完成护理</button></div>
           <div class="macro-frame-overlay"></div><div id="macro-reticle" class="macro-reticle" hidden>鼻翼沟与内侧脸颊 · 自然肌理</div>
@@ -1820,6 +1832,11 @@
           this._tone([[freq, 0]], index === 3 ? .019 : .042, .42, 'sine', index * .075, 4200, pan)), 'gift');
       }
 
+      playCarePraise() {
+        this._playOnce(() => [659.25, 880, 1046.5].forEach((freq, index) =>
+          this._tone([[freq, 0]], .026, .20, 'sine', index * .065, 3200)), 'care-praise');
+      }
+
       playUI(kind, event, item = null) {
         // Only the trusted activation passed by a visible UI control can open
         // this scope. Loading, programmatic .click(), rendering and timers cannot.
@@ -2233,6 +2250,8 @@ function foodIllustration(itemId) {
     }
     const WARDROBE_DEFAULTS = Object.freeze({ hair: 'none', dress: 'patched', skin: 'natural', lashes: 'natural',
       eyes: 'natural', lips: 'natural', hairstyle: 'original', shoes: 'worn', bracelet: 'none', necklace: 'none' });
+    const CARE_PRAISE = Object.freeze({ MILESTONES: Object.freeze([3, 6, 10]), REPEAT_EVERY: 5,
+      COOLDOWN_MS: 12000, NOTICE_MS: 1800, MAX_PER_RUN: 3, PENDING_MS: 8000, RELEASE_MS: 400 });
     let wardrobeProgress = normalizeWardrobeProgress(null);
     let adventureEntered = false;
     let wardrobeReturnModal = null;
@@ -2241,6 +2260,11 @@ function foodIllustration(itemId) {
     let giftNoticeGesture = null;
     let giftNoticeItems = [];
     const giftFlightTimers = new Set();
+    let carePraisePending = null;
+    let carePraiseTimer = null;
+    let carePraiseRevision = 0;
+    let carePraiseHideTimer = null;
+    let carePraiseNoticeRevision = 0;
     let hungerReminderTimer = null;
     let hungerReminderRevision = 0;
     let hungerWindowActive = true;
@@ -2411,7 +2435,8 @@ function foodIllustration(itemId) {
       return { version: 3, level: Number.isSafeInteger(raw?.level) && raw.level >= 1 && raw.level <= 1000000 ? raw.level : 1,
         unlocked, equipped: Object.fromEntries(Object.entries(WARDROBE_DEFAULTS).map(([slot, fallback]) => [slot, selected(slot, fallback)])),
         dreams, dreamEquipped, pantry, hunger: Number.isInteger(raw?.hunger) && raw.hunger >= 0 && raw.hunger <= 100 ? raw.hunger : 38,
-        careRhythm: normalizeCareRhythm(raw?.careRhythm), hungerReminder: normalizeHungerReminder(raw?.hungerReminder) };
+        careRhythm: normalizeCareRhythm(raw?.careRhythm), hungerReminder: normalizeHungerReminder(raw?.hungerReminder),
+        carePraise: normalizeCarePraise(raw?.carePraise) };
     }
 
     function normalizeHungerReminder(raw) {
@@ -2419,6 +2444,23 @@ function foodIllustration(itemId) {
         lastRunId: typeof raw?.lastRunId === 'string' && raw.lastRunId.length <= 128 ? raw.lastRunId : '',
         nextAt: Number.isSafeInteger(raw?.nextAt) && raw.nextAt >= 0 && raw.nextAt <= Date.now() + 86400000 ? raw.nextAt : 0
       };
+    }
+
+    function carePraiseMilestoneFor(streak) {
+      const [first, second, recurring] = CARE_PRAISE.MILESTONES;
+      if (streak >= recurring) return recurring + Math.floor((streak - recurring) / CARE_PRAISE.REPEAT_EVERY) * CARE_PRAISE.REPEAT_EVERY;
+      return streak >= second ? second : streak >= first ? first : 0;
+    }
+
+    function normalizeCarePraise(raw) {
+      const streak = Number.isSafeInteger(raw?.streak) && raw.streak >= 0 && raw.streak <= 1000000 ? raw.streak : 0;
+      return { streak,
+        // Earned milestones are consumed even when their brief notice could not
+        // fit. Restoring a profile must never manufacture a catch-up celebration.
+        lastMilestone: carePraiseMilestoneFor(streak),
+        nextAt: Number.isSafeInteger(raw?.nextAt) && raw.nextAt >= 0 && raw.nextAt <= Date.now() + 86400000 ? raw.nextAt : 0,
+        runId: typeof raw?.runId === 'string' && raw.runId.length <= 128 ? raw.runId : '',
+        shownThisRun: Number.isInteger(raw?.shownThisRun) && raw.shownThisRun >= 0 && raw.shownThisRun <= CARE_PRAISE.MAX_PER_RUN ? raw.shownThisRun : 0 };
     }
 
     function normalizeCareRhythm(raw) {
@@ -2611,6 +2653,7 @@ function foodIllustration(itemId) {
         notice.hidden = true;
         notice.classList.remove('is-dismissing');
         if (!immediate) queueHungerReminder(1400);
+        queueCarePraise();
         return;
       }
       notice.classList.add('is-dismissing');
@@ -2620,6 +2663,7 @@ function foodIllustration(itemId) {
         notice.classList.remove('is-dismissing');
         giftNoticeTimer = null;
         queueHungerReminder(1400);
+        queueCarePraise();
       }, 180);
     }
 
@@ -2635,6 +2679,7 @@ function foodIllustration(itemId) {
 
     function showGiftNotice(item) {
       cancelHungerReminder();
+      clearCarePraisePresentation(false);
       const notice = document.getElementById('gift-discovery'), focused = notice.contains(document.activeElement);
       const previous = notice.hidden || notice.classList.contains('is-dismissing') ? [] : giftNoticeItems;
       giftNoticeItems = [...new Set([...previous, item.id])];
@@ -2649,6 +2694,7 @@ function foodIllustration(itemId) {
       notice.hidden = false;
       if (focused) notice.querySelector('.gift-dismiss').focus({preventScroll: true});
       scheduleGiftNoticeDismiss();
+      queueCarePraise();
     }
 
     function bindGiftNoticeInteractions() {
@@ -2714,6 +2760,7 @@ function foodIllustration(itemId) {
     }
 
     function clearGiftPresentation() {
+      clearCarePraisePresentation();
       dismissGiftNotice(true, false);
       for (const timer of giftFlightTimers) clearTimeout(timer);
       giftFlightTimers.clear();
@@ -2740,7 +2787,7 @@ function foodIllustration(itemId) {
       flight.style.setProperty('--gift-end-y', rise + 'px');
       flight.innerHTML = rewardItemIllustration(item.id);
       layer.append(flight);
-      const timer = setTimeout(() => { flight.remove(); giftFlightTimers.delete(timer); }, motionPreference?.matches ? 800 : 1900);
+      const timer = setTimeout(() => { flight.remove(); giftFlightTimers.delete(timer); queueCarePraise(); }, motionPreference?.matches ? 800 : 1900);
       giftFlightTimers.add(timer);
     }
 
@@ -2951,6 +2998,148 @@ function foodIllustration(itemId) {
       return hungerHeldMouseButtons.size > 0 || hungerHeldTouches.size > 0 || hungerHeldKeys.size > 0;
     }
 
+    function cancelCarePraiseTimer() {
+      carePraiseRevision += 1;
+      if (carePraiseTimer !== null) clearTimeout(carePraiseTimer);
+      carePraiseTimer = null;
+    }
+
+    function clearCarePraisePresentation(dropPending = true) {
+      carePraiseNoticeRevision += 1;
+      if (carePraiseHideTimer !== null) clearTimeout(carePraiseHideTimer);
+      carePraiseHideTimer = null;
+      const notice = document.getElementById('care-praise');
+      if (notice) notice.hidden = true;
+      if (dropPending) {
+        carePraisePending = null;
+        cancelCarePraiseTimer();
+      }
+    }
+
+    function resetCarePraiseStreak() {
+      const praise = wardrobeProgress.carePraise = normalizeCarePraise(wardrobeProgress.carePraise);
+      praise.streak = 0;
+      praise.lastMilestone = 0;
+      clearCarePraisePresentation();
+      // A mistake never removes the cooldown or the round's display cap.
+      queueSessionSave();
+    }
+
+    function recordBlackheadCarePraise(item) {
+      if (!item || item.kind !== 'blackhead' || item.sourceType !== 'blackhead'
+        || !item.rewards?.extract || item.praiseCounted || careControl.hydrating || !careControl.owned) return false;
+      item.praiseCounted = true;
+      if (item.gentle !== true || state.runStats.lastMistakeAction === state.actionSerial) {
+        resetCarePraiseStreak();
+        return false;
+      }
+      const praise = wardrobeProgress.carePraise = normalizeCarePraise(wardrobeProgress.carePraise);
+      if (praise.runId !== state.runId) { praise.runId = state.runId; praise.shownThisRun = 0; }
+      praise.streak = Math.min(1000000, praise.streak + 1);
+      const milestone = carePraiseMilestoneFor(praise.streak);
+      if (carePraisePending && (carePraisePending.runId !== state.runId || Date.now() >= carePraisePending.expiresAt)) {
+        carePraisePending = null;
+        cancelCarePraiseTimer();
+      }
+      if (carePraisePending?.runId === state.runId) carePraisePending.streak = praise.streak;
+      if (milestone > praise.lastMilestone) {
+        praise.lastMilestone = milestone;
+        if (praise.shownThisRun < CARE_PRAISE.MAX_PER_RUN) {
+          // One candidate, never a queue. A group extraction can update its
+          // count, but cannot keep an old celebration alive indefinitely.
+          carePraisePending = { runId: state.runId, streak: praise.streak, milestone,
+            expiresAt: carePraisePending?.runId === state.runId ? carePraisePending.expiresAt : Date.now() + CARE_PRAISE.PENDING_MS };
+        }
+      }
+      if (carePraisePending) queueCarePraise();
+      // rewardTrophyOnce saves this together with the extract ledger below.
+      return true;
+    }
+
+    function carePraiseContextReady() {
+      return careControl.owned && !careControl.hydrating && adventureEntered && state.pimples.length > 0
+        && hungerWindowActive && !document.hidden && !state.paused && !state.settled
+        && !state.iceBrushingMode && !state.iceFinishing && state.currentTool !== 'ice_brush'
+        && !document.querySelector('.modal-backdrop.open');
+    }
+
+    function carePraiseInteractionBusy() {
+      return hungerInputIsHeld() || state.pointer.active || state.keyboardCare.active
+        || Boolean(state.tweezers.clampedPimple || state.tweezers.loupeRelease)
+        || state.flyingTrophies.length > 0 || !document.getElementById('gift-discovery').hidden
+        || document.getElementById('gift-flight-layer').childElementCount > 0;
+    }
+
+    function carePraisePendingValid() {
+      const praise = wardrobeProgress.carePraise;
+      return carePraisePending && carePraisePending.runId === state.runId
+        && carePraisePending.streak === praise.streak && praise.shownThisRun < CARE_PRAISE.MAX_PER_RUN
+        && Date.now() < carePraisePending.expiresAt;
+    }
+
+    function queueCarePraise(delayMs = 0) {
+      cancelCarePraiseTimer();
+      if (!carePraisePending) return false;
+      if (!carePraisePendingValid() || !carePraiseContextReady()) {
+        clearCarePraisePresentation();
+        return false;
+      }
+      const now = Date.now(), expiresIn = carePraisePending.expiresAt - now;
+      const delay = Number.isFinite(delayMs) ? Math.max(0, Math.min(CARE_PRAISE.PENDING_MS, delayMs)) : 0;
+      // While busy, only an expiry is scheduled. Physical release, loupe / tray
+      // completion and gift dismissal wake us; there is no idle polling loop.
+      const wait = carePraiseInteractionBusy() ? expiresIn
+        : Math.min(expiresIn, Math.max(delay, wardrobeProgress.carePraise.nextAt - now, 0));
+      const revision = carePraiseRevision;
+      carePraiseTimer = setTimeout(() => {
+        if (revision !== carePraiseRevision) return;
+        carePraiseTimer = null;
+        maybeShowCarePraise();
+      }, wait);
+      return true;
+    }
+
+    function maybeShowCarePraise() {
+      cancelCarePraiseTimer();
+      if (!carePraisePending) return false;
+      if (!carePraisePendingValid() || !carePraiseContextReady()) {
+        clearCarePraisePresentation();
+        return false;
+      }
+      if (carePraiseInteractionBusy() || Date.now() < wardrobeProgress.carePraise.nextAt) {
+        queueCarePraise();
+        return false;
+      }
+      if (!ensureCareControl()) { clearCarePraisePresentation(); return false; }
+      const praise = wardrobeProgress.carePraise;
+      const milestone = carePraisePending.milestone;
+      const copy = milestone === 3 ? '手法好稳呀！' : milestone === 6 ? '越来越熟练啦！'
+        : milestone === 10 ? '这份耐心，真的很棒！'
+        : ['每一步都照顾得好细心！', '又是干净利落的一次！', '保持这个温柔的节奏吧！'][Math.floor((milestone - 15) / 5) % 3];
+      clearCarePraisePresentation(false);
+      carePraisePending = null;
+      praise.shownThisRun += 1;
+      praise.nextAt = Date.now() + CARE_PRAISE.COOLDOWN_MS;
+      // Persist the display cap and cooldown before exposing the notice. A
+      // reload restores the achievement, never the transient presentation.
+      saveCurrentSession();
+      if (!carePraiseContextReady()) return false;
+      const notice = document.getElementById('care-praise');
+      document.getElementById('care-praise-title').textContent = copy;
+      document.getElementById('care-praise-count').textContent = '连续轻柔取出 ' + praise.streak + ' 次';
+      notice.dataset.streak = String(praise.streak);
+      notice.classList.toggle('reduced-motion', Boolean(motionPreference?.matches));
+      notice.hidden = false;
+      sound.playCarePraise();
+      const revision = carePraiseNoticeRevision;
+      carePraiseHideTimer = setTimeout(() => {
+        if (revision !== carePraiseNoticeRevision) return;
+        carePraiseHideTimer = null;
+        notice.hidden = true;
+      }, CARE_PRAISE.NOTICE_MS);
+      return true;
+    }
+
     function hungerReminderDue() {
       const reminder = wardrobeProgress.hungerReminder;
       return wardrobeProgress.hunger >= 80 && FOOD_ITEMS.some(item => wardrobeProgress.pantry[item.id] > 0)
@@ -2987,6 +3176,7 @@ function foodIllustration(itemId) {
         || !document.getElementById('gift-discovery').hidden
         || document.getElementById('gift-flight-layer').childElementCount > 0
         || state.flyingTrophies.length > 0 || !ensureCareControl()) return false;
+      clearCarePraisePresentation();
       const hunger = wardrobeProgress.hunger;
       document.getElementById('hunger-girl').innerHTML = girlIllustration(wardrobeProgress.equipped);
       document.getElementById('hunger-title').textContent = hunger >= 100 ? '肚子真的好饿呀…' : '肚子咕咕叫了…';
@@ -3057,6 +3247,7 @@ function foodIllustration(itemId) {
       // can be called by a completed group while a finger is still on the glass.
       const afterRelease = () => {
         if (hungerInputIsHeld()) return;
+        queueCarePraise(CARE_PRAISE.RELEASE_MS);
         hungerSafeAfter = Date.now() + 1400;
         cancelHungerReminder();
         const revision = hungerReminderRevision;
@@ -3099,6 +3290,7 @@ function foodIllustration(itemId) {
       const suspend = () => {
         hungerWindowActive = false;
         hungerHeldMouseButtons.clear(); hungerHeldTouches.clear(); hungerHeldKeys.clear();
+        clearCarePraisePresentation();
         clearHungerReminderPresentation(true);
       };
       const resume = () => { hungerWindowActive = true; queueHungerReminder(); };
@@ -3111,6 +3303,7 @@ function foodIllustration(itemId) {
       let overlayWasOpen = Boolean(document.querySelector('.modal-backdrop.open:not(#hunger-modal)'));
       const syncOverlays = () => {
         const overlayOpen = Boolean(document.querySelector('.modal-backdrop.open:not(#hunger-modal)'));
+        if (document.querySelector('.modal-backdrop.open')) clearCarePraisePresentation();
         if (overlayOpen) clearHungerReminderPresentation();
         else if (overlayWasOpen) queueHungerReminder();
         overlayWasOpen = overlayOpen;
@@ -3543,6 +3736,7 @@ function foodIllustration(itemId) {
     }
 
     function hydrateCareProfile(snapshot) {
+      clearCarePraisePresentation();
       clearHungerReminderPresentation();
       careControl.hydrating = true;
       careControl.saveIssue = false;
@@ -3614,6 +3808,7 @@ function foodIllustration(itemId) {
       // Disable every writer before releasePointer or modal cleanup can save.
       careControl.owned = false;
       sessionSaveEnabled = false;
+      clearCarePraisePresentation();
       clearHungerReminderPresentation();
       if (sessionSaveTimer) { clearTimeout(sessionSaveTimer); sessionSaveTimer = null; }
       if (careControl.heartbeat) { clearInterval(careControl.heartbeat); careControl.heartbeat = null; }
@@ -3984,6 +4179,7 @@ function foodIllustration(itemId) {
     }
 
     function beginCareAction() {
+      clearCarePraisePresentation(false);
       normalizeRunStats();
       state.actionSerial += 1;
       if (state.controlMode === 'keyboard') {
@@ -3994,6 +4190,7 @@ function foodIllustration(itemId) {
     }
 
     function recordCareMistake() {
+      resetCarePraiseStreak();
       if (state.runStats.lastMistakeAction !== state.actionSerial) {
         state.runStats.mistakes += 1;
         state.runStats.lastMistakeAction = state.actionSerial;
@@ -4841,6 +5038,7 @@ function foodIllustration(itemId) {
 
     function generateLevel(overrideDensity = 0, options = {}) {
       if (!ensureCareControl()) return;
+      clearCarePraisePresentation();
       clearHungerReminderPresentation();
       pointerCareTarget = null;
       pendingTreatmentChange = null;
@@ -4848,6 +5046,11 @@ function foodIllustration(itemId) {
       syncDensityControls();
       syncViewPreferenceControls();
       state.runId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 11)}`;
+      if (!options.restoring) {
+        wardrobeProgress.carePraise = normalizeCarePraise(wardrobeProgress.carePraise);
+        wardrobeProgress.carePraise.runId = state.runId;
+        wardrobeProgress.carePraise.shownThisRun = 0;
+      }
       state.runDensity = overrideDensity;
       state.runLevel = wardrobeProgress.level;
       state.roundPlan = overrideDensity || options.restoring ? null : chooseAdventurePlan(state.runLevel);
@@ -5249,6 +5452,7 @@ function foodIllustration(itemId) {
           item.gentle = !source.hardSqueezeWarned && !source.snappedCap && source.traumaLevel <= 0.1;
           if (item.gentle) state.runStats.cleanExtractions += 1;
         }
+        recordBlackheadCarePraise(item);
       }
       addScore(points, x, y, label);
       return true;
@@ -7618,6 +7822,7 @@ function foodIllustration(itemId) {
       if (state.paused || state.settled || !careControl.owned) sound.pause();
       else sound.setTension(0);
       saveCurrentSession();
+      queueCarePraise(CARE_PRAISE.RELEASE_MS);
     }
 
     function getAxisAngleDiff(a, b) {
@@ -7628,6 +7833,7 @@ function foodIllustration(itemId) {
 
     function enterIceBrushingStage() {
       if (!ensureCareControl()) return;
+      clearCarePraisePresentation();
       selectTool('ice_brush');
       state.iceBrushingMode = true;
       iceFinishBtnEl.classList.remove('show');
@@ -7640,6 +7846,7 @@ function foodIllustration(itemId) {
     function triggerIceMaskFinale() {
       if (!ensureCareControl()) return;
       if (state.iceFinishing || state.settled) return;
+      clearCarePraisePresentation();
       state.iceFinishing = true;
       state.iceBrushingMode = false;
       iceFinishBtnEl.classList.remove('show');
@@ -7676,6 +7883,7 @@ function foodIllustration(itemId) {
         state.tweezers.loupeRelease.remaining -= dt;
         if (state.tweezers.loupeRelease.remaining <= 0 || state.currentTool !== 'tweezers') {
           state.tweezers.loupeRelease = null;
+          queueCarePraise();
         }
       }
 
@@ -7693,6 +7901,7 @@ function foodIllustration(itemId) {
         if (ft.progress >= 1) {
           finalizeTrophyInTray(ft.kind, ft.wormLen, ft.collectionId);
           state.flyingTrophies.splice(i, 1);
+          if (state.flyingTrophies.length === 0) queueCarePraise();
         }
       }
 
@@ -9949,6 +10158,7 @@ function foodIllustration(itemId) {
       clinicModalEl.classList.remove('open');
       state.paused = false;
       state.clientIndex = change.clientIndex;
+      resetCarePraiseStreak();
       sound.unlock();
       generateLevel(change.density);
       selectTool('steam');
